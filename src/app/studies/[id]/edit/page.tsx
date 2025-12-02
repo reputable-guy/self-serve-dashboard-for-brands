@@ -21,6 +21,7 @@ import { StudyPreview } from "@/components/study-preview";
 import { StudyDetailsPreview } from "@/components/study-details-preview";
 import { ImageUpload } from "@/components/image-upload";
 import { DiscoverItem, RoutineStep, ValueItem, CustomQuestion } from "@/lib/study-context";
+import { CATEGORIES, DEVICES, METRICS, DEFAULT_VILLAIN_DAYS } from "@/lib/constants";
 import {
   ArrowLeft,
   Save,
@@ -35,40 +36,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
-const categories = [
-  { value: "sleep", label: "Sleep & Recovery" },
-  { value: "stress", label: "Stress & Mood" },
-  { value: "energy", label: "Energy & Focus" },
-  { value: "fitness", label: "Fitness & Performance" },
-  { value: "nutrition", label: "Nutrition & Gut Health" },
-  { value: "longevity", label: "Longevity & Anti-Aging" },
-  { value: "immunity", label: "Immunity & Wellness" },
-  { value: "cognitive", label: "Cognitive & Brain Health" },
-];
-
-const deviceOptions = [
-  { value: "any", label: "Any Device" },
-  { value: "oura", label: "Oura Ring" },
-  { value: "whoop", label: "Whoop" },
-  { value: "apple", label: "Apple Watch" },
-  { value: "garmin", label: "Garmin" },
-  { value: "fitbit", label: "Fitbit" },
-];
-
-const metricsOptions = [
-  { id: "sleep-quality", label: "Sleep Quality", icon: "💤" },
-  { id: "deep-sleep", label: "Deep Sleep", icon: "🌙" },
-  { id: "rem-sleep", label: "REM Sleep", icon: "😴" },
-  { id: "hrv", label: "HRV (Heart Rate Variability)", icon: "💓" },
-  { id: "resting-heart-rate", label: "Resting Heart Rate", icon: "❤️" },
-  { id: "stress", label: "Stress", icon: "😰" },
-  { id: "recovery-score", label: "Recovery Score", icon: "🔋" },
-  { id: "steps", label: "Steps", icon: "👣" },
-  { id: "energy", label: "Energy", icon: "⚡" },
-];
-
-const defaultVillainDays = [7, 14, 21, 28];
 
 export default function EditStudyPage() {
   const params = useParams();
@@ -478,7 +445,7 @@ export default function EditStudyPage() {
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories.map((cat) => (
+                            {CATEGORIES.map((cat) => (
                               <SelectItem key={cat.value} value={cat.value}>
                                 {cat.label}
                               </SelectItem>
@@ -561,7 +528,7 @@ export default function EditStudyPage() {
                             <SelectValue placeholder="Select device" />
                           </SelectTrigger>
                           <SelectContent>
-                            {deviceOptions.map((device) => (
+                            {DEVICES.map((device) => (
                               <SelectItem
                                 key={device.value}
                                 value={device.value}
@@ -577,7 +544,7 @@ export default function EditStudyPage() {
                     <div className="space-y-2">
                       <Label>Metrics to Track</Label>
                       <div className="grid grid-cols-2 gap-2">
-                        {metricsOptions.map((metric) => (
+                        {METRICS.map((metric) => (
                           <div
                             key={metric.id}
                             className="flex items-center space-x-2"
@@ -687,7 +654,7 @@ export default function EditStudyPage() {
                           Select which days to ask this question
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {defaultVillainDays.map((day) => (
+                          {DEFAULT_VILLAIN_DAYS.map((day) => (
                             <button
                               key={day}
                               type="button"
@@ -806,7 +773,7 @@ export default function EditStudyPage() {
                               <div className="space-y-2">
                                 <Label>Show on Days</Label>
                                 <div className="flex flex-wrap gap-2">
-                                  {defaultVillainDays.map((day) => (
+                                  {DEFAULT_VILLAIN_DAYS.map((day) => (
                                     <button
                                       key={day}
                                       type="button"

@@ -23,30 +23,8 @@ import {
 } from "@/components/ui/collapsible";
 import { StudyPreview } from "@/components/study-preview";
 import { useStudyForm, CustomQuestion } from "@/lib/study-context";
+import { DEVICES, METRICS, DEFAULT_VILLAIN_DAYS } from "@/lib/constants";
 import { ChevronDown, Plus, Trash2, Mic } from "lucide-react";
-
-const devices = [
-  { value: "oura", label: "Oura Ring" },
-  { value: "whoop", label: "Whoop" },
-  { value: "apple", label: "Apple Watch" },
-  { value: "garmin", label: "Garmin" },
-  { value: "fitbit", label: "Fitbit" },
-  { value: "any", label: "Any Device" },
-];
-
-const metrics = [
-  { id: "sleep-quality", label: "Sleep Quality", icon: "💤" },
-  { id: "deep-sleep", label: "Deep Sleep", icon: "🌙" },
-  { id: "rem-sleep", label: "REM Sleep", icon: "😴" },
-  { id: "hrv", label: "HRV (Heart Rate Variability)", icon: "💓" },
-  { id: "resting-heart-rate", label: "Resting Heart Rate", icon: "❤️" },
-  { id: "stress", label: "Stress", icon: "😰" },
-  { id: "recovery-score", label: "Recovery Score", icon: "🔋" },
-  { id: "steps", label: "Steps", icon: "👣" },
-  { id: "energy", label: "Energy", icon: "⚡" },
-];
-
-const defaultVillainDays = [7, 14, 21, 28];
 
 export default function CreateStudyStep2() {
   const router = useRouter();
@@ -244,7 +222,7 @@ export default function CreateStudyStep2() {
                         <SelectValue placeholder="Select required device" />
                       </SelectTrigger>
                       <SelectContent>
-                        {devices.map((device) => (
+                        {DEVICES.map((device) => (
                           <SelectItem key={device.value} value={device.value}>
                             {device.label}
                           </SelectItem>
@@ -260,7 +238,7 @@ export default function CreateStudyStep2() {
                       Select the health metrics relevant to your product
                     </p>
                     <div className="grid grid-cols-2 gap-3">
-                      {metrics.map((metric) => (
+                      {METRICS.map((metric) => (
                         <label
                           key={metric.id}
                           className="flex items-center space-x-3 p-3 rounded-lg border bg-background hover:bg-muted/50 cursor-pointer transition-colors"
@@ -354,7 +332,7 @@ export default function CreateStudyStep2() {
                           <div className="space-y-2">
                             <Label>When should this question appear?</Label>
                             <div className="flex flex-wrap gap-2">
-                              {defaultVillainDays.map((day) => (
+                              {DEFAULT_VILLAIN_DAYS.map((day) => (
                                 <label
                                   key={day}
                                   className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-background hover:bg-muted/50 cursor-pointer transition-colors"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -35,25 +36,24 @@ import {
   BadgeCheck,
   Sparkles,
   ImageIcon,
-  Link2,
 } from "lucide-react";
-
-const statusStyles: Record<Study["status"], { bg: string; text: string; label: string }> = {
-  draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
-  recruiting: { bg: "bg-[#00D1C1]/20", text: "text-[#00D1C1]", label: "Recruiting" },
-  "filling-fast": { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "⚡ Filling Fast" },
-  full: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Full" },
-  completed: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Completed" },
-};
-
-const deviceLabels: Record<string, string> = {
-  oura: "Oura Ring",
-  whoop: "Whoop",
-  apple: "Apple Watch",
-  garmin: "Garmin",
-  fitbit: "Fitbit",
-  any: "Any Device",
-};
+import { STUDY_STATUSES, DEVICE_LABELS } from "@/lib/constants";
+import {
+  MOCK_PARTICIPANTS,
+  MOCK_TESTIMONIALS,
+  MOCK_DEMOGRAPHICS,
+  MOCK_BASELINE_DATA,
+} from "@/lib/mock-data";
+import {
+  CarouselWidgetPreview,
+  DataCardWidgetPreview,
+  WallWidgetPreview,
+  TrustBadgeWidgetPreview,
+  EmbedCodeDisplay,
+} from "@/components/embed-widgets";
+import { VerificationBadge } from "@/components/verification-page";
+import { StoryCardActions } from "@/components/story-card-actions";
+import { StudyLinkActions } from "@/components/study-link-actions";
 
 // Determine the default tab based on study status
 function getDefaultTab(status: Study["status"]): string {
@@ -70,162 +70,6 @@ function getDefaultTab(status: Study["status"]): string {
       return "setup";
   }
 }
-
-// Mock participant data for monitor tab
-const mockParticipants = [
-  { id: 1, name: "Sarah M.", status: "active", day: 12, compliance: 95, lastActive: "2 hours ago" },
-  { id: 2, name: "Mike T.", status: "active", day: 8, compliance: 88, lastActive: "5 hours ago" },
-  { id: 3, name: "Emily R.", status: "completed", day: 28, compliance: 92, lastActive: "1 day ago" },
-  { id: 4, name: "James L.", status: "active", day: 15, compliance: 78, lastActive: "3 hours ago" },
-  { id: 5, name: "Lisa K.", status: "at-risk", day: 6, compliance: 45, lastActive: "3 days ago" },
-];
-
-// Mock testimonial data for harvest tab - enhanced with full story card fields
-const mockTestimonials = [
-  {
-    id: 1,
-    participant: "Sarah M.",
-    initials: "SM",
-    age: 34,
-    location: "Austin, TX",
-    completedDay: 28,
-    overallRating: 4.8,
-    story: "I've tried many sleep supplements, but this one actually worked. My Oura ring showed a 23% improvement in deep sleep within the first two weeks. I wake up feeling genuinely refreshed for the first time in years.",
-    metrics: [
-      { label: "Deep Sleep", value: "+23%", positive: true },
-      { label: "Sleep Score", value: "+15%", positive: true },
-      { label: "Restfulness", value: "+18%", positive: true },
-    ],
-    benefits: ["Fall asleep faster", "Wake up refreshed", "More consistent sleep schedule"],
-    verified: true,
-    verificationId: "2025-087",
-    device: "Oura Ring",
-  },
-  {
-    id: 2,
-    participant: "Emily R.",
-    initials: "ER",
-    age: 29,
-    location: "Denver, CO",
-    completedDay: 28,
-    overallRating: 4.5,
-    story: "Skeptical at first, but the data doesn't lie. My HRV improved significantly and I'm waking up feeling actually rested. This is the first supplement that actually delivered measurable results.",
-    metrics: [
-      { label: "HRV", value: "+19%", positive: true },
-      { label: "Sleep Score", value: "+12%", positive: true },
-      { label: "Recovery", value: "+14%", positive: true },
-    ],
-    benefits: ["Better recovery", "Improved HRV", "Less morning grogginess"],
-    verified: true,
-    verificationId: "2025-092",
-    device: "Whoop",
-  },
-  {
-    id: 3,
-    participant: "Mike T.",
-    initials: "MT",
-    age: 42,
-    location: "Seattle, WA",
-    completedDay: 28,
-    overallRating: 4.9,
-    story: "As someone who's tracked my sleep for 3 years, I can confidently say this product made a real difference. The improvement in my deep sleep was consistent week over week.",
-    metrics: [
-      { label: "Deep Sleep", value: "+28%", positive: true },
-      { label: "Light Sleep", value: "+10%", positive: true },
-      { label: "Sleep Efficiency", value: "+8%", positive: true },
-    ],
-    benefits: ["Deeper sleep cycles", "More energy throughout the day", "Better mental clarity"],
-    verified: true,
-    verificationId: "2025-098",
-    device: "Apple Watch",
-  },
-  {
-    id: 4,
-    participant: "Lisa K.",
-    initials: "LK",
-    age: 38,
-    location: "Portland, OR",
-    completedDay: 28,
-    overallRating: 4.6,
-    story: "I was dealing with stress-related sleep issues and this really helped. My Garmin showed steady improvements in both sleep quality and recovery scores.",
-    metrics: [
-      { label: "Stress Score", value: "-15%", positive: true },
-      { label: "Sleep Quality", value: "+17%", positive: true },
-      { label: "Body Battery", value: "+22%", positive: true },
-    ],
-    benefits: ["Reduced nighttime anxiety", "More restorative sleep", "Better stress management"],
-    verified: true,
-    verificationId: "2025-103",
-    device: "Garmin",
-  },
-];
-
-// Mock demographic data for participant insights
-const mockDemographics = {
-  age: [
-    { label: "18-25", value: 15, color: "#84CC16" },
-    { label: "26-35", value: 42, color: "#F97316" },
-    { label: "36-45", value: 28, color: "#8B5CF6" },
-    { label: "46-55", value: 15, color: "#06B6D4" },
-  ],
-  gender: [
-    { label: "Female", value: 58, color: "#F97316" },
-    { label: "Male", value: 38, color: "#3B82F6" },
-    { label: "Other", value: 4, color: "#84CC16" },
-  ],
-  location: [
-    { label: "US", value: 72, color: "#84CC16" },
-    { label: "Canada", value: 18, color: "#F97316" },
-    { label: "Other", value: 10, color: "#3B82F6" },
-  ],
-  income: [
-    { label: "$0-$50K", value: 22, color: "#8B5CF6" },
-    { label: "$50K-$100K", value: 45, color: "#06B6D4" },
-    { label: "$100K+", value: 33, color: "#84CC16" },
-  ],
-};
-
-// Mock baseline intake data
-const mockBaselineData = {
-  diet: [
-    { label: "No specific diet", value: 35 },
-    { label: "Keto/Low-carb", value: 18 },
-    { label: "Vegetarian/Vegan", value: 15 },
-    { label: "Paleo", value: 12 },
-    { label: "Mediterranean", value: 20 },
-  ],
-  exerciseFrequency: [
-    { label: "0-1 days", value: 12 },
-    { label: "2-3 days", value: 35 },
-    { label: "4-5 days", value: 38 },
-    { label: "6-7 days", value: 15 },
-  ],
-  stressLevel: [
-    { label: "Low", value: 15 },
-    { label: "Moderate", value: 45 },
-    { label: "High", value: 32 },
-    { label: "Very High", value: 8 },
-  ],
-  wearableDevices: [
-    { label: "Oura Ring", value: 42 },
-    { label: "Apple Watch", value: 35 },
-    { label: "Whoop", value: 15 },
-    { label: "Fitbit", value: 8 },
-  ],
-  takesSupplements: { yes: 68, no: 32 },
-  purchaseMotivation: [
-    { label: "Better sleep", value: 45 },
-    { label: "More energy", value: 25 },
-    { label: "Stress relief", value: 18 },
-    { label: "General wellness", value: 12 },
-  ],
-  expectedResults: [
-    { label: "Improved sleep quality", value: 52 },
-    { label: "Fall asleep faster", value: 28 },
-    { label: "Wake up refreshed", value: 15 },
-    { label: "Reduced anxiety", value: 5 },
-  ],
-};
 
 // Simple donut chart component
 function DonutChart({ data, size = 80 }: { data: { label: string; value: number; color: string }[]; size?: number }) {
@@ -288,10 +132,13 @@ function HorizontalBar({ label, value, maxValue, color = "#00D1C1" }: { label: s
   );
 }
 
+type WidgetType = "carousel" | "data-card" | "wall" | "trust-badge";
+
 export default function StudyDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { getStudy, updateStudy } = useStudies();
+  const [selectedWidget, setSelectedWidget] = useState<WidgetType>("carousel");
 
   const study = getStudy(params.id as string);
 
@@ -311,9 +158,10 @@ export default function StudyDetailsPage() {
     );
   }
 
-  const status = statusStyles[study.status];
-  const device = deviceLabels[study.requiredDevice] || "Any Device";
-  const spotsRemaining = parseInt(study.totalSpots) - study.enrolledCount;
+  const status = STUDY_STATUSES[study.status];
+  const device = DEVICE_LABELS[study.requiredDevice] || "Any Device";
+  const totalSpots = parseInt(study.totalSpots) || 50; // Default to 50 if not set
+  const spotsRemaining = totalSpots - study.enrolledCount;
   const rebateNum = parseFloat(study.rebateAmount || "0");
   const heartbeats = rebateNum > 0 ? Math.round(rebateNum * 100) : 0;
 
@@ -364,7 +212,7 @@ export default function StudyDetailsPage() {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span>
-                <strong>{study.enrolledCount}</strong>/{study.totalSpots} enrolled
+                <strong>{study.enrolledCount}</strong>/{totalSpots} enrolled
               </span>
               <span className="text-muted-foreground">({spotsRemaining} spots left)</span>
             </div>
@@ -630,14 +478,14 @@ export default function StudyDetailsPage() {
                       <div className="flex justify-between mb-2">
                         <span className="text-sm text-muted-foreground">Progress</span>
                         <span className="text-sm font-medium">
-                          {study.enrolledCount}/{study.totalSpots}
+                          {study.enrolledCount}/{totalSpots}
                         </span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#00D1C1] rounded-full transition-all"
                           style={{
-                            width: `${(study.enrolledCount / parseInt(study.totalSpots)) * 100}%`,
+                            width: `${totalSpots > 0 ? (study.enrolledCount / totalSpots) * 100 : 0}%`,
                           }}
                         />
                       </div>
@@ -806,14 +654,14 @@ export default function StudyDetailsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Enrolled</p>
-                        <p className="text-2xl font-bold">{study.enrolledCount > 0 ? `${study.enrolledCount}/${study.totalSpots}` : `38/${study.totalSpots}`}</p>
+                        <p className="text-2xl font-bold">{study.enrolledCount > 0 ? `${study.enrolledCount}/${totalSpots}` : `38/${totalSpots}`}</p>
                       </div>
                       <Users className="h-8 w-8 text-[#00D1C1]" />
                     </div>
                     <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#00D1C1] rounded-full"
-                        style={{ width: `${study.enrolledCount > 0 ? (study.enrolledCount / parseInt(study.totalSpots)) * 100 : 76}%` }}
+                        style={{ width: `${study.enrolledCount > 0 ? (study.enrolledCount / totalSpots) * 100 : 76}%` }}
                       />
                     </div>
                   </CardContent>
@@ -865,7 +713,7 @@ export default function StudyDetailsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {mockParticipants.map((participant) => (
+                    {MOCK_PARTICIPANTS.map((participant) => (
                       <div key={participant.id} className="flex items-center gap-4 p-3 rounded-lg border">
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <span className="text-sm font-medium">{participant.name.split(" ")[0][0]}{participant.name.split(" ")[1][0]}</span>
@@ -927,11 +775,11 @@ export default function StudyDetailsPage() {
                         <div className="grid grid-cols-2 gap-6">
                           {/* Age */}
                           <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30">
-                            <DonutChart data={mockDemographics.age} size={80} />
+                            <DonutChart data={MOCK_DEMOGRAPHICS.age} size={80} />
                             <div className="flex-1">
                               <p className="text-sm font-medium mb-2">Age</p>
                               <div className="space-y-1">
-                                {mockDemographics.age.map((item) => (
+                                {MOCK_DEMOGRAPHICS.age.map((item) => (
                                   <div key={item.label} className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2">
                                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -945,11 +793,11 @@ export default function StudyDetailsPage() {
                           </div>
                           {/* Gender */}
                           <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30">
-                            <DonutChart data={mockDemographics.gender} size={80} />
+                            <DonutChart data={MOCK_DEMOGRAPHICS.gender} size={80} />
                             <div className="flex-1">
                               <p className="text-sm font-medium mb-2">Gender</p>
                               <div className="space-y-1">
-                                {mockDemographics.gender.map((item) => (
+                                {MOCK_DEMOGRAPHICS.gender.map((item) => (
                                   <div key={item.label} className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2">
                                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -963,11 +811,11 @@ export default function StudyDetailsPage() {
                           </div>
                           {/* Location */}
                           <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30">
-                            <DonutChart data={mockDemographics.location} size={80} />
+                            <DonutChart data={MOCK_DEMOGRAPHICS.location} size={80} />
                             <div className="flex-1">
                               <p className="text-sm font-medium mb-2">Location</p>
                               <div className="space-y-1">
-                                {mockDemographics.location.map((item) => (
+                                {MOCK_DEMOGRAPHICS.location.map((item) => (
                                   <div key={item.label} className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2">
                                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -981,11 +829,11 @@ export default function StudyDetailsPage() {
                           </div>
                           {/* Income */}
                           <div className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30">
-                            <DonutChart data={mockDemographics.income} size={80} />
+                            <DonutChart data={MOCK_DEMOGRAPHICS.income} size={80} />
                             <div className="flex-1">
                               <p className="text-sm font-medium mb-2">Income</p>
                               <div className="space-y-1">
-                                {mockDemographics.income.map((item) => (
+                                {MOCK_DEMOGRAPHICS.income.map((item) => (
                                   <div key={item.label} className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2">
                                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -1007,7 +855,7 @@ export default function StudyDetailsPage() {
                           <div>
                             <h4 className="text-sm font-medium mb-3">Purchase Motivation</h4>
                             <div className="space-y-2">
-                              {mockBaselineData.purchaseMotivation.map((item) => (
+                              {MOCK_BASELINE_DATA.purchaseMotivation.map((item) => (
                                 <HorizontalBar
                                   key={item.label}
                                   label={item.label}
@@ -1021,7 +869,7 @@ export default function StudyDetailsPage() {
                           <div>
                             <h4 className="text-sm font-medium mb-3">Expected Results</h4>
                             <div className="space-y-2">
-                              {mockBaselineData.expectedResults.map((item) => (
+                              {MOCK_BASELINE_DATA.expectedResults.map((item) => (
                                 <HorizontalBar
                                   key={item.label}
                                   label={item.label}
@@ -1039,7 +887,7 @@ export default function StudyDetailsPage() {
                           <div>
                             <h4 className="text-sm font-medium mb-3">Exercise Frequency</h4>
                             <div className="space-y-2">
-                              {mockBaselineData.exerciseFrequency.map((item) => (
+                              {MOCK_BASELINE_DATA.exerciseFrequency.map((item) => (
                                 <HorizontalBar
                                   key={item.label}
                                   label={item.label}
@@ -1053,7 +901,7 @@ export default function StudyDetailsPage() {
                           <div>
                             <h4 className="text-sm font-medium mb-3">Stress Level</h4>
                             <div className="space-y-2">
-                              {mockBaselineData.stressLevel.map((item) => (
+                              {MOCK_BASELINE_DATA.stressLevel.map((item) => (
                                 <HorizontalBar
                                   key={item.label}
                                   label={item.label}
@@ -1067,7 +915,7 @@ export default function StudyDetailsPage() {
                           <div>
                             <h4 className="text-sm font-medium mb-3">Wearable Devices</h4>
                             <div className="space-y-2">
-                              {mockBaselineData.wearableDevices.map((item) => (
+                              {MOCK_BASELINE_DATA.wearableDevices.map((item) => (
                                 <HorizontalBar
                                   key={item.label}
                                   label={item.label}
@@ -1143,7 +991,7 @@ export default function StudyDetailsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Story Cards Ready</p>
-                        <p className="text-2xl font-bold">{mockTestimonials.length}</p>
+                        <p className="text-2xl font-bold">{MOCK_TESTIMONIALS.length}</p>
                       </div>
                       <BadgeCheck className="h-8 w-8 text-[#00D1C1]" />
                     </div>
@@ -1230,7 +1078,7 @@ export default function StudyDetailsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {mockTestimonials.map((testimonial) => (
+                  {MOCK_TESTIMONIALS.map((testimonial) => (
                     <Card key={testimonial.id} className="overflow-hidden hover:border-[#00D1C1]/50 transition-colors">
                       {/* Card Header with Verified Badge */}
                       <div className="bg-gradient-to-r from-[#00D1C1]/10 to-transparent p-4 border-b">
@@ -1298,25 +1146,15 @@ export default function StudyDetailsPage() {
 
                         {/* Verification Footer */}
                         <div className="flex items-center justify-between pt-3 border-t">
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">Study ID:</span> {study.id.slice(0, 8)}
-                            <span className="mx-2">·</span>
-                            <span className="font-medium">Verification:</span> #{testimonial.verificationId}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Link2 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <QrCode className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Link href={`/verify/${testimonial.verificationId}`}>
+                            <VerificationBadge
+                              verificationId={testimonial.verificationId}
+                            />
+                          </Link>
+                          <StoryCardActions
+                            testimonial={testimonial}
+                            studyId={study.id}
+                          />
                         </div>
                       </CardContent>
                     </Card>
@@ -1384,7 +1222,7 @@ export default function StudyDetailsPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-3">Top Performers</h4>
                       <div className="space-y-2">
-                        {mockTestimonials.slice(0, 3).map((t, idx) => (
+                        {MOCK_TESTIMONIALS.slice(0, 3).map((t, idx) => (
                           <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                             <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#00D1C1]/20 text-[#00D1C1] text-xs font-bold">
                               {idx + 1}
@@ -1405,44 +1243,162 @@ export default function StudyDetailsPage() {
                 </CardContent>
               </Card>
 
-              {/* Embed Options */}
+              {/* Embed Widgets Section */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Embed on Your Website</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5 text-[#00D1C1]" />
+                    Embed on Your Website
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <p className="text-muted-foreground">
-                    Add verified story cards to your website with embedded widgets. Each card links to a third-party verified page.
+                    Add verified story cards to your website with embedded widgets. Each widget links to third-party verified results powered by Reputable Health.
                   </p>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                        <MessageSquareQuote className="h-6 w-6 text-muted-foreground" />
+
+                  {/* Widget Type Selector */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <button
+                      onClick={() => setSelectedWidget("carousel")}
+                      className={`p-4 border rounded-lg text-center transition-all ${
+                        selectedWidget === "carousel"
+                          ? "border-[#00D1C1] bg-[#00D1C1]/5 ring-2 ring-[#00D1C1]/20"
+                          : "hover:border-[#00D1C1]/50"
+                      }`}
+                    >
+                      <div className={`h-12 rounded mb-2 flex items-center justify-center ${
+                        selectedWidget === "carousel" ? "bg-[#00D1C1]/10" : "bg-muted"
+                      }`}>
+                        <MessageSquareQuote className={`h-5 w-5 ${
+                          selectedWidget === "carousel" ? "text-[#00D1C1]" : "text-muted-foreground"
+                        }`} />
                       </div>
-                      <p className="text-sm font-medium">Carousel</p>
+                      <p className={`text-sm font-medium ${
+                        selectedWidget === "carousel" ? "text-[#00D1C1]" : ""
+                      }`}>Carousel</p>
                       <p className="text-xs text-muted-foreground">Rotating cards</p>
-                    </div>
-                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                        <BarChart3 className="h-6 w-6 text-muted-foreground" />
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedWidget("data-card")}
+                      className={`p-4 border rounded-lg text-center transition-all ${
+                        selectedWidget === "data-card"
+                          ? "border-[#00D1C1] bg-[#00D1C1]/5 ring-2 ring-[#00D1C1]/20"
+                          : "hover:border-[#00D1C1]/50"
+                      }`}
+                    >
+                      <div className={`h-12 rounded mb-2 flex items-center justify-center ${
+                        selectedWidget === "data-card" ? "bg-[#00D1C1]/10" : "bg-muted"
+                      }`}>
+                        <BarChart3 className={`h-5 w-5 ${
+                          selectedWidget === "data-card" ? "text-[#00D1C1]" : "text-muted-foreground"
+                        }`} />
                       </div>
-                      <p className="text-sm font-medium">Data Card</p>
-                      <p className="text-xs text-muted-foreground">Single highlight</p>
-                    </div>
-                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                        <Users className="h-6 w-6 text-muted-foreground" />
+                      <p className={`text-sm font-medium ${
+                        selectedWidget === "data-card" ? "text-[#00D1C1]" : ""
+                      }`}>Data Card</p>
+                      <p className="text-xs text-muted-foreground">Hero highlight</p>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedWidget("wall")}
+                      className={`p-4 border rounded-lg text-center transition-all ${
+                        selectedWidget === "wall"
+                          ? "border-[#00D1C1] bg-[#00D1C1]/5 ring-2 ring-[#00D1C1]/20"
+                          : "hover:border-[#00D1C1]/50"
+                      }`}
+                    >
+                      <div className={`h-12 rounded mb-2 flex items-center justify-center ${
+                        selectedWidget === "wall" ? "bg-[#00D1C1]/10" : "bg-muted"
+                      }`}>
+                        <Users className={`h-5 w-5 ${
+                          selectedWidget === "wall" ? "text-[#00D1C1]" : "text-muted-foreground"
+                        }`} />
                       </div>
-                      <p className="text-sm font-medium">Wall</p>
+                      <p className={`text-sm font-medium ${
+                        selectedWidget === "wall" ? "text-[#00D1C1]" : ""
+                      }`}>Wall</p>
                       <p className="text-xs text-muted-foreground">Grid display</p>
-                    </div>
-                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                        <BadgeCheck className="h-6 w-6 text-muted-foreground" />
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedWidget("trust-badge")}
+                      className={`p-4 border rounded-lg text-center transition-all ${
+                        selectedWidget === "trust-badge"
+                          ? "border-[#00D1C1] bg-[#00D1C1]/5 ring-2 ring-[#00D1C1]/20"
+                          : "hover:border-[#00D1C1]/50"
+                      }`}
+                    >
+                      <div className={`h-12 rounded mb-2 flex items-center justify-center ${
+                        selectedWidget === "trust-badge" ? "bg-[#00D1C1]/10" : "bg-muted"
+                      }`}>
+                        <BadgeCheck className={`h-5 w-5 ${
+                          selectedWidget === "trust-badge" ? "text-[#00D1C1]" : "text-muted-foreground"
+                        }`} />
                       </div>
-                      <p className="text-sm font-medium">Trust Badge</p>
+                      <p className={`text-sm font-medium ${
+                        selectedWidget === "trust-badge" ? "text-[#00D1C1]" : ""
+                      }`}>Trust Badge</p>
                       <p className="text-xs text-muted-foreground">Verification seal</p>
+                    </button>
+                  </div>
+
+                  {/* Widget Preview Area */}
+                  <div className="border rounded-xl p-6 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                    <div className="text-center mb-4">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Live Preview
+                      </span>
                     </div>
+
+                    <div className="flex justify-center">
+                      {selectedWidget === "carousel" && (
+                        <CarouselWidgetPreview
+                          testimonials={MOCK_TESTIMONIALS}
+                          studyId={study.id}
+                        />
+                      )}
+                      {selectedWidget === "data-card" && (
+                        <DataCardWidgetPreview
+                          testimonial={MOCK_TESTIMONIALS[0]}
+                          studyId={study.id}
+                        />
+                      )}
+                      {selectedWidget === "wall" && (
+                        <WallWidgetPreview
+                          testimonials={MOCK_TESTIMONIALS}
+                          studyId={study.id}
+                        />
+                      )}
+                      {selectedWidget === "trust-badge" && (
+                        <TrustBadgeWidgetPreview
+                          testimonialCount={MOCK_TESTIMONIALS.length}
+                          avgRating={
+                            MOCK_TESTIMONIALS.reduce((sum, t) => sum + t.overallRating, 0) /
+                            MOCK_TESTIMONIALS.length
+                          }
+                          topMetric={{
+                            label: MOCK_TESTIMONIALS[0].metrics[0].label,
+                            value: MOCK_TESTIMONIALS[0].metrics[0].value,
+                          }}
+                          studyId={study.id}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Embed Code */}
+                  <EmbedCodeDisplay widgetType={selectedWidget} studyId={study.id} />
+
+                  {/* Link to Full Study Profile */}
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div>
+                      <p className="text-sm font-medium">Full Study Verification Page</p>
+                      <p className="text-xs text-muted-foreground">
+                        Share a link to your complete verified study profile
+                      </p>
+                    </div>
+                    <StudyLinkActions studyId={study.id} />
                   </div>
                 </CardContent>
               </Card>

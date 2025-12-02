@@ -5,29 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, FlaskConical, Clock, Watch, Users, CheckCircle2, MessageSquareQuote } from "lucide-react";
 import { useStudies, Study } from "@/lib/studies-store";
-
-const statusStyles: Record<Study["status"], { bg: string; text: string; label: string }> = {
-  draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
-  recruiting: { bg: "bg-[#00D1C1]/20", text: "text-[#00D1C1]", label: "Recruiting" },
-  "filling-fast": { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Filling Fast" },
-  full: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Full" },
-  completed: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Completed" },
-};
-
-const deviceLabels: Record<string, string> = {
-  oura: "Oura Ring",
-  whoop: "Whoop",
-  apple: "Apple Watch",
-  garmin: "Garmin",
-  fitbit: "Fitbit",
-  any: "Any Device",
-};
+import { STUDY_STATUSES, DEVICE_LABELS } from "@/lib/constants";
 
 function StudyCard({ study }: { study: Study }) {
-  const status = statusStyles[study.status];
-  const spotsRemaining = parseInt(study.totalSpots) - study.enrolledCount;
-  const device = deviceLabels[study.requiredDevice] || "Any Device";
-  const enrollmentPercent = (study.enrolledCount / parseInt(study.totalSpots)) * 100;
+  const status = STUDY_STATUSES[study.status];
+  const totalSpots = parseInt(study.totalSpots) || 50; // Default to 50 if not set
+  const spotsRemaining = totalSpots - study.enrolledCount;
+  const device = DEVICE_LABELS[study.requiredDevice] || "Any Device";
+  const enrollmentPercent = totalSpots > 0 ? (study.enrolledCount / totalSpots) * 100 : 0;
 
   // Mock data for completed studies
   const mockCompletionRate = 87;
@@ -87,7 +72,7 @@ function StudyCard({ study }: { study: Study }) {
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-muted-foreground">
-                {study.enrolledCount}/{study.totalSpots} enrolled
+                {study.enrolledCount}/{totalSpots} enrolled
               </span>
               <span className="text-xs font-medium">{Math.round(enrollmentPercent)}%</span>
             </div>

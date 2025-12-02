@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudies } from "@/lib/studies-store";
+import { MOCK_ACTIVITIES } from "@/lib/mock-data";
 import {
   FlaskConical,
   Users,
@@ -16,54 +17,12 @@ import {
   UserPlus,
 } from "lucide-react";
 
-// Mock activity data
-const mockActivities = [
-  {
-    id: 1,
-    type: "completion",
-    message: "Sarah M. completed Better Sleep Study",
-    detail: "testimonial ready",
-    timestamp: "2 hours ago",
-    icon: CheckCircle2,
-    iconColor: "text-green-500",
-  },
-  {
-    id: 2,
-    type: "enrollment",
-    message: "12 new enrollments in Energy Boost Study",
-    detail: null,
-    timestamp: "5 hours ago",
-    icon: UserPlus,
-    iconColor: "text-[#00D1C1]",
-  },
-  {
-    id: 3,
-    type: "milestone",
-    message: "Recovery Pro Study is 80% full",
-    detail: "only 10 spots left",
-    timestamp: "1 day ago",
-    icon: TrendingUp,
-    iconColor: "text-yellow-500",
-  },
-  {
-    id: 4,
-    type: "completion",
-    message: "Mike T. completed Better Sleep Study",
-    detail: "testimonial ready",
-    timestamp: "1 day ago",
-    icon: CheckCircle2,
-    iconColor: "text-green-500",
-  },
-  {
-    id: 5,
-    type: "enrollment",
-    message: "5 new enrollments in Better Sleep Study",
-    detail: null,
-    timestamp: "2 days ago",
-    icon: UserPlus,
-    iconColor: "text-[#00D1C1]",
-  },
-];
+// Map activity types to icons and colors
+const activityIconMap = {
+  completion: { icon: CheckCircle2, color: "text-green-500" },
+  enrollment: { icon: UserPlus, color: "text-[#00D1C1]" },
+  milestone: { icon: TrendingUp, color: "text-yellow-500" },
+};
 
 export default function DashboardPage() {
   const { studies } = useStudies();
@@ -146,27 +105,30 @@ export default function DashboardPage() {
             <CardContent>
               {hasActivity ? (
                 <div className="space-y-4">
-                  {mockActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
-                    >
+                  {MOCK_ACTIVITIES.map((activity) => {
+                    const { icon: Icon, color } = activityIconMap[activity.type];
+                    return (
                       <div
-                        className={`h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0`}
+                        key={activity.id}
+                        className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
                       >
-                        <activity.icon className={`h-4 w-4 ${activity.iconColor}`} />
+                        <div
+                          className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0"
+                        >
+                          <Icon className={`h-4 w-4 ${color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{activity.message}</p>
+                          {activity.detail && (
+                            <p className="text-xs text-muted-foreground">{activity.detail}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {activity.timestamp}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{activity.message}</p>
-                        {activity.detail && (
-                          <p className="text-xs text-muted-foreground">{activity.detail}</p>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {activity.timestamp}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
