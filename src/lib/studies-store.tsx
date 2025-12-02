@@ -10,6 +10,7 @@ export interface Study extends StudyFormData {
   status: "draft" | "recruiting" | "filling-fast" | "full" | "completed";
   createdAt: Date;
   enrolledCount: number;
+  completedCount: number;
 }
 
 // Serialize study for localStorage (convert Date to string)
@@ -95,6 +96,7 @@ export function StudiesProvider({ children }: { children: ReactNode }) {
       status: "draft",
       createdAt: new Date(),
       enrolledCount: 0,
+      completedCount: 0,
     };
     setStudies((prev) => [newStudy, ...prev]);
     return id;

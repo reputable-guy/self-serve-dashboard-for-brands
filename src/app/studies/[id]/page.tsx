@@ -36,6 +36,9 @@ import {
   BadgeCheck,
   Sparkles,
   ImageIcon,
+  DollarSign,
+  Calculator,
+  Target,
 } from "lucide-react";
 import { STUDY_STATUSES, DEVICE_LABELS } from "@/lib/constants";
 import {
@@ -1032,6 +1035,93 @@ export default function StudyDetailsPage() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* ROI Insights */}
+              <Card className="bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="h-5 w-5 text-emerald-500" />
+                    ROI Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    // Calculate ROI metrics
+                    const completedTestimonials = MOCK_TESTIMONIALS.filter(t => t.verified).length;
+                    const mockEnrolled = study.enrolledCount > 0 ? study.enrolledCount : 38;
+                    const mockCompleted = study.completedCount > 0 ? study.completedCount : completedTestimonials;
+                    const totalRebatesPaid = mockCompleted * rebateNum;
+                    const costPerTestimonial = mockCompleted > 0 ? totalRebatesPaid / completedTestimonials : 0;
+                    const completionRate = mockEnrolled > 0 ? (mockCompleted / mockEnrolled) * 100 : 0;
+
+                    return (
+                      <div className="grid grid-cols-3 gap-6">
+                        {/* Total Rebates Paid */}
+                        <div className="p-4 rounded-xl bg-background border">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                              <DollarSign className="h-5 w-5 text-emerald-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Rebates Paid</p>
+                              <p className="text-2xl font-bold text-emerald-600">${totalRebatesPaid.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {mockCompleted} completions × ${rebateNum} rebate
+                          </p>
+                        </div>
+
+                        {/* Cost per Verified Testimonial */}
+                        <div className="p-4 rounded-xl bg-background border">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                              <Calculator className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Cost per Testimonial</p>
+                              <p className="text-2xl font-bold text-blue-600">${costPerTestimonial.toFixed(2)}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            ${totalRebatesPaid.toLocaleString()} ÷ {completedTestimonials} verified stories
+                          </p>
+                        </div>
+
+                        {/* Completion Rate */}
+                        <div className="p-4 rounded-xl bg-background border">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                              <Target className="h-5 w-5 text-purple-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Completion Rate</p>
+                              <p className="text-2xl font-bold text-purple-600">{completionRate.toFixed(0)}%</p>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-purple-500 rounded-full transition-all"
+                                style={{ width: `${Math.min(completionRate, 100)}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {mockCompleted} of {mockEnrolled} enrolled finished
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <span className="font-medium">Benchmark:</span> Industry average cost per testimonial via traditional methods is $150-$500.
+                      Study-verified testimonials typically see 3-5x higher conversion rates.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Export & Distribution Tools */}
               <Card className="bg-gradient-to-r from-[#00D1C1]/5 to-blue-500/5 border-[#00D1C1]/20">

@@ -15,6 +15,9 @@ import {
   TrendingUp,
   CheckCircle2,
   UserPlus,
+  DollarSign,
+  Calculator,
+  Target,
 } from "lucide-react";
 
 // Map activity types to icons and colors
@@ -91,6 +94,108 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ROI Summary - Only show when there are studies */}
+      {studies.length > 0 && (
+        <Card className="mb-8 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-emerald-500" />
+              Rebate Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              // Calculate aggregate ROI metrics across all studies
+              const totalRebatesPaid = studies.reduce((sum, s) => {
+                const rebateAmount = parseFloat(s.rebateAmount || "0");
+                const completed = s.completedCount || 0;
+                return sum + (rebateAmount * completed);
+              }, 0);
+
+              const totalCompleted = studies.reduce((sum, s) => sum + (s.completedCount || 0), 0);
+              const totalEnrolled = studies.reduce((sum, s) => sum + s.enrolledCount, 0);
+
+              // Use mock data for demonstration if no completions yet
+              const displayRebatesPaid = totalRebatesPaid > 0 ? totalRebatesPaid :
+                studies.reduce((sum, s) => sum + (parseFloat(s.rebateAmount || "0") * 4), 0);
+              const displayCompleted = totalCompleted > 0 ? totalCompleted : studies.length * 4;
+              const displayEnrolled = totalEnrolled > 0 ? totalEnrolled : studies.length * 38;
+
+              const costPerTestimonial = displayCompleted > 0 ? displayRebatesPaid / displayCompleted : 0;
+              const completionRate = displayEnrolled > 0 ? (displayCompleted / displayEnrolled) * 100 : 0;
+
+              const showMockBanner = totalCompleted === 0;
+
+              return (
+                <>
+                  {showMockBanner && (
+                    <div className="mb-4 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+                      <p className="text-xs text-blue-400">
+                        Showing projected data based on your studies. Real metrics will appear once participants complete.
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* Total Rebates Paid */}
+                    <div className="p-4 rounded-xl bg-background border">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                          <DollarSign className="h-5 w-5 text-emerald-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Rebates Paid</p>
+                          <p className="text-2xl font-bold text-emerald-600">${displayRebatesPaid.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Across {studies.length} {studies.length === 1 ? "study" : "studies"}
+                      </p>
+                    </div>
+
+                    {/* Cost per Verified Testimonial */}
+                    <div className="p-4 rounded-xl bg-background border">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                          <Calculator className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Avg Cost per Testimonial</p>
+                          <p className="text-2xl font-bold text-blue-600">${costPerTestimonial.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {displayCompleted} verified testimonials
+                      </p>
+                    </div>
+
+                    {/* Completion Rate */}
+                    <div className="p-4 rounded-xl bg-background border">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                          <Target className="h-5 w-5 text-purple-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Avg Completion Rate</p>
+                          <p className="text-2xl font-bold text-purple-600">{completionRate.toFixed(0)}%</p>
+                        </div>
+                      </div>
+                      <div className="mt-1">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-purple-500 rounded-full transition-all"
+                            style={{ width: `${Math.min(completionRate, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-3 gap-6">
         {/* Recent Activity */}
