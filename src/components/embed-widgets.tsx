@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   BadgeCheck,
@@ -16,26 +17,25 @@ import {
 } from "lucide-react";
 import { MockTestimonial } from "@/lib/mock-data";
 
-// Reputable Health verification badge component
+// Reputable Health verification badge component with logo
 function ReputableBadge({ size = "sm" }: { size?: "sm" | "md" | "lg" }) {
-  const sizes = {
-    sm: "h-4 w-4",
-    md: "h-5 w-5",
-    lg: "h-6 w-6",
-  };
-  const textSizes = {
-    sm: "text-[10px]",
-    md: "text-xs",
-    lg: "text-sm",
+  const heights = {
+    sm: "h-4",
+    md: "h-5",
+    lg: "h-6",
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <div className="relative">
-        <Shield className={`${sizes[size]} text-[#00D1C1] fill-[#00D1C1]/20`} />
-        <Check className={`absolute inset-0 m-auto h-2 w-2 text-white`} />
-      </div>
-      <span className={`${textSizes[size]} font-medium text-[#00D1C1]`}>
+    <div className="flex items-center gap-1.5">
+      <Image
+        src="/logos/reputable-icon-dark.png"
+        alt=""
+        width={48}
+        height={48}
+        className={`${heights[size]} w-auto`}
+        unoptimized
+      />
+      <span className={`${size === "sm" ? "text-[10px]" : size === "md" ? "text-xs" : "text-sm"} font-medium text-gray-700`}>
         Verified by Reputable
       </span>
     </div>
@@ -52,15 +52,32 @@ export function CarouselWidgetPreview({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
+  // Reset index when testimonials change to prevent out of bounds
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (currentIndex >= testimonials.length) {
+      setCurrentIndex(0);
+    }
+  }, [testimonials.length, currentIndex]);
+
+  useEffect(() => {
+    if (!isAutoPlaying || testimonials.length === 0) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 4000);
     return () => clearInterval(timer);
   }, [isAutoPlaying, testimonials.length]);
 
-  const testimonial = testimonials[currentIndex];
+  // Handle empty testimonials array
+  if (testimonials.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto border text-center">
+        <p className="text-gray-500 text-sm">No testimonials selected</p>
+        <p className="text-gray-400 text-xs mt-1">Star testimonials above to feature them</p>
+      </div>
+    );
+  }
+
+  const testimonial = testimonials[currentIndex] || testimonials[0];
 
   return (
     <div
@@ -265,6 +282,16 @@ export function WallWidgetPreview({
   testimonials: MockTestimonial[];
   studyId?: string;
 }) {
+  // Handle empty testimonials array
+  if (testimonials.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-6 border text-center">
+        <p className="text-gray-500 text-sm">No testimonials selected</p>
+        <p className="text-gray-400 text-xs mt-1">Star testimonials above to feature them</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 rounded-xl p-4 border">
       {/* Header */}
@@ -352,6 +379,16 @@ export function TrustBadgeWidgetPreview({
   topMetric: { label: string; value: string };
   studyId?: string;
 }) {
+  // Handle empty state
+  if (testimonialCount === 0 || isNaN(avgRating)) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6 border text-center">
+        <p className="text-gray-500 text-sm">No testimonials selected</p>
+        <p className="text-gray-400 text-xs mt-1">Star testimonials above to feature them</p>
+      </div>
+    );
+  }
+
   return (
     <div className="inline-flex flex-col items-center gap-2">
       {/* Main Badge */}
@@ -419,16 +456,22 @@ export function TrustBadgeWidgetPreview({
 export function EmbedCodeDisplay({
   widgetType,
   studyId,
+  featuredIds = [],
 }: {
   widgetType: "carousel" | "data-card" | "wall" | "trust-badge";
   studyId: string;
+  featuredIds?: string[];
 }) {
   const [copied, setCopied] = useState(false);
+
+  const featuredAttr = featuredIds.length > 0
+    ? `\n  data-featured="${featuredIds.join(",")}"`
+    : "";
 
   const embedCode = `<script src="https://embed.reputable.health/widget.js"></script>
 <div
   data-reputable-widget="${widgetType}"
-  data-study-id="${studyId}"
+  data-study-id="${studyId}"${featuredAttr}
   data-theme="light"
 ></div>`;
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, FlaskConical, Settings } from "lucide-react";
@@ -18,10 +19,15 @@ export function Sidebar() {
     <aside className="flex h-screen w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            R
-          </div>
-          <span className="font-semibold text-lg">Reputable</span>
+          <Image
+            src="/logos/reputable-logo-dark-compact.png"
+            alt="Reputable"
+            width={240}
+            height={58}
+            className="h-8 w-auto"
+            priority
+            unoptimized
+          />
         </Link>
       </div>
       <nav className="flex-1 space-y-1 p-4">

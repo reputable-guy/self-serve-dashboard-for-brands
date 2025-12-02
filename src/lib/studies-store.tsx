@@ -10,6 +10,7 @@ export interface Study extends StudyFormData {
   status: "draft" | "recruiting" | "filling-fast" | "full" | "completed";
   createdAt: Date;
   enrolledCount: number;
+  featuredTestimonialIds: string[];
 }
 
 // Serialize study for localStorage (convert Date to string)
@@ -23,6 +24,7 @@ function serializeStudies(studies: Study[]): string {
 }
 
 // Deserialize studies from localStorage (convert string back to Date)
+// Also handles migration of old data that may be missing new fields
 function deserializeStudies(json: string): Study[] {
   try {
     const parsed = JSON.parse(json);
@@ -30,6 +32,8 @@ function deserializeStudies(json: string): Study[] {
     return parsed.map((s: Study & { createdAt: string }) => ({
       ...s,
       createdAt: new Date(s.createdAt),
+      // Ensure featuredTestimonialIds exists for older studies
+      featuredTestimonialIds: s.featuredTestimonialIds || [],
     }));
   } catch {
     return [];
@@ -64,6 +68,7 @@ interface StudiesContextType {
   getStudy: (id: string) => Study | undefined;
   updateStudy: (id: string, updates: Partial<Study>) => void;
   deleteStudy: (id: string) => void;
+  toggleFeaturedTestimonial: (studyId: string, testimonialId: string) => void;
   isLoading: boolean;
 }
 
@@ -95,6 +100,7 @@ export function StudiesProvider({ children }: { children: ReactNode }) {
       status: "draft",
       createdAt: new Date(),
       enrolledCount: 0,
+      featuredTestimonialIds: [],
     };
     setStudies((prev) => [newStudy, ...prev]);
     return id;
@@ -114,9 +120,26 @@ export function StudiesProvider({ children }: { children: ReactNode }) {
     setStudies((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const toggleFeaturedTestimonial = (studyId: string, testimonialId: string) => {
+    setStudies((prev) =>
+      prev.map((study) => {
+        if (study.id !== studyId) return study;
+        const featured = study.featuredTestimonialIds ?? [];
+        const isCurrentlyFeatured = featured.includes(testimonialId);
+        const newFeatured = isCurrentlyFeatured
+          ? featured.filter((featId) => featId !== testimonialId)
+          : [...featured, testimonialId];
+        return {
+          ...study,
+          featuredTestimonialIds: newFeatured,
+        };
+      })
+    );
+  };
+
   return (
     <StudiesContext.Provider
-      value={{ studies, addStudy, getStudy, updateStudy, deleteStudy, isLoading }}
+      value={{ studies, addStudy, getStudy, updateStudy, deleteStudy, toggleFeaturedTestimonial, isLoading }}
     >
       {children}
     </StudiesContext.Provider>

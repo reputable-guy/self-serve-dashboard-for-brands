@@ -31,7 +31,6 @@ import {
   TrendingUp,
   Download,
   QrCode,
-  Share2,
   Star,
   BadgeCheck,
   Sparkles,
@@ -54,6 +53,7 @@ import {
 import { VerificationBadge } from "@/components/verification-page";
 import { StoryCardActions } from "@/components/story-card-actions";
 import { StudyLinkActions } from "@/components/study-link-actions";
+import { generateStudyPDF } from "@/components/pdf-report-generator";
 
 // Determine the default tab based on study status
 function getDefaultTab(status: Study["status"]): string {
@@ -137,7 +137,7 @@ type WidgetType = "carousel" | "data-card" | "wall" | "trust-badge";
 export default function StudyDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const { getStudy, updateStudy } = useStudies();
+  const { getStudy, updateStudy, toggleFeaturedTestimonial } = useStudies();
   const [selectedWidget, setSelectedWidget] = useState<WidgetType>("carousel");
 
   const study = getStudy(params.id as string);
@@ -173,6 +173,36 @@ export default function StudyDetailsPage() {
 
   const handleLaunchStudy = () => {
     updateStudy(study.id, { status: "recruiting" });
+  };
+
+  // Get sorted testimonials by rating for auto-selection
+  const sortedTestimonials = [...MOCK_TESTIMONIALS].sort((a, b) => b.overallRating - a.overallRating);
+  const topTestimonialIds = sortedTestimonials.slice(0, 3).map(t => String(t.id));
+
+  // Auto-select top testimonials if none are selected
+  const handleSelectTopRated = () => {
+    updateStudy(study.id, { featuredTestimonialIds: topTestimonialIds });
+  };
+
+  const handleSelectAll = () => {
+    updateStudy(study.id, { featuredTestimonialIds: MOCK_TESTIMONIALS.map(t => String(t.id)) });
+  };
+
+  const handleClearAll = () => {
+    updateStudy(study.id, { featuredTestimonialIds: [] });
+  };
+
+  const handleDownloadReport = async () => {
+    const featuredIds = study.featuredTestimonialIds || [];
+    const featured = featuredIds.length > 0
+      ? MOCK_TESTIMONIALS.filter((t) => featuredIds.includes(String(t.id)))
+      : MOCK_TESTIMONIALS;
+
+    await generateStudyPDF({
+      study,
+      featuredTestimonials: featured,
+      allTestimonials: MOCK_TESTIMONIALS,
+    });
   };
 
   return (
@@ -1055,9 +1085,13 @@ export default function StudyDetailsPage() {
                         <Code className="h-4 w-4 mr-2" />
                         Embed Widget
                       </Button>
-                      <Button className="bg-[#00D1C1] hover:bg-[#00B8A9] text-white" size="sm">
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share Report
+                      <Button
+                        className="bg-[#00D1C1] hover:bg-[#00B8A9] text-white"
+                        size="sm"
+                        onClick={handleDownloadReport}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF Report
                       </Button>
                     </div>
                   </div>
@@ -1077,9 +1111,62 @@ export default function StudyDetailsPage() {
                   </Button>
                 </div>
 
+                {/* Featured Selection Banner */}
+                <div className="mb-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-yellow-500/20">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Select testimonials for your widgets</p>
+                        <p className="text-xs text-muted-foreground">
+                          Click the <Star className="inline h-3 w-3 text-yellow-500" /> star on any card to feature it in your carousel, wall, and embed widgets below
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">
+                      {(study.featuredTestimonialIds || []).length} of {MOCK_TESTIMONIALS.length} selected
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-yellow-500/20">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSelectTopRated}
+                      className="text-xs h-7"
+                    >
+                      <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                      Select Top 3 Rated
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSelectAll}
+                      className="text-xs h-7"
+                    >
+                      Select All
+                    </Button>
+                    {(study.featuredTestimonialIds || []).length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearAll}
+                        className="text-xs h-7 text-muted-foreground"
+                      >
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
-                  {MOCK_TESTIMONIALS.map((testimonial) => (
-                    <Card key={testimonial.id} className="overflow-hidden hover:border-[#00D1C1]/50 transition-colors">
+                  {MOCK_TESTIMONIALS.map((testimonial) => {
+                    const testimonialId = String(testimonial.id);
+                    const isFeatured = (study.featuredTestimonialIds || []).includes(testimonialId);
+
+                    return (
+                    <Card key={testimonial.id} className={`overflow-hidden transition-colors ${isFeatured ? "border-yellow-500/50 ring-1 ring-yellow-500/20" : "hover:border-[#00D1C1]/50"}`}>
                       {/* Card Header with Verified Badge */}
                       <div className="bg-gradient-to-r from-[#00D1C1]/10 to-transparent p-4 border-b">
                         <div className="flex items-center justify-between">
@@ -1098,9 +1185,23 @@ export default function StudyDetailsPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
-                            <BadgeCheck className="h-3.5 w-3.5" />
-                            Verified
+                          <div className="flex items-center gap-2">
+                            {/* Feature Star Toggle */}
+                            <button
+                              onClick={() => toggleFeaturedTestimonial(study.id, testimonialId)}
+                              className={`p-1.5 rounded-full transition-colors ${
+                                isFeatured
+                                  ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-yellow-500"
+                              }`}
+                              title={isFeatured ? "Remove from featured" : "Add to featured widgets"}
+                            >
+                              <Star className={`h-4 w-4 ${isFeatured ? "fill-yellow-500" : ""}`} />
+                            </button>
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
+                              <BadgeCheck className="h-3.5 w-3.5" />
+                              Verified
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1158,7 +1259,8 @@ export default function StudyDetailsPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1344,51 +1446,72 @@ export default function StudyDetailsPage() {
                   </div>
 
                   {/* Widget Preview Area */}
-                  <div className="border rounded-xl p-6 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                    <div className="text-center mb-4">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Live Preview
-                      </span>
-                    </div>
+                  {(() => {
+                    // Get featured testimonials or fall back to all if none selected
+                    const featuredIds = study.featuredTestimonialIds || [];
+                    const featuredTestimonials = featuredIds.length > 0
+                      ? MOCK_TESTIMONIALS.filter((t) => featuredIds.includes(String(t.id)))
+                      : MOCK_TESTIMONIALS;
+                    const displayTestimonial = featuredTestimonials[0] || MOCK_TESTIMONIALS[0];
 
-                    <div className="flex justify-center">
-                      {selectedWidget === "carousel" && (
-                        <CarouselWidgetPreview
-                          testimonials={MOCK_TESTIMONIALS}
-                          studyId={study.id}
-                        />
-                      )}
-                      {selectedWidget === "data-card" && (
-                        <DataCardWidgetPreview
-                          testimonial={MOCK_TESTIMONIALS[0]}
-                          studyId={study.id}
-                        />
-                      )}
-                      {selectedWidget === "wall" && (
-                        <WallWidgetPreview
-                          testimonials={MOCK_TESTIMONIALS}
-                          studyId={study.id}
-                        />
-                      )}
-                      {selectedWidget === "trust-badge" && (
-                        <TrustBadgeWidgetPreview
-                          testimonialCount={MOCK_TESTIMONIALS.length}
-                          avgRating={
-                            MOCK_TESTIMONIALS.reduce((sum, t) => sum + t.overallRating, 0) /
-                            MOCK_TESTIMONIALS.length
-                          }
-                          topMetric={{
-                            label: MOCK_TESTIMONIALS[0].metrics[0].label,
-                            value: MOCK_TESTIMONIALS[0].metrics[0].value,
-                          }}
-                          studyId={study.id}
-                        />
-                      )}
-                    </div>
-                  </div>
+                    return (
+                      <div className="border rounded-xl p-6 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                        <div className="text-center mb-4">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Live Preview
+                          </span>
+                          {featuredIds.length > 0 && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400">
+                              {featuredIds.length} featured
+                            </span>
+                          )}
+                          {featuredIds.length === 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Star testimonials above to feature them in your widgets
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex justify-center">
+                          {selectedWidget === "carousel" && (
+                            <CarouselWidgetPreview
+                              testimonials={featuredTestimonials}
+                              studyId={study.id}
+                            />
+                          )}
+                          {selectedWidget === "data-card" && (
+                            <DataCardWidgetPreview
+                              testimonial={displayTestimonial}
+                              studyId={study.id}
+                            />
+                          )}
+                          {selectedWidget === "wall" && (
+                            <WallWidgetPreview
+                              testimonials={featuredTestimonials}
+                              studyId={study.id}
+                            />
+                          )}
+                          {selectedWidget === "trust-badge" && (
+                            <TrustBadgeWidgetPreview
+                              testimonialCount={featuredTestimonials.length}
+                              avgRating={
+                                featuredTestimonials.reduce((sum, t) => sum + t.overallRating, 0) /
+                                featuredTestimonials.length
+                              }
+                              topMetric={{
+                                label: displayTestimonial.metrics[0].label,
+                                value: displayTestimonial.metrics[0].value,
+                              }}
+                              studyId={study.id}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Embed Code */}
-                  <EmbedCodeDisplay widgetType={selectedWidget} studyId={study.id} />
+                  <EmbedCodeDisplay widgetType={selectedWidget} studyId={study.id} featuredIds={study.featuredTestimonialIds || []} />
 
                   {/* Link to Full Study Profile */}
                   <div className="flex items-center justify-between pt-4 border-t">

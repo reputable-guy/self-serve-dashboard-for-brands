@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
 import { useStudies } from "@/lib/studies-store";
 import { MOCK_TESTIMONIALS } from "@/lib/mock-data";
 import { DEVICE_LABELS } from "@/lib/constants";
+import { generateStudyPDF } from "@/components/pdf-report-generator";
 
 // Reputable Health Seal Component
 function ReputableSeal() {
@@ -166,27 +168,42 @@ export default function PublicStudyPage() {
 
   const device = DEVICE_LABELS[study.requiredDevice] || "Any Device";
 
+  const handleDownloadPDF = async () => {
+    // Use featured testimonials if set, otherwise all
+    const featuredIds = study.featuredTestimonialIds || [];
+    const featured = featuredIds.length > 0
+      ? MOCK_TESTIMONIALS.filter((t) => featuredIds.includes(String(t.id)))
+      : MOCK_TESTIMONIALS;
+
+    await generateStudyPDF({
+      study,
+      featuredTestimonials: featured,
+      allTestimonials: MOCK_TESTIMONIALS,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#00D1C1] to-[#00A89D] flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-[#00D1C1]">Reputable Health</p>
-                <p className="text-xs text-muted-foreground">Verified Study Results</p>
-              </div>
-            </div>
+            <Link href="/" className="flex items-center gap-3">
+              <Image
+                src="/logos/reputable-logo-dark.png"
+                alt="Reputable Health"
+                width={320}
+                height={80}
+                className="h-10 w-auto"
+                unoptimized
+              />
+            </Link>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <Share2 className="h-4 w-4 mr-1" />
                 Share
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
                 <Download className="h-4 w-4 mr-1" />
                 PDF Report
               </Button>
@@ -463,9 +480,15 @@ export default function PublicStudyPage() {
 
         {/* Footer */}
         <div className="text-center py-8 border-t">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Shield className="h-5 w-5 text-[#00D1C1]" />
-            <span className="font-semibold text-[#00D1C1]">Reputable Health</span>
+          <div className="flex items-center justify-center mb-3">
+            <Image
+              src="/logos/reputable-logo-dark-compact.png"
+              alt="Reputable Health"
+              width={240}
+              height={58}
+              className="h-8 w-auto"
+              unoptimized
+            />
           </div>
           <p className="text-sm text-muted-foreground">
             Independent verification for wellness products
