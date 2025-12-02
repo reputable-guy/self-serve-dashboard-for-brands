@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FlaskConical, MessageSquareQuote, Settings } from "lucide-react";
+import { LayoutDashboard, FlaskConical, Settings } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/studies", label: "Studies", icon: FlaskConical },
-  { href: "/testimonials", label: "Testimonials", icon: MessageSquareQuote },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
