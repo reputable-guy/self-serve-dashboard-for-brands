@@ -29,6 +29,13 @@ import {
   AlertCircle,
   TrendingUp,
   Download,
+  QrCode,
+  Share2,
+  Star,
+  BadgeCheck,
+  Sparkles,
+  ImageIcon,
+  Link2,
 } from "lucide-react";
 
 const statusStyles: Record<Study["status"], { bg: string; text: string; label: string }> = {
@@ -73,25 +80,83 @@ const mockParticipants = [
   { id: 5, name: "Lisa K.", status: "at-risk", day: 6, compliance: 45, lastActive: "3 days ago" },
 ];
 
-// Mock testimonial data for harvest tab
+// Mock testimonial data for harvest tab - enhanced with full story card fields
 const mockTestimonials = [
   {
     id: 1,
     participant: "Sarah M.",
+    initials: "SM",
+    age: 34,
+    location: "Austin, TX",
     completedDay: 28,
-    story: "I've tried many sleep supplements, but this one actually worked. My Oura ring showed a 23% improvement in deep sleep within the first two weeks.",
-    metrics: { sleepScore: "+15%", deepSleep: "+23%", restfulness: "+18%" },
+    overallRating: 4.8,
+    story: "I've tried many sleep supplements, but this one actually worked. My Oura ring showed a 23% improvement in deep sleep within the first two weeks. I wake up feeling genuinely refreshed for the first time in years.",
+    metrics: [
+      { label: "Deep Sleep", value: "+23%", positive: true },
+      { label: "Sleep Score", value: "+15%", positive: true },
+      { label: "Restfulness", value: "+18%", positive: true },
+    ],
+    benefits: ["Fall asleep faster", "Wake up refreshed", "More consistent sleep schedule"],
     verified: true,
-    avatar: null,
+    verificationId: "2025-087",
+    device: "Oura Ring",
   },
   {
     id: 2,
     participant: "Emily R.",
+    initials: "ER",
+    age: 29,
+    location: "Denver, CO",
     completedDay: 28,
-    story: "Skeptical at first, but the data doesn't lie. My HRV improved significantly and I'm waking up feeling actually rested.",
-    metrics: { sleepScore: "+12%", hrv: "+8%", recovery: "+14%" },
+    overallRating: 4.5,
+    story: "Skeptical at first, but the data doesn't lie. My HRV improved significantly and I'm waking up feeling actually rested. This is the first supplement that actually delivered measurable results.",
+    metrics: [
+      { label: "HRV", value: "+19%", positive: true },
+      { label: "Sleep Score", value: "+12%", positive: true },
+      { label: "Recovery", value: "+14%", positive: true },
+    ],
+    benefits: ["Better recovery", "Improved HRV", "Less morning grogginess"],
     verified: true,
-    avatar: null,
+    verificationId: "2025-092",
+    device: "Whoop",
+  },
+  {
+    id: 3,
+    participant: "Mike T.",
+    initials: "MT",
+    age: 42,
+    location: "Seattle, WA",
+    completedDay: 28,
+    overallRating: 4.9,
+    story: "As someone who's tracked my sleep for 3 years, I can confidently say this product made a real difference. The improvement in my deep sleep was consistent week over week.",
+    metrics: [
+      { label: "Deep Sleep", value: "+28%", positive: true },
+      { label: "Light Sleep", value: "+10%", positive: true },
+      { label: "Sleep Efficiency", value: "+8%", positive: true },
+    ],
+    benefits: ["Deeper sleep cycles", "More energy throughout the day", "Better mental clarity"],
+    verified: true,
+    verificationId: "2025-098",
+    device: "Apple Watch",
+  },
+  {
+    id: 4,
+    participant: "Lisa K.",
+    initials: "LK",
+    age: 38,
+    location: "Portland, OR",
+    completedDay: 28,
+    overallRating: 4.6,
+    story: "I was dealing with stress-related sleep issues and this really helped. My Garmin showed steady improvements in both sleep quality and recovery scores.",
+    metrics: [
+      { label: "Stress Score", value: "-15%", positive: true },
+      { label: "Sleep Quality", value: "+17%", positive: true },
+      { label: "Body Battery", value: "+22%", positive: true },
+    ],
+    benefits: ["Reduced nighttime anxiety", "More restorative sleep", "Better stress management"],
+    verified: true,
+    verificationId: "2025-103",
+    device: "Garmin",
   },
 ];
 
@@ -1062,16 +1127,38 @@ export default function StudyDetailsPage() {
           {/* HARVEST TAB */}
           <TabsContent value="harvest">
             <div className="space-y-6">
+              {/* Sample Data Banner */}
+              {study.enrolledCount === 0 && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+                  <p className="text-sm text-blue-400">
+                    Showing sample story cards for preview purposes. Real verified stories will appear once participants complete the study.
+                  </p>
+                </div>
+              )}
+
               {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Testimonials Ready</p>
+                        <p className="text-sm text-muted-foreground">Story Cards Ready</p>
                         <p className="text-2xl font-bold">{mockTestimonials.length}</p>
                       </div>
-                      <MessageSquareQuote className="h-8 w-8 text-[#00D1C1]" />
+                      <BadgeCheck className="h-8 w-8 text-[#00D1C1]" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Avg. Rating</p>
+                        <p className="text-2xl font-bold flex items-center gap-1">
+                          4.7 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                        </p>
+                      </div>
+                      <Sparkles className="h-8 w-8 text-yellow-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1080,7 +1167,7 @@ export default function StudyDetailsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Completion Rate</p>
-                        <p className="text-2xl font-bold">{study.enrolledCount > 0 ? "87%" : "--"}</p>
+                        <p className="text-2xl font-bold">87%</p>
                       </div>
                       <CheckCircle2 className="h-8 w-8 text-green-500" />
                     </div>
@@ -1091,7 +1178,7 @@ export default function StudyDetailsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Avg. Improvement</p>
-                        <p className="text-2xl font-bold">{study.enrolledCount > 0 ? "+15%" : "--"}</p>
+                        <p className="text-2xl font-bold text-[#00D1C1]">+18%</p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-blue-500" />
                     </div>
@@ -1099,106 +1186,266 @@ export default function StudyDetailsPage() {
                 </Card>
               </div>
 
-              {/* Testimonials */}
+              {/* Export & Distribution Tools */}
+              <Card className="bg-gradient-to-r from-[#00D1C1]/5 to-blue-500/5 border-[#00D1C1]/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Export & Share</h3>
+                      <p className="text-sm text-muted-foreground">Download story cards for social media or embed on your website</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Download Cards
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <QrCode className="h-4 w-4 mr-2" />
+                        QR Codes
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Code className="h-4 w-4 mr-2" />
+                        Embed Widget
+                      </Button>
+                      <Button className="bg-[#00D1C1] hover:bg-[#00B8A9] text-white" size="sm">
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share Report
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Verified Story Cards */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Verified Story Cards</h3>
+                    <p className="text-sm text-muted-foreground">Each card links to a third-party verified page on Reputable Health</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export All
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {mockTestimonials.map((testimonial) => (
+                    <Card key={testimonial.id} className="overflow-hidden hover:border-[#00D1C1]/50 transition-colors">
+                      {/* Card Header with Verified Badge */}
+                      <div className="bg-gradient-to-r from-[#00D1C1]/10 to-transparent p-4 border-b">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-full bg-[#00D1C1]/20 flex items-center justify-center">
+                              <span className="font-semibold text-[#00D1C1]">{testimonial.initials}</span>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{testimonial.participant}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{testimonial.age} · {testimonial.location}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Watch className="h-3 w-3" />
+                                <span>{testimonial.device}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
+                            <BadgeCheck className="h-3.5 w-3.5" />
+                            Verified
+                          </div>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-4 space-y-4">
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${star <= Math.floor(testimonial.overallRating) ? "text-yellow-500 fill-yellow-500" : "text-muted"}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-medium">{testimonial.overallRating}</span>
+                        </div>
+
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {testimonial.metrics.map((metric) => (
+                            <div key={metric.label} className="p-2 rounded-lg bg-[#00D1C1]/10 text-center">
+                              <p className="text-lg font-bold text-[#00D1C1]">{metric.value}</p>
+                              <p className="text-xs text-muted-foreground">{metric.label}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Benefits */}
+                        <div className="space-y-1">
+                          {testimonial.benefits.map((benefit) => (
+                            <div key={benefit} className="flex items-center gap-2 text-sm">
+                              <Check className="h-3.5 w-3.5 text-green-500" />
+                              <span>{benefit}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Quote */}
+                        <div className="p-3 rounded-lg bg-muted/50 border-l-2 border-[#00D1C1]">
+                          <p className="text-sm italic">&quot;{testimonial.story}&quot;</p>
+                        </div>
+
+                        {/* Verification Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t">
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">Study ID:</span> {study.id.slice(0, 8)}
+                            <span className="mx-2">·</span>
+                            <span className="font-medium">Verification:</span> #{testimonial.verificationId}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aggregate Insights */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Verified Testimonials</span>
-                    {mockTestimonials.length > 0 && (
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export All
-                      </Button>
-                    )}
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-[#00D1C1]" />
+                    Aggregate Study Insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {study.enrolledCount === 0 ? (
-                    <div className="py-12 text-center">
-                      <MessageSquareQuote className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No testimonials yet</h3>
-                      <p className="text-muted-foreground max-w-md mx-auto">
-                        Verified testimonials will appear here as participants complete the study.
-                        Each testimonial includes their story paired with real wearable data.
-                      </p>
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* Top Metrics */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-3">Top Improvements</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                          <span className="text-sm">Deep Sleep</span>
+                          <span className="font-semibold text-[#00D1C1]">+22%</span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                          <span className="text-sm">HRV</span>
+                          <span className="font-semibold text-[#00D1C1]">+17%</span>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                          <span className="text-sm">Sleep Score</span>
+                          <span className="font-semibold text-[#00D1C1]">+14%</span>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {mockTestimonials.map((testimonial) => (
-                        <div key={testimonial.id} className="p-4 rounded-lg border">
-                          <div className="flex items-start gap-4">
-                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                              <span className="font-medium">{testimonial.participant.split(" ")[0][0]}{testimonial.participant.split(" ")[1][0]}</span>
+
+                    {/* Common Benefits */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-3">Most Reported Benefits</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-[#00D1C1]" />
+                          <span className="text-sm">Wake up refreshed</span>
+                          <span className="text-xs text-muted-foreground ml-auto">78%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          <span className="text-sm">Fall asleep faster</span>
+                          <span className="text-xs text-muted-foreground ml-auto">65%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-purple-500" />
+                          <span className="text-sm">Better recovery</span>
+                          <span className="text-xs text-muted-foreground ml-auto">52%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          <span className="text-sm">More energy</span>
+                          <span className="text-xs text-muted-foreground ml-auto">48%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Performers */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-3">Top Performers</h4>
+                      <div className="space-y-2">
+                        {mockTestimonials.slice(0, 3).map((t, idx) => (
+                          <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#00D1C1]/20 text-[#00D1C1] text-xs font-bold">
+                              {idx + 1}
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-medium">{testimonial.participant}</span>
-                                {testimonial.verified && (
-                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-500">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Verified
-                                  </span>
-                                )}
-                                <span className="text-sm text-muted-foreground">· Completed {testimonial.completedDay} days</span>
-                              </div>
-                              <p className="text-sm mb-3">&quot;{testimonial.story}&quot;</p>
-                              <div className="flex flex-wrap gap-2">
-                                {Object.entries(testimonial.metrics).map(([key, value]) => (
-                                  <span key={key} className="px-2 py-1 bg-[#00D1C1]/10 text-[#00D1C1] rounded text-xs font-medium">
-                                    {key.replace(/([A-Z])/g, " $1").trim()}: {value}
-                                  </span>
-                                ))}
-                              </div>
+                              <p className="text-sm font-medium">{t.participant}</p>
+                              <p className="text-xs text-muted-foreground">{t.metrics[0].value} {t.metrics[0].label}</p>
                             </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Code className="h-4 w-4" />
-                              </Button>
+                            <div className="flex items-center gap-0.5">
+                              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                              <span className="text-xs font-medium">{t.overallRating}</span>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Embed Options */}
-              {study.enrolledCount > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Embed Testimonials</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground">
-                      Add verified testimonials to your website with embedded widgets.
-                    </p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                        <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                          <MessageSquareQuote className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium">Carousel</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Embed on Your Website</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Add verified story cards to your website with embedded widgets. Each card links to a third-party verified page.
+                  </p>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
+                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
+                        <MessageSquareQuote className="h-6 w-6 text-muted-foreground" />
                       </div>
-                      <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                        <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                          <BarChart3 className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium">Data Card</p>
-                      </div>
-                      <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
-                        <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium">Wall</p>
-                      </div>
+                      <p className="text-sm font-medium">Carousel</p>
+                      <p className="text-xs text-muted-foreground">Rotating cards</p>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
+                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
+                        <BarChart3 className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium">Data Card</p>
+                      <p className="text-xs text-muted-foreground">Single highlight</p>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
+                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
+                        <Users className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium">Wall</p>
+                      <p className="text-xs text-muted-foreground">Grid display</p>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center cursor-pointer hover:border-[#00D1C1] transition-colors">
+                      <div className="h-16 bg-muted rounded mb-2 flex items-center justify-center">
+                        <BadgeCheck className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium">Trust Badge</p>
+                      <p className="text-xs text-muted-foreground">Verification seal</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
