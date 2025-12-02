@@ -11,6 +11,7 @@ interface StudyPreviewProps {
   requiredDevice?: string;
   studyTitle?: string;
   hookQuestion?: string;
+  villainVariable?: string;
 }
 
 const deviceLabels: Record<string, string> = {
@@ -31,6 +32,7 @@ export function StudyPreview({
   requiredDevice,
   studyTitle: customStudyTitle,
   hookQuestion,
+  villainVariable,
 }: StudyPreviewProps) {
   const studyTitle = customStudyTitle || (productName ? `${productName} Study` : "Your Study Title");
 
@@ -138,6 +140,14 @@ export function StudyPreview({
                 <span>{duration} Days</span>
               </div>
             </div>
+
+            {/* Weekly Check-in Indicator */}
+            {villainVariable && (
+              <div className="flex items-center gap-1.5 pt-2 text-xs text-[#00D1C1]">
+                <span>📋</span>
+                <span>Weekly check-ins configured</span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -14,8 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { StudyPreview } from "@/components/study-preview";
-import { useStudyForm } from "@/lib/study-context";
+import { useStudyForm, CustomQuestion } from "@/lib/study-context";
+import { ChevronDown, Plus, Trash2, Mic } from "lucide-react";
 
 const devices = [
   { value: "oura", label: "Oura Ring" },
@@ -38,9 +46,13 @@ const metrics = [
   { id: "energy", label: "Energy", icon: "⚡" },
 ];
 
+const defaultVillainDays = [7, 14, 21, 28];
+
 export default function CreateStudyStep2() {
   const router = useRouter();
   const { formData, updateField } = useStudyForm();
+  const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [isCustomQuestionsOpen, setIsCustomQuestionsOpen] = useState(false);
 
   const handleMetricToggle = (metricId: string) => {
     const currentMetrics = formData.metricsToTrack;
@@ -56,6 +68,81 @@ export default function CreateStudyStep2() {
 
   const handleContinue = () => {
     router.push("/studies/new/preview");
+  };
+
+  const handleVillainDayToggle = (day: number) => {
+    const currentDays = formData.villainQuestionDays;
+    const newDays = currentDays.includes(day)
+      ? currentDays.filter((d) => d !== day)
+      : [...currentDays, day].sort((a, b) => a - b);
+    updateField("villainQuestionDays", newDays);
+  };
+
+  const addCustomQuestion = () => {
+    const newQuestion: CustomQuestion = {
+      questionText: "",
+      questionType: "text",
+      options: ["", "", "", ""],
+      showOnDays: [7],
+    };
+    updateField("customQuestions", [...formData.customQuestions, newQuestion]);
+  };
+
+  const updateCustomQuestion = (
+    index: number,
+    field: keyof CustomQuestion,
+    value: CustomQuestion[keyof CustomQuestion]
+  ) => {
+    const updated = [...formData.customQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    updateField("customQuestions", updated);
+  };
+
+  const updateCustomQuestionOption = (
+    questionIndex: number,
+    optionIndex: number,
+    value: string
+  ) => {
+    const updated = [...formData.customQuestions];
+    const newOptions = [...updated[questionIndex].options];
+    newOptions[optionIndex] = value;
+    updated[questionIndex] = { ...updated[questionIndex], options: newOptions };
+    updateField("customQuestions", updated);
+  };
+
+  const addOptionToQuestion = (questionIndex: number) => {
+    const updated = [...formData.customQuestions];
+    updated[questionIndex] = {
+      ...updated[questionIndex],
+      options: [...updated[questionIndex].options, ""],
+    };
+    updateField("customQuestions", updated);
+  };
+
+  const removeOptionFromQuestion = (questionIndex: number, optionIndex: number) => {
+    const updated = [...formData.customQuestions];
+    updated[questionIndex] = {
+      ...updated[questionIndex],
+      options: updated[questionIndex].options.filter((_, i) => i !== optionIndex),
+    };
+    updateField("customQuestions", updated);
+  };
+
+  const toggleCustomQuestionDay = (questionIndex: number, day: number) => {
+    const updated = [...formData.customQuestions];
+    const currentDays = updated[questionIndex].showOnDays;
+    const newDays = currentDays.includes(day)
+      ? currentDays.filter((d) => d !== day)
+      : [...currentDays, day].sort((a, b) => a - b);
+    updated[questionIndex] = { ...updated[questionIndex], showOnDays: newDays };
+    updateField("customQuestions", updated);
+  };
+
+  const removeCustomQuestion = (index: number) => {
+    updateField(
+      "customQuestions",
+      formData.customQuestions.filter((_, i) => i !== index)
+    );
   };
 
   return (
@@ -189,6 +276,285 @@ export default function CreateStudyStep2() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Weekly Check-in Questions */}
+                  <Collapsible open={isCheckInOpen} onOpenChange={setIsCheckInOpen}>
+                    <Card className="border-dashed">
+                      <CollapsibleTrigger asChild>
+                        <div className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-medium flex items-center gap-2">
+                                <span>📋</span> Weekly Check-in Questions
+                                <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Ask participants specific questions about their experience on certain days
+                              </p>
+                            </div>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${isCheckInOpen ? "rotate-180" : ""}`} />
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0 space-y-6">
+                          {/* Hero Symptom / Villain Variable */}
+                          <div className="space-y-2">
+                            <Label htmlFor="villainVariable">What problem does your product solve?</Label>
+                            <Input
+                              id="villainVariable"
+                              maxLength={50}
+                              placeholder="e.g., afternoon brain fog, poor sleep, stress, bloating"
+                              value={formData.villainVariable}
+                              onChange={(e) => updateField("villainVariable", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              This will be inserted into weekly questions participants see
+                            </p>
+                          </div>
+
+                          {/* Question Preview Card */}
+                          {formData.villainVariable && (
+                            <div className="space-y-2">
+                              <Label>Question Preview</Label>
+                              <div className="bg-[#111827] rounded-xl p-4 space-y-4">
+                                <p className="text-white text-sm">
+                                  This week, did you notice any changes regarding your{" "}
+                                  <span className="text-[#00D1C1] font-medium">
+                                    {formData.villainVariable || "symptom"}
+                                  </span>
+                                  ?
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {["No change", "A little better", "Much better", "Worse"].map((option) => (
+                                    <div
+                                      key={option}
+                                      className="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 text-xs text-center"
+                                    >
+                                      {option}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="pt-3 border-t border-gray-700">
+                                  <p className="text-gray-400 text-xs mb-2">Tell us more. What felt different?</p>
+                                  <div className="flex gap-2">
+                                    <div className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-gray-500 text-xs">
+                                      Type your response...
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-[#00D1C1] flex items-center justify-center">
+                                      <Mic className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Question Schedule */}
+                          <div className="space-y-2">
+                            <Label>When should this question appear?</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {defaultVillainDays.map((day) => (
+                                <label
+                                  key={day}
+                                  className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+                                >
+                                  <Checkbox
+                                    checked={formData.villainQuestionDays.includes(day)}
+                                    onCheckedChange={() => handleVillainDayToggle(day)}
+                                  />
+                                  <span className="text-sm">Day {day}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Questions appear after the daily check-in on selected days
+                            </p>
+                          </div>
+
+                          {/* Additional Custom Questions */}
+                          <Collapsible open={isCustomQuestionsOpen} onOpenChange={setIsCustomQuestionsOpen}>
+                            <CollapsibleTrigger asChild>
+                              <Button variant="outline" className="w-full justify-between">
+                                <span className="flex items-center gap-2">
+                                  <Plus className="w-4 h-4" />
+                                  Additional Custom Questions
+                                </span>
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isCustomQuestionsOpen ? "rotate-180" : ""}`} />
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="pt-4 space-y-4">
+                              {formData.customQuestions.map((question, qIndex) => (
+                                <div key={qIndex} className="p-4 border rounded-lg space-y-4 bg-muted/30">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Question {qIndex + 1}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeCustomQuestion(qIndex)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>Question Text</Label>
+                                    <Textarea
+                                      placeholder="Enter your question..."
+                                      value={question.questionText}
+                                      onChange={(e) =>
+                                        updateCustomQuestion(qIndex, "questionText", e.target.value)
+                                      }
+                                      rows={2}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>Question Type</Label>
+                                    <Select
+                                      value={question.questionType}
+                                      onValueChange={(value) =>
+                                        updateCustomQuestion(
+                                          qIndex,
+                                          "questionType",
+                                          value as CustomQuestion["questionType"]
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                                        <SelectItem value="text">Text Response</SelectItem>
+                                        <SelectItem value="voice_and_text">Voice + Text</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {question.questionType === "multiple_choice" && (
+                                    <div className="space-y-2">
+                                      <Label>Answer Options</Label>
+                                      {question.options.map((option, oIndex) => (
+                                        <div key={oIndex} className="flex gap-2">
+                                          <Input
+                                            placeholder={`Option ${oIndex + 1}`}
+                                            value={option}
+                                            onChange={(e) =>
+                                              updateCustomQuestionOption(qIndex, oIndex, e.target.value)
+                                            }
+                                          />
+                                          {question.options.length > 2 && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => removeOptionFromQuestion(qIndex, oIndex)}
+                                            >
+                                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      ))}
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addOptionToQuestion(qIndex)}
+                                      >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Option
+                                      </Button>
+                                    </div>
+                                  )}
+
+                                  <div className="space-y-2">
+                                    <Label>Show on Days</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                      {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => (
+                                        <button
+                                          key={day}
+                                          type="button"
+                                          onClick={() => toggleCustomQuestionDay(qIndex, day)}
+                                          className={`w-8 h-8 text-xs rounded-md border transition-colors ${
+                                            question.showOnDays.includes(day)
+                                              ? "bg-[#00D1C1] text-white border-[#00D1C1]"
+                                              : "bg-background hover:bg-muted/50"
+                                          }`}
+                                        >
+                                          {day}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Live Preview for Custom Question */}
+                                  {question.questionText && (
+                                    <div className="space-y-2">
+                                      <Label>Preview</Label>
+                                      <div className="bg-[#111827] rounded-xl p-4 space-y-4">
+                                        <p className="text-white text-sm">{question.questionText}</p>
+
+                                        {question.questionType === "multiple_choice" && (
+                                          <div className="grid grid-cols-2 gap-2">
+                                            {question.options.filter(o => o).map((opt, oIdx) => (
+                                              <div
+                                                key={oIdx}
+                                                className="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 text-xs text-center"
+                                              >
+                                                {opt}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {question.questionType === "text" && (
+                                          <div className="bg-gray-800 rounded-lg px-3 py-2 text-gray-500 text-xs">
+                                            Type your response...
+                                          </div>
+                                        )}
+
+                                        {question.questionType === "voice_and_text" && (
+                                          <div className="flex gap-2">
+                                            <div className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-gray-500 text-xs">
+                                              Type your response...
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-[#00D1C1] flex items-center justify-center">
+                                              <Mic className="w-4 h-4 text-white" />
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Always show follow-up text/voice option */}
+                                        <div className="pt-3 border-t border-gray-700">
+                                          <p className="text-gray-400 text-xs mb-2">Tell us more (optional)</p>
+                                          <div className="flex gap-2">
+                                            <div className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-gray-500 text-xs">
+                                              Add more context...
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-[#00D1C1] flex items-center justify-center">
+                                              <Mic className="w-4 h-4 text-white" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+
+                              <Button
+                                variant="outline"
+                                onClick={addCustomQuestion}
+                                className="w-full"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Custom Question
+                              </Button>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
                 </div>
 
                 {/* Buttons */}
@@ -221,6 +587,7 @@ export default function CreateStudyStep2() {
                 durationDays={formData.durationDays}
                 totalSpots={formData.totalSpots}
                 requiredDevice={formData.requiredDevice}
+                villainVariable={formData.villainVariable}
               />
             </div>
           </div>

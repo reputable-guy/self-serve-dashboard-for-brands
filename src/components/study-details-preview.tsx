@@ -87,7 +87,7 @@ export function StudyDetailsPreview({
         </div>
 
         {/* Content */}
-        <div className="px-4 pb-20 -mt-8 relative z-10">
+        <div className="px-4 pb-4 -mt-8 relative z-10">
           {/* Title Section */}
           <h1 className="text-xl font-bold text-white mb-1">{studyTitle || "Your Study Title"}</h1>
           <p className="text-sm text-gray-400 mb-3">{hookQuestion || "Your hook question..."}</p>
@@ -151,7 +151,7 @@ export function StudyDetailsPreview({
           </div>
 
           {/* What You'll Get */}
-          <div className="mb-4">
+          <div className="mb-6">
             <h2 className="text-sm font-semibold text-white mb-2">🎁 What You&apos;ll Get</h2>
             <div className="space-y-2">
               {whatYouGet.map((item, index) => (
@@ -169,11 +169,9 @@ export function StudyDetailsPreview({
               <span className="text-sm text-[#00D1C1] font-bold">${totalValue}+</span>
             </div>
           </div>
-        </div>
 
-        {/* Fixed CTA at bottom */}
-        <div className="absolute bottom-8 left-4 right-4">
-          <div className="bg-[#00D1C1] text-center py-2.5 rounded-lg">
+          {/* CTA Button - scrolls with content */}
+          <div className="bg-[#00D1C1] text-center py-2.5 rounded-lg mb-4">
             <p className="text-xs font-semibold text-white">Join Study</p>
             <p className="text-[10px] text-white/80">{spots} spots left</p>
           </div>

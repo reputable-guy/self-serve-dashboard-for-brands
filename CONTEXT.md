@@ -26,6 +26,16 @@ A self-serve dashboard where wellness brands create "rebate studies." Participan
 - requiredDevice: "Oura" | "Whoop" | "Apple Watch" | "Garmin" | "Fitbit" | "Any"
 - metricsToTrack: array of "Sleep Quality" | "Deep Sleep" | "REM Sleep" | "HRV" | "Resting Heart Rate" | "Stress" | "Recovery Score" | "Steps" | "Energy"
 
+### Custom Questions (Optional)
+- villainVariable: string (the symptom/problem, e.g. "afternoon brain fog")
+- villainQuestionDays: array of numbers (default [7, 14, 21, 28])
+- customQuestions: array of {
+    questionText: string,
+    questionType: "multiple_choice" | "text" | "voice_and_text",
+    options: array of strings (if multiple_choice),
+    showOnDays: array of numbers
+  }
+
 ### Generated Content (LLM creates from inputs, brand can edit)
 - studyTitle: string (e.g. "Better Sleep Study")
 - hookQuestion: string (e.g. "Do essential oils actually help YOU sleep better?")

@@ -18,6 +18,13 @@ export interface ValueItem {
   note: string;
 }
 
+export interface CustomQuestion {
+  questionText: string;
+  questionType: "multiple_choice" | "text" | "voice_and_text";
+  options: string[];
+  showOnDays: number[];
+}
+
 export interface StudyFormData {
   // Step 1: Product Info
   productName: string;
@@ -32,6 +39,10 @@ export interface StudyFormData {
   totalSpots: string;
   requiredDevice: string;
   metricsToTrack: string[];
+  // Step 2: Weekly Check-in Questions (Optional)
+  villainVariable: string;
+  villainQuestionDays: number[];
+  customQuestions: CustomQuestion[];
   // Step 3: Generated Content
   studyTitle: string;
   hookQuestion: string;
@@ -52,6 +63,9 @@ const initialFormData: StudyFormData = {
   totalSpots: "",
   requiredDevice: "",
   metricsToTrack: [],
+  villainVariable: "",
+  villainQuestionDays: [7, 14, 21, 28],
+  customQuestions: [],
   studyTitle: "",
   hookQuestion: "",
   discoverItems: [],
@@ -64,6 +78,7 @@ interface StudyContextType {
   updateField: <K extends keyof StudyFormData>(field: K, value: StudyFormData[K]) => void;
   updateFields: (fields: Partial<StudyFormData>) => void;
   resetForm: () => void;
+  loadStudy: (data: StudyFormData) => void;
 }
 
 const StudyContext = createContext<StudyContextType | undefined>(undefined);
@@ -83,8 +98,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setFormData(initialFormData);
   };
 
+  const loadStudy = (data: StudyFormData) => {
+    setFormData(data);
+  };
+
   return (
-    <StudyContext.Provider value={{ formData, updateField, updateFields, resetForm }}>
+    <StudyContext.Provider value={{ formData, updateField, updateFields, resetForm, loadStudy }}>
       {children}
     </StudyContext.Provider>
   );
