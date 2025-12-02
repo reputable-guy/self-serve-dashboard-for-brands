@@ -38,6 +38,7 @@ import {
   DollarSign,
   Calculator,
   Target,
+  ChevronRight,
 } from "lucide-react";
 import { STUDY_STATUSES, DEVICE_LABELS } from "@/lib/constants";
 import {
@@ -56,6 +57,8 @@ import {
 import { StudyLinkActions } from "@/components/study-link-actions";
 import { generateStudyPDF } from "@/components/pdf-report-generator";
 import { VideoTestimonialCard } from "@/components/video-testimonial-card";
+import { ParticipantDetailPanel } from "@/components/participant-detail-panel";
+import { MockParticipant } from "@/lib/mock-data";
 
 // Determine the default tab based on study status
 function getDefaultTab(status: Study["status"]): string {
@@ -141,6 +144,7 @@ export default function StudyDetailsPage() {
   const router = useRouter();
   const { getStudy, updateStudy, toggleFeaturedTestimonial } = useStudies();
   const [selectedWidget, setSelectedWidget] = useState<WidgetType>("carousel");
+  const [selectedParticipant, setSelectedParticipant] = useState<MockParticipant | null>(null);
 
   const study = getStudy(params.id as string);
 
@@ -746,9 +750,13 @@ export default function StudyDetailsPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {MOCK_PARTICIPANTS.map((participant) => (
-                      <div key={participant.id} className="flex items-center gap-4 p-3 rounded-lg border">
+                      <button
+                        key={participant.id}
+                        onClick={() => setSelectedParticipant(participant)}
+                        className="w-full text-left flex items-center gap-4 p-3 rounded-lg border hover:border-[#00D1C1]/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                      >
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                          <span className="text-sm font-medium">{participant.name.split(" ")[0][0]}{participant.name.split(" ")[1][0]}</span>
+                          <span className="text-sm font-medium">{participant.initials}</span>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -767,7 +775,8 @@ export default function StudyDetailsPage() {
                           <p className="text-sm font-medium">{participant.compliance}%</p>
                           <p className="text-xs text-muted-foreground">compliance</p>
                         </div>
-                      </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </button>
                     ))}
                   </div>
                 </CardContent>
@@ -1532,6 +1541,14 @@ export default function StudyDetailsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Participant Detail Panel */}
+      {selectedParticipant && (
+        <ParticipantDetailPanel
+          participant={selectedParticipant}
+          onClose={() => setSelectedParticipant(null)}
+        />
+      )}
     </div>
   );
 }

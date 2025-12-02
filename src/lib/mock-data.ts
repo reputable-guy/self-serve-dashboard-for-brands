@@ -8,6 +8,59 @@ export interface MockParticipant {
   day: number;
   compliance: number;
   lastActive: string;
+  // Extended participant details
+  initials: string;
+  age: number;
+  location: string;
+  device: string;
+  enrolledDate: string;
+  email?: string;
+}
+
+// Daily wearable metric data point
+export interface DailyMetricPoint {
+  day: number;
+  date: string;
+  deepSleep: number; // minutes
+  remSleep: number; // minutes
+  lightSleep: number; // minutes
+  totalSleep: number; // minutes
+  hrv: number; // ms
+  restingHr: number; // bpm
+  sleepScore: number; // 0-100
+  recoveryScore: number; // 0-100
+}
+
+// Check-in response
+export interface CheckInResponse {
+  day: number;
+  date: string;
+  completed: boolean;
+  villainResponse?: {
+    question: string;
+    answer: string;
+  };
+  customResponses?: {
+    question: string;
+    questionType: "multiple_choice" | "text" | "voice_and_text";
+    answer: string;
+  }[];
+}
+
+// Extended participant detail with metrics and check-ins
+export interface ParticipantDetail {
+  participantId: number;
+  baselineMetrics: {
+    avgDeepSleep: number;
+    avgRemSleep: number;
+    avgTotalSleep: number;
+    avgHrv: number;
+    avgRestingHr: number;
+    avgSleepScore: number;
+  };
+  dailyMetrics: DailyMetricPoint[];
+  checkIns: CheckInResponse[];
+  syncHistory: { date: string; synced: boolean }[];
 }
 
 export interface MockMetric {
@@ -50,11 +103,11 @@ export interface MockBaselineItem {
 
 // Mock participant data for monitor tab
 export const MOCK_PARTICIPANTS: MockParticipant[] = [
-  { id: 1, name: "Sarah M.", status: "active", day: 12, compliance: 95, lastActive: "2 hours ago" },
-  { id: 2, name: "Mike T.", status: "active", day: 8, compliance: 88, lastActive: "5 hours ago" },
-  { id: 3, name: "Emily R.", status: "completed", day: 28, compliance: 92, lastActive: "1 day ago" },
-  { id: 4, name: "James L.", status: "active", day: 15, compliance: 78, lastActive: "3 hours ago" },
-  { id: 5, name: "Lisa K.", status: "at-risk", day: 6, compliance: 45, lastActive: "3 days ago" },
+  { id: 1, name: "Sarah M.", status: "active", day: 12, compliance: 95, lastActive: "2 hours ago", initials: "SM", age: 34, location: "Austin, TX", device: "Oura Ring", enrolledDate: "2024-11-20" },
+  { id: 2, name: "Mike T.", status: "active", day: 8, compliance: 88, lastActive: "5 hours ago", initials: "MT", age: 42, location: "Seattle, WA", device: "Apple Watch", enrolledDate: "2024-11-24" },
+  { id: 3, name: "Emily R.", status: "completed", day: 28, compliance: 92, lastActive: "1 day ago", initials: "ER", age: 29, location: "Denver, CO", device: "Whoop", enrolledDate: "2024-11-04" },
+  { id: 4, name: "James L.", status: "active", day: 15, compliance: 78, lastActive: "3 hours ago", initials: "JL", age: 38, location: "Portland, OR", device: "Garmin", enrolledDate: "2024-11-17" },
+  { id: 5, name: "Lisa K.", status: "at-risk", day: 6, compliance: 45, lastActive: "3 days ago", initials: "LK", age: 31, location: "San Diego, CA", device: "Fitbit", enrolledDate: "2024-11-26" },
 ];
 
 // Mock testimonial data for harvest tab - enhanced with full story card fields
@@ -258,3 +311,202 @@ export const MOCK_ACTIVITIES: MockActivity[] = [
     timestamp: "2 days ago",
   },
 ];
+
+// Helper to generate daily metrics for a participant
+function generateDailyMetrics(participantId: number, numDays: number, improving: boolean): DailyMetricPoint[] {
+  const baseDate = new Date("2024-11-20");
+  const metrics: DailyMetricPoint[] = [];
+
+  // Base values vary by participant
+  const bases: Record<number, { deepSleep: number; remSleep: number; hrv: number; restingHr: number; sleepScore: number }> = {
+    1: { deepSleep: 45, remSleep: 80, hrv: 42, restingHr: 62, sleepScore: 72 },
+    2: { deepSleep: 38, remSleep: 75, hrv: 38, restingHr: 65, sleepScore: 68 },
+    3: { deepSleep: 50, remSleep: 85, hrv: 45, restingHr: 58, sleepScore: 75 },
+    4: { deepSleep: 42, remSleep: 78, hrv: 40, restingHr: 64, sleepScore: 70 },
+    5: { deepSleep: 35, remSleep: 70, hrv: 35, restingHr: 68, sleepScore: 62 },
+  };
+
+  const base = bases[participantId] || bases[1];
+
+  for (let day = 1; day <= numDays; day++) {
+    const date = new Date(baseDate);
+    date.setDate(date.getDate() + day - 1);
+
+    // Add some variance and improvement trend
+    const improvementFactor = improving ? (day / numDays) * 0.25 : 0;
+    const variance = () => (Math.random() - 0.5) * 10;
+
+    const deepSleep = Math.round(base.deepSleep * (1 + improvementFactor) + variance());
+    const remSleep = Math.round(base.remSleep * (1 + improvementFactor * 0.5) + variance());
+    const lightSleep = Math.round(180 + variance() * 2);
+
+    metrics.push({
+      day,
+      date: date.toISOString().split("T")[0],
+      deepSleep: Math.max(20, deepSleep),
+      remSleep: Math.max(40, remSleep),
+      lightSleep,
+      totalSleep: deepSleep + remSleep + lightSleep,
+      hrv: Math.round(base.hrv * (1 + improvementFactor) + variance() * 0.5),
+      restingHr: Math.round(base.restingHr * (1 - improvementFactor * 0.1) + variance() * 0.3),
+      sleepScore: Math.min(100, Math.max(40, Math.round(base.sleepScore * (1 + improvementFactor) + variance() * 0.5))),
+      recoveryScore: Math.min(100, Math.max(30, Math.round(65 + improvementFactor * 20 + variance()))),
+    });
+  }
+
+  return metrics;
+}
+
+// Generate check-in responses
+function generateCheckIns(numDays: number, compliance: number, villainVariable?: string): CheckInResponse[] {
+  const baseDate = new Date("2024-11-20");
+  const checkIns: CheckInResponse[] = [];
+  const villainDays = [7, 14, 21, 28];
+
+  const villainAnswers = [
+    "Yes, noticeably better this week",
+    "Somewhat improved",
+    "About the same",
+    "Much better than before",
+  ];
+
+  const customQuestions = [
+    { question: "How would you rate your energy levels today?", type: "multiple_choice" as const, options: ["Low", "Moderate", "High", "Very High"] },
+    { question: "Did you take the supplement as directed?", type: "multiple_choice" as const, options: ["Yes", "No", "Forgot once"] },
+    { question: "Any side effects to report?", type: "text" as const, options: [] },
+  ];
+
+  for (let day = 1; day <= numDays; day++) {
+    const date = new Date(baseDate);
+    date.setDate(date.getDate() + day - 1);
+
+    // Determine if this check-in was completed based on compliance
+    const completed = Math.random() * 100 < compliance;
+
+    const checkIn: CheckInResponse = {
+      day,
+      date: date.toISOString().split("T")[0],
+      completed,
+    };
+
+    if (completed) {
+      // Add villain response on villain days
+      if (villainDays.includes(day) && villainVariable) {
+        checkIn.villainResponse = {
+          question: `Did you notice any changes regarding your ${villainVariable}?`,
+          answer: villainAnswers[Math.floor(Math.random() * villainAnswers.length)],
+        };
+      }
+
+      // Add custom responses
+      checkIn.customResponses = customQuestions.map((q) => ({
+        question: q.question,
+        questionType: q.type,
+        answer: q.type === "text"
+          ? (Math.random() > 0.7 ? "No side effects" : "None to report")
+          : q.options[Math.floor(Math.random() * q.options.length)],
+      }));
+    }
+
+    checkIns.push(checkIn);
+  }
+
+  return checkIns;
+}
+
+// Generate sync history
+function generateSyncHistory(numDays: number, compliance: number): { date: string; synced: boolean }[] {
+  const baseDate = new Date("2024-11-20");
+  const history: { date: string; synced: boolean }[] = [];
+
+  for (let day = 1; day <= numDays; day++) {
+    const date = new Date(baseDate);
+    date.setDate(date.getDate() + day - 1);
+
+    history.push({
+      date: date.toISOString().split("T")[0],
+      synced: Math.random() * 100 < compliance + 5, // Syncing is slightly more reliable than check-ins
+    });
+  }
+
+  return history;
+}
+
+// Detailed participant data
+export const MOCK_PARTICIPANT_DETAILS: Record<number, ParticipantDetail> = {
+  1: {
+    participantId: 1,
+    baselineMetrics: {
+      avgDeepSleep: 45,
+      avgRemSleep: 80,
+      avgTotalSleep: 305,
+      avgHrv: 42,
+      avgRestingHr: 62,
+      avgSleepScore: 72,
+    },
+    dailyMetrics: generateDailyMetrics(1, 12, true),
+    checkIns: generateCheckIns(12, 95, "afternoon brain fog"),
+    syncHistory: generateSyncHistory(12, 95),
+  },
+  2: {
+    participantId: 2,
+    baselineMetrics: {
+      avgDeepSleep: 38,
+      avgRemSleep: 75,
+      avgTotalSleep: 290,
+      avgHrv: 38,
+      avgRestingHr: 65,
+      avgSleepScore: 68,
+    },
+    dailyMetrics: generateDailyMetrics(2, 8, true),
+    checkIns: generateCheckIns(8, 88, "afternoon brain fog"),
+    syncHistory: generateSyncHistory(8, 88),
+  },
+  3: {
+    participantId: 3,
+    baselineMetrics: {
+      avgDeepSleep: 50,
+      avgRemSleep: 85,
+      avgTotalSleep: 320,
+      avgHrv: 45,
+      avgRestingHr: 58,
+      avgSleepScore: 75,
+    },
+    dailyMetrics: generateDailyMetrics(3, 28, true),
+    checkIns: generateCheckIns(28, 92, "afternoon brain fog"),
+    syncHistory: generateSyncHistory(28, 92),
+  },
+  4: {
+    participantId: 4,
+    baselineMetrics: {
+      avgDeepSleep: 42,
+      avgRemSleep: 78,
+      avgTotalSleep: 300,
+      avgHrv: 40,
+      avgRestingHr: 64,
+      avgSleepScore: 70,
+    },
+    dailyMetrics: generateDailyMetrics(4, 15, true),
+    checkIns: generateCheckIns(15, 78, "afternoon brain fog"),
+    syncHistory: generateSyncHistory(15, 78),
+  },
+  5: {
+    participantId: 5,
+    baselineMetrics: {
+      avgDeepSleep: 35,
+      avgRemSleep: 70,
+      avgTotalSleep: 275,
+      avgHrv: 35,
+      avgRestingHr: 68,
+      avgSleepScore: 62,
+    },
+    dailyMetrics: generateDailyMetrics(5, 6, false),
+    checkIns: generateCheckIns(6, 45, "afternoon brain fog"),
+    syncHistory: generateSyncHistory(6, 45),
+  },
+};
+
+// Helper to get participant detail by ID
+export function getParticipantDetail(participantId: number): ParticipantDetail | undefined {
+  return MOCK_PARTICIPANT_DETAILS[participantId];
+}
