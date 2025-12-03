@@ -732,6 +732,7 @@ export default function EditStudyPage() {
                                     <SelectItem value="text">Text Response</SelectItem>
                                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
                                     <SelectItem value="voice_and_text">Voice & Text</SelectItem>
+                                    <SelectItem value="likert_scale">Likert Scale (1-10)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -767,6 +768,61 @@ export default function EditStudyPage() {
                                     <Plus className="h-3 w-3 mr-1" />
                                     Add Option
                                   </Button>
+                                </div>
+                              )}
+
+                              {question.questionType === "likert_scale" && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Scale Range</Label>
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          type="number"
+                                          min="1"
+                                          max="5"
+                                          value={question.likertMin || 1}
+                                          onChange={(e) =>
+                                            updateCustomQuestion(qIndex, "likertMin", parseInt(e.target.value) || 1)
+                                          }
+                                          className="w-16"
+                                        />
+                                        <span className="text-muted-foreground">to</span>
+                                        <Input
+                                          type="number"
+                                          min="5"
+                                          max="10"
+                                          value={question.likertMax || 10}
+                                          onChange={(e) =>
+                                            updateCustomQuestion(qIndex, "likertMax", parseInt(e.target.value) || 10)
+                                          }
+                                          className="w-16"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Low End Label</Label>
+                                      <Input
+                                        placeholder="e.g., Strongly Disagree"
+                                        value={question.likertMinLabel || ""}
+                                        onChange={(e) =>
+                                          updateCustomQuestion(qIndex, "likertMinLabel", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>High End Label</Label>
+                                      <Input
+                                        placeholder="e.g., Strongly Agree"
+                                        value={question.likertMaxLabel || ""}
+                                        onChange={(e) =>
+                                          updateCustomQuestion(qIndex, "likertMaxLabel", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               )}
 
@@ -826,6 +882,31 @@ export default function EditStudyPage() {
                                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50 text-gray-400 text-sm">
                                             <Mic className="w-4 h-4" />
                                             <span>Tap to record or type...</span>
+                                          </div>
+                                        )}
+                                        {question.questionType === "likert_scale" && (
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-xs text-gray-400 px-1">
+                                              <span>{question.likertMinLabel || "Strongly Disagree"}</span>
+                                              <span>{question.likertMaxLabel || "Strongly Agree"}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-1">
+                                              {Array.from(
+                                                { length: (question.likertMax || 10) - (question.likertMin || 1) + 1 },
+                                                (_, i) => (question.likertMin || 1) + i
+                                              ).map((num) => (
+                                                <div
+                                                  key={num}
+                                                  className={`flex-1 h-10 rounded-lg flex items-center justify-center text-sm font-medium ${
+                                                    num === 7
+                                                      ? "bg-[#00D1C1] text-white"
+                                                      : "bg-gray-800 text-gray-400"
+                                                  }`}
+                                                >
+                                                  {num}
+                                                </div>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
                                         <div className="flex items-center gap-2 pt-2 text-xs text-gray-400">
