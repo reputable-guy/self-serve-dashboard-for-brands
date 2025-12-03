@@ -44,8 +44,14 @@ export interface CheckInResponse {
   };
   customResponses?: {
     question: string;
-    questionType: "multiple_choice" | "text" | "voice_and_text";
+    questionType: "multiple_choice" | "text" | "voice_and_text" | "likert_scale";
     answer: string;
+    // Likert scale metadata for display
+    likertValue?: number;
+    likertMin?: number;
+    likertMax?: number;
+    likertMinLabel?: string;
+    likertMaxLabel?: string;
   }[];
 }
 
@@ -561,6 +567,7 @@ function generateCheckInsWithStudyQuestions(
       if (questionsForThisDay.length > 0) {
         checkIn.customResponses = questionsForThisDay.map((q) => {
           let answer: string;
+          let likertValue: number | undefined;
 
           if (q.questionType === "text" || q.questionType === "voice_and_text") {
             // Generate realistic text responses based on question content
@@ -572,6 +579,17 @@ function generateCheckInsWithStudyQuestions(
               "Some minor improvements noticed",
             ];
             answer = textResponses[Math.floor(Math.random() * textResponses.length)];
+          } else if (q.questionType === "likert_scale") {
+            // Generate a Likert scale response (tends toward positive for improving participants)
+            const min = q.likertMin || 1;
+            const max = q.likertMax || 10;
+            // Bias toward higher values (6-10 range more likely)
+            likertValue = Math.floor(Math.random() * (max - min + 1)) + min;
+            // Add slight positive bias
+            if (likertValue < max - 2 && Math.random() > 0.4) {
+              likertValue = Math.min(max, likertValue + Math.floor(Math.random() * 3));
+            }
+            answer = likertValue.toString();
           } else {
             // Multiple choice - pick from the configured options
             const validOptions = q.options.filter(o => o && o.trim() !== "");
@@ -580,11 +598,22 @@ function generateCheckInsWithStudyQuestions(
               : "N/A";
           }
 
-          return {
+          const response: NonNullable<CheckInResponse["customResponses"]>[0] = {
             question: q.questionText || "Custom question",
             questionType: q.questionType,
             answer,
           };
+
+          // Add Likert metadata if applicable
+          if (q.questionType === "likert_scale") {
+            response.likertValue = likertValue;
+            response.likertMin = q.likertMin || 1;
+            response.likertMax = q.likertMax || 10;
+            response.likertMinLabel = q.likertMinLabel || "Strongly Disagree";
+            response.likertMaxLabel = q.likertMaxLabel || "Strongly Agree";
+          }
+
+          return response;
         });
       }
     }

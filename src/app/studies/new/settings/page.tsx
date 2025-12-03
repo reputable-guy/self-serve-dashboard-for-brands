@@ -255,7 +255,7 @@ export default function CreateStudyStep2() {
                     </div>
                   </div>
 
-                  {/* Weekly Check-in Questions */}
+                  {/* Check-in Questions */}
                   <Collapsible open={isCheckInOpen} onOpenChange={setIsCheckInOpen}>
                     <Card className="border-dashed">
                       <CollapsibleTrigger asChild>
@@ -263,11 +263,11 @@ export default function CreateStudyStep2() {
                           <div className="flex items-center justify-between">
                             <div>
                               <h3 className="font-medium flex items-center gap-2">
-                                <span>📋</span> Weekly Check-in Questions
+                                <span>📋</span> Check-in Questions
                                 <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
                               </h3>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Ask participants specific questions about their experience on certain days
+                                Configure weekly symptom check-ins and custom questions for any day
                               </p>
                             </div>
                             <ChevronDown className={`h-5 w-5 transition-transform ${isCheckInOpen ? "rotate-180" : ""}`} />
@@ -276,9 +276,16 @@ export default function CreateStudyStep2() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <CardContent className="pt-0 space-y-6">
-                          {/* Hero Symptom / Villain Variable */}
-                          <div className="space-y-2">
-                            <Label htmlFor="villainVariable">What problem does your product solve?</Label>
+                          {/* Weekly Hero Symptom Check-in */}
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-sm font-semibold">Weekly Hero Symptom Check-in</h4>
+                              <p className="text-xs text-muted-foreground">
+                                Ask participants about their primary symptom on specific days
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="villainVariable">What problem does your product solve?</Label>
                             <Input
                               id="villainVariable"
                               maxLength={50}
@@ -349,18 +356,26 @@ export default function CreateStudyStep2() {
                               Questions appear after the daily check-in on selected days
                             </p>
                           </div>
+                          </div>
 
-                          {/* Additional Custom Questions */}
-                          <Collapsible open={isCustomQuestionsOpen} onOpenChange={setIsCustomQuestionsOpen}>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="outline" className="w-full justify-between">
-                                <span className="flex items-center gap-2">
-                                  <Plus className="w-4 h-4" />
-                                  Additional Custom Questions
-                                </span>
-                                <ChevronDown className={`h-4 w-4 transition-transform ${isCustomQuestionsOpen ? "rotate-180" : ""}`} />
-                              </Button>
-                            </CollapsibleTrigger>
+                          {/* Additional Questions */}
+                          <div className="space-y-4 pt-4 border-t">
+                            <div>
+                              <h4 className="text-sm font-semibold">Additional Questions</h4>
+                              <p className="text-xs text-muted-foreground">
+                                Add custom questions that can be shown on any day of the study
+                              </p>
+                            </div>
+                            <Collapsible open={isCustomQuestionsOpen} onOpenChange={setIsCustomQuestionsOpen}>
+                              <CollapsibleTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between">
+                                  <span className="flex items-center gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    {formData.customQuestions.length} question{formData.customQuestions.length !== 1 ? 's' : ''} configured
+                                  </span>
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${isCustomQuestionsOpen ? "rotate-180" : ""}`} />
+                                </Button>
+                              </CollapsibleTrigger>
                             <CollapsibleContent className="pt-4 space-y-4">
                               {formData.customQuestions.map((question, qIndex) => (
                                 <div key={qIndex} className="p-4 border rounded-lg space-y-4 bg-muted/30">
@@ -406,6 +421,7 @@ export default function CreateStudyStep2() {
                                         <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
                                         <SelectItem value="text">Text Response</SelectItem>
                                         <SelectItem value="voice_and_text">Voice + Text</SelectItem>
+                                        <SelectItem value="likert_scale">Likert Scale (1-10)</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
@@ -441,6 +457,61 @@ export default function CreateStudyStep2() {
                                         <Plus className="h-3 w-3 mr-1" />
                                         Add Option
                                       </Button>
+                                    </div>
+                                  )}
+
+                                  {question.questionType === "likert_scale" && (
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Scale Range</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              max="5"
+                                              value={question.likertMin || 1}
+                                              onChange={(e) =>
+                                                updateCustomQuestion(qIndex, "likertMin", parseInt(e.target.value) || 1)
+                                              }
+                                              className="w-16"
+                                            />
+                                            <span className="text-muted-foreground">to</span>
+                                            <Input
+                                              type="number"
+                                              min="5"
+                                              max="10"
+                                              value={question.likertMax || 10}
+                                              onChange={(e) =>
+                                                updateCustomQuestion(qIndex, "likertMax", parseInt(e.target.value) || 10)
+                                              }
+                                              className="w-16"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Low End Label</Label>
+                                          <Input
+                                            placeholder="e.g., Strongly Disagree"
+                                            value={question.likertMinLabel || ""}
+                                            onChange={(e) =>
+                                              updateCustomQuestion(qIndex, "likertMinLabel", e.target.value)
+                                            }
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>High End Label</Label>
+                                          <Input
+                                            placeholder="e.g., Strongly Agree"
+                                            value={question.likertMaxLabel || ""}
+                                            onChange={(e) =>
+                                              updateCustomQuestion(qIndex, "likertMaxLabel", e.target.value)
+                                            }
+                                          />
+                                        </div>
+                                      </div>
                                     </div>
                                   )}
 
@@ -501,6 +572,32 @@ export default function CreateStudyStep2() {
                                           </div>
                                         )}
 
+                                        {question.questionType === "likert_scale" && (
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-xs text-gray-400 px-1">
+                                              <span>{question.likertMinLabel || "Strongly Disagree"}</span>
+                                              <span>{question.likertMaxLabel || "Strongly Agree"}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-1">
+                                              {Array.from(
+                                                { length: (question.likertMax || 10) - (question.likertMin || 1) + 1 },
+                                                (_, i) => (question.likertMin || 1) + i
+                                              ).map((num) => (
+                                                <div
+                                                  key={num}
+                                                  className={`flex-1 h-10 rounded-lg flex items-center justify-center text-sm font-medium ${
+                                                    num === 7
+                                                      ? "bg-[#00D1C1] text-white"
+                                                      : "bg-gray-800 text-gray-400"
+                                                  }`}
+                                                >
+                                                  {num}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
                                         {/* Always show follow-up text/voice option */}
                                         <div className="pt-3 border-t border-gray-700">
                                           <p className="text-gray-400 text-xs mb-2">Tell us more (optional)</p>
@@ -529,6 +626,7 @@ export default function CreateStudyStep2() {
                               </Button>
                             </CollapsibleContent>
                           </Collapsible>
+                          </div>
                         </CardContent>
                       </CollapsibleContent>
                     </Card>

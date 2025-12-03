@@ -223,14 +223,50 @@ function CheckInTimeline({
 
               {/* Custom Responses */}
               {checkIn.customResponses && checkIn.customResponses.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {checkIn.customResponses.map((response, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
-                      <div className="flex-1">
-                        <span className="text-muted-foreground">{response.question}</span>
-                        <span className="font-medium ml-2">{response.answer}</span>
-                      </div>
+                    <div key={idx} className="text-sm">
+                      {response.questionType === "likert_scale" ? (
+                        <div className="p-2 rounded bg-blue-500/10 border border-blue-500/20">
+                          <p className="text-xs text-muted-foreground mb-2">{response.question}</p>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>{response.likertMinLabel}</span>
+                              <span>{response.likertMaxLabel}</span>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {Array.from(
+                                { length: (response.likertMax || 10) - (response.likertMin || 1) + 1 },
+                                (_, i) => (response.likertMin || 1) + i
+                              ).map((num) => (
+                                <div
+                                  key={num}
+                                  className={`flex-1 h-6 rounded text-xs flex items-center justify-center font-medium ${
+                                    num === response.likertValue
+                                      ? "bg-blue-500 text-white"
+                                      : num < (response.likertValue || 0)
+                                      ? "bg-blue-500/30 text-blue-600"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {num}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-center text-sm font-semibold text-blue-600">
+                              {response.likertValue} / {response.likertMax || 10}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2">
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">{response.question}</span>
+                            <span className="font-medium ml-2">{response.answer}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

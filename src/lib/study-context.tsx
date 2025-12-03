@@ -20,9 +20,14 @@ export interface ValueItem {
 
 export interface CustomQuestion {
   questionText: string;
-  questionType: "multiple_choice" | "text" | "voice_and_text";
+  questionType: "multiple_choice" | "text" | "voice_and_text" | "likert_scale";
   options: string[];
   showOnDays: number[];
+  // Likert scale specific fields
+  likertMin?: number;
+  likertMax?: number;
+  likertMinLabel?: string;
+  likertMaxLabel?: string;
 }
 
 export interface StudyFormData {

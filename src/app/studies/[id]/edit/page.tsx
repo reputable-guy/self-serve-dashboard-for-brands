@@ -102,6 +102,10 @@ export default function EditStudyPage() {
         dailyRoutine: study.dailyRoutine,
         whatYouGet: study.whatYouGet,
       });
+      // Auto-expand custom questions section if there are existing questions
+      if (study.customQuestions && study.customQuestions.length > 0) {
+        setIsCustomQuestionsOpen(true);
+      }
     }
   }, [study]);
 
@@ -573,7 +577,7 @@ export default function EditStudyPage() {
               </Card>
             </Collapsible>
 
-            {/* Weekly Check-in Questions */}
+            {/* Check-in Questions */}
             <Collapsible
               open={openSections.checkin}
               onOpenChange={() => toggleSection("checkin")}
@@ -583,7 +587,7 @@ export default function EditStudyPage() {
                   <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <span>📋</span> Weekly Check-in Questions
+                        <span>📋</span> Check-in Questions
                         <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
                       </CardTitle>
                       <ChevronDown
@@ -596,11 +600,18 @@ export default function EditStudyPage() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="space-y-6">
-                    {/* Villain Variable */}
-                    <div className="space-y-2">
-                      <Label htmlFor="villainVariable">
-                        Hero Symptom (Villain Variable)
-                      </Label>
+                    {/* Weekly Hero Symptom Check-in */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold">Weekly Hero Symptom Check-in</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Ask participants about their primary symptom on specific days
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="villainVariable">
+                          Hero Symptom (Villain Variable)
+                        </Label>
                       <p className="text-xs text-muted-foreground">
                         The symptom or problem your product helps solve (e.g., &quot;afternoon brain fog&quot;, &quot;poor sleep quality&quot;)
                       </p>
@@ -671,9 +682,16 @@ export default function EditStudyPage() {
                         </div>
                       </div>
                     )}
+                    </div>
 
-                    {/* Custom Questions */}
+                    {/* Additional Custom Questions */}
                     <div className="space-y-4 pt-4 border-t">
+                      <div>
+                        <h4 className="text-sm font-semibold">Additional Questions</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Add custom questions that can be shown on any day of the study
+                        </p>
+                      </div>
                       <Collapsible open={isCustomQuestionsOpen} onOpenChange={setIsCustomQuestionsOpen}>
                         <CollapsibleTrigger asChild>
                           <button
@@ -685,7 +703,7 @@ export default function EditStudyPage() {
                                 isCustomQuestionsOpen ? "rotate-180" : ""
                               }`}
                             />
-                            Additional Custom Questions ({formData.customQuestions.length})
+                            {formData.customQuestions.length} question{formData.customQuestions.length !== 1 ? 's' : ''} configured
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="pt-4 space-y-4">
@@ -732,6 +750,7 @@ export default function EditStudyPage() {
                                     <SelectItem value="text">Text Response</SelectItem>
                                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
                                     <SelectItem value="voice_and_text">Voice & Text</SelectItem>
+                                    <SelectItem value="likert_scale">Likert Scale (1-10)</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -770,21 +789,76 @@ export default function EditStudyPage() {
                                 </div>
                               )}
 
+                              {question.questionType === "likert_scale" && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Scale Range</Label>
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          type="number"
+                                          min="1"
+                                          max="5"
+                                          value={question.likertMin || 1}
+                                          onChange={(e) =>
+                                            updateCustomQuestion(qIndex, "likertMin", parseInt(e.target.value) || 1)
+                                          }
+                                          className="w-16"
+                                        />
+                                        <span className="text-muted-foreground">to</span>
+                                        <Input
+                                          type="number"
+                                          min="5"
+                                          max="10"
+                                          value={question.likertMax || 10}
+                                          onChange={(e) =>
+                                            updateCustomQuestion(qIndex, "likertMax", parseInt(e.target.value) || 10)
+                                          }
+                                          className="w-16"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Low End Label</Label>
+                                      <Input
+                                        placeholder="e.g., Strongly Disagree"
+                                        value={question.likertMinLabel || ""}
+                                        onChange={(e) =>
+                                          updateCustomQuestion(qIndex, "likertMinLabel", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>High End Label</Label>
+                                      <Input
+                                        placeholder="e.g., Strongly Agree"
+                                        value={question.likertMaxLabel || ""}
+                                        onChange={(e) =>
+                                          updateCustomQuestion(qIndex, "likertMaxLabel", e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="space-y-2">
                                 <Label>Show on Days</Label>
-                                <div className="flex flex-wrap gap-2">
-                                  {DEFAULT_VILLAIN_DAYS.map((day) => (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => (
                                     <button
                                       key={day}
                                       type="button"
                                       onClick={() => toggleCustomQuestionDay(qIndex, day)}
-                                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                      className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
                                         question.showOnDays.includes(day)
                                           ? "bg-[#00D1C1] text-white"
                                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                                       }`}
                                     >
-                                      Day {day}
+                                      {day}
                                     </button>
                                   ))}
                                 </div>
@@ -826,6 +900,31 @@ export default function EditStudyPage() {
                                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50 text-gray-400 text-sm">
                                             <Mic className="w-4 h-4" />
                                             <span>Tap to record or type...</span>
+                                          </div>
+                                        )}
+                                        {question.questionType === "likert_scale" && (
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-xs text-gray-400 px-1">
+                                              <span>{question.likertMinLabel || "Strongly Disagree"}</span>
+                                              <span>{question.likertMaxLabel || "Strongly Agree"}</span>
+                                            </div>
+                                            <div className="flex justify-between gap-1">
+                                              {Array.from(
+                                                { length: (question.likertMax || 10) - (question.likertMin || 1) + 1 },
+                                                (_, i) => (question.likertMin || 1) + i
+                                              ).map((num) => (
+                                                <div
+                                                  key={num}
+                                                  className={`flex-1 h-10 rounded-lg flex items-center justify-center text-sm font-medium ${
+                                                    num === 7
+                                                      ? "bg-[#00D1C1] text-white"
+                                                      : "bg-gray-800 text-gray-400"
+                                                  }`}
+                                                >
+                                                  {num}
+                                                </div>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
                                         <div className="flex items-center gap-2 pt-2 text-xs text-gray-400">
