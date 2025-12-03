@@ -52,8 +52,8 @@ function SparklineChart({
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const width = 200;
-  const padding = 4;
+  const width = 100; // Use viewBox for responsive scaling
+  const padding = 6; // Increase padding to keep dots inside
 
   const points = data.map((value, index) => {
     const x = padding + (index / (data.length - 1)) * (width - padding * 2);
@@ -67,7 +67,11 @@ function SparklineChart({
     : null;
 
   return (
-    <svg width={width} height={height} className="overflow-visible">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full h-10"
+      preserveAspectRatio="none"
+    >
       {/* Baseline reference line */}
       {showBaseline && baselineY !== null && (
         <line
@@ -88,13 +92,14 @@ function SparklineChart({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
       />
       {/* End point dot */}
       {data.length > 0 && (
         <circle
           cx={width - padding}
           cy={height - padding - ((data[data.length - 1] - min) / range) * (height - padding * 2)}
-          r="4"
+          r="3"
           fill={color}
         />
       )}
