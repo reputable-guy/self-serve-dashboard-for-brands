@@ -24,8 +24,12 @@ import {
   Heart,
   Moon,
   Zap,
+  User,
+  Quote,
+  Target,
+  MessageSquare,
 } from "lucide-react";
-import { MockTestimonial } from "@/lib/mock-data";
+import { MockTestimonial, ParticipantStory } from "@/lib/mock-data";
 
 // Reputable Health Seal Component
 function ReputableSeal({ size = "lg" }: { size?: "sm" | "md" | "lg" }) {
@@ -133,12 +137,65 @@ function MetricCard({
   );
 }
 
+// Villain Journey Progress component for verification page
+function VillainJourneyProgress({ ratings, villainVariable }: {
+  ratings: ParticipantStory["journey"]["villainRatings"];
+  villainVariable: string
+}) {
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4) return "bg-green-500";
+    if (rating >= 3) return "bg-yellow-500";
+    return "bg-red-400";
+  };
+
+  const getRatingLabel = (rating: number) => {
+    if (rating === 5) return "Much better";
+    if (rating === 4) return "Better";
+    if (rating === 3) return "Same";
+    if (rating === 2) return "Worse";
+    return "Much worse";
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <TrendingUp className="h-4 w-4 text-[#00D1C1]" />
+        <span className="capitalize">{villainVariable} Progress</span>
+      </div>
+      <div className="space-y-3">
+        {ratings.map((r, idx) => (
+          <div key={r.day} className="flex items-center gap-4">
+            <div className="w-16 text-sm text-muted-foreground">Day {r.day}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getRatingColor(r.rating)} transition-all`}
+                    style={{ width: `${(r.rating / 5) * 100}%` }}
+                  />
+                </div>
+                <span className={`text-sm font-medium ${r.rating >= 4 ? "text-green-600" : r.rating >= 3 ? "text-yellow-600" : "text-red-500"}`}>
+                  {getRatingLabel(r.rating)}
+                </span>
+              </div>
+              {r.note && (
+                <p className="text-xs text-muted-foreground mt-1 italic">&ldquo;{r.note}&rdquo;</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface VerificationPageProps {
   testimonial: MockTestimonial;
   studyTitle: string;
   productName: string;
   studyDuration: number;
   studyId: string;
+  story?: ParticipantStory;
 }
 
 export function VerificationPage({
@@ -147,9 +204,11 @@ export function VerificationPage({
   productName,
   studyDuration,
   studyId,
+  story,
 }: VerificationPageProps) {
   const [showMethodology, setShowMethodology] = useState(false);
   const [showRawData, setShowRawData] = useState(false);
+  const [showFullStory, setShowFullStory] = useState(false);
 
   // Mock timeline data
   const timeline = [
@@ -185,8 +244,38 @@ export function VerificationPage({
     },
   ];
 
-  // Mock detailed metrics with before/after
-  const detailedMetrics = [
+  // Build detailed metrics from story data or fall back to mock data
+  const detailedMetrics = story ? [
+    story.wearableMetrics.deepSleepChange && {
+      label: "Deep Sleep",
+      before: `${story.wearableMetrics.deepSleepChange.before}min`,
+      after: `${story.wearableMetrics.deepSleepChange.after}min`,
+      change: `${story.wearableMetrics.deepSleepChange.changePercent > 0 ? "+" : ""}${story.wearableMetrics.deepSleepChange.changePercent}%`,
+      icon: Moon,
+    },
+    {
+      label: "Total Sleep",
+      before: `${(story.wearableMetrics.sleepChange.before / 60).toFixed(1)}h`,
+      after: `${(story.wearableMetrics.sleepChange.after / 60).toFixed(1)}h`,
+      change: `${story.wearableMetrics.sleepChange.changePercent > 0 ? "+" : ""}${story.wearableMetrics.sleepChange.changePercent}%`,
+      icon: Star,
+    },
+    story.wearableMetrics.hrvChange && {
+      label: "HRV",
+      before: `${story.wearableMetrics.hrvChange.before}ms`,
+      after: `${story.wearableMetrics.hrvChange.after}ms`,
+      change: `${story.wearableMetrics.hrvChange.changePercent > 0 ? "+" : ""}${story.wearableMetrics.hrvChange.changePercent}%`,
+      icon: Heart,
+    },
+    story.wearableMetrics.restingHrChange && {
+      label: "Resting HR",
+      before: `${story.wearableMetrics.restingHrChange.before}bpm`,
+      after: `${story.wearableMetrics.restingHrChange.after}bpm`,
+      change: `${story.wearableMetrics.restingHrChange.changePercent}%`,
+      icon: Activity,
+    },
+  ].filter(Boolean) as { label: string; before: string; after: string; change: string; icon: React.ElementType }[]
+  : [
     { label: "Deep Sleep", before: "1h 12m", after: "1h 29m", change: "+23%", icon: Moon },
     { label: "Sleep Score", before: "72", after: "83", change: "+15%", icon: Star },
     { label: "HRV", before: "42ms", after: "51ms", change: "+21%", icon: Heart },
@@ -290,6 +379,113 @@ export function VerificationPage({
           </CardContent>
         </Card>
 
+        {/* Participant Story Context - only shown if story data exists */}
+        {story && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5 text-[#00D1C1]" />
+                Participant Context
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Profile Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Life Stage</p>
+                  <p className="font-medium">{story.profile.lifeStage}</p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Duration Dealing with Issue</p>
+                  <p className="font-medium">{story.baseline.villainDuration}</p>
+                </div>
+              </div>
+
+              {/* Tried Other Products */}
+              {story.baseline.triedOther && story.baseline.triedOther !== "No" && (
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    <strong>Previously tried:</strong> {story.baseline.triedOther}
+                  </p>
+                </div>
+              )}
+
+              {/* Baseline Motivation */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Quote className="h-4 w-4 text-[#00D1C1]" />
+                  <span>Why They Joined the Study</span>
+                </div>
+                <div className="p-4 rounded-lg bg-purple-50 border-l-4 border-purple-400">
+                  <p className="text-sm italic text-purple-900">
+                    &ldquo;{story.baseline.motivation}&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              {/* Hoped Results */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Target className="h-4 w-4 text-[#00D1C1]" />
+                  <span>What They Hoped to Achieve</span>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-50 border-l-4 border-blue-400">
+                  <p className="text-sm italic text-blue-900">
+                    &ldquo;{story.baseline.hopedResults}&rdquo;
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Villain Variable Journey - only shown if story data exists */}
+        {story && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-[#00D1C1]" />
+                Self-Reported Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VillainJourneyProgress
+                ratings={story.journey.villainRatings}
+                villainVariable={story.journey.villainVariable}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Key Quotes from Journey - only shown if story data exists */}
+        {story && story.journey.keyQuotes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-[#00D1C1]" />
+                Key Moments During the Study
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {story.journey.keyQuotes.map((kq, idx) => (
+                  <div key={idx} className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="px-3 py-1 rounded-full bg-[#00D1C1]/10 text-[#00D1C1] text-sm font-medium">
+                        Day {kq.day}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm italic mb-1">&ldquo;{kq.quote}&rdquo;</p>
+                      <p className="text-xs text-muted-foreground">{kq.context}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Study Details */}
         <Card>
           <CardHeader>
@@ -298,7 +494,7 @@ export function VerificationPage({
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <p className="text-2xl font-bold text-[#00D1C1]">{studyDuration}</p>
+                <p className="text-2xl font-bold text-[#00D1C1]">{story?.journey.durationDays || studyDuration}</p>
                 <p className="text-sm text-muted-foreground">Days in Study</p>
               </div>
               <div className="text-center p-4 bg-muted/30 rounded-lg">
@@ -306,7 +502,7 @@ export function VerificationPage({
                 <p className="text-sm text-muted-foreground">Compliance Rate</p>
               </div>
               <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <p className="text-2xl font-bold text-[#00D1C1]">{studyDuration * 24}</p>
+                <p className="text-2xl font-bold text-[#00D1C1]">{(story?.journey.durationDays || studyDuration) * 24}</p>
                 <p className="text-sm text-muted-foreground">Hours of Data</p>
               </div>
             </div>

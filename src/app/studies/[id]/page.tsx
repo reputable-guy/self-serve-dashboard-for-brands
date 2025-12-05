@@ -39,6 +39,7 @@ import {
   Calculator,
   Target,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import { STUDY_STATUSES, DEVICE_LABELS } from "@/lib/constants";
 import {
@@ -46,7 +47,10 @@ import {
   MOCK_TESTIMONIALS,
   MOCK_DEMOGRAPHICS,
   MOCK_BASELINE_DATA,
+  MOCK_PARTICIPANT_STORIES,
 } from "@/lib/mock-data";
+import { CompactTestimonialCard } from "@/components/compact-testimonial-card";
+import { FullStudyResultCard, CompactFullCard } from "@/components/full-study-result-card";
 import {
   CarouselWidgetPreview,
   DataCardWidgetPreview,
@@ -145,6 +149,8 @@ export default function StudyDetailsPage() {
   const { getStudy, updateStudy, toggleFeaturedTestimonial } = useStudies();
   const [selectedWidget, setSelectedWidget] = useState<WidgetType>("carousel");
   const [selectedParticipant, setSelectedParticipant] = useState<MockParticipant | null>(null);
+  const [storyCardView, setStoryCardView] = useState<"compact" | "full" | "legacy">("legacy");
+  const [selectedStory, setSelectedStory] = useState<string | null>(null);
 
   const study = getStudy(params.id as string);
 
@@ -1200,80 +1206,179 @@ export default function StudyDetailsPage() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold">Verified Story Cards</h3>
+                    <h3 className="text-lg font-semibold">Verified Participant Stories</h3>
                     <p className="text-sm text-muted-foreground">Each card links to a third-party verified page on Reputable Health</p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export All
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* View Toggle */}
+                    <div className="flex items-center border rounded-lg p-0.5 bg-muted/50">
+                      <button
+                        onClick={() => setStoryCardView("compact")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          storyCardView === "compact"
+                            ? "bg-white dark:bg-gray-800 shadow-sm text-[#00D1C1]"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Compact
+                      </button>
+                      <button
+                        onClick={() => setStoryCardView("full")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          storyCardView === "full"
+                            ? "bg-white dark:bg-gray-800 shadow-sm text-[#00D1C1]"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Full Story
+                      </button>
+                      <button
+                        onClick={() => setStoryCardView("legacy")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          storyCardView === "legacy"
+                            ? "bg-white dark:bg-gray-800 shadow-sm text-[#00D1C1]"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Legacy
+                      </button>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export All
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Featured Selection Banner */}
-                <div className="mb-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-yellow-500/20">
-                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                {/* Featured Selection Banner - only show for legacy view */}
+                {storyCardView === "legacy" && (
+                  <div className="mb-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-yellow-500/20">
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Select testimonials for your widgets</p>
+                          <p className="text-xs text-muted-foreground">
+                            Click the <Star className="inline h-3 w-3 text-yellow-500" /> star on any card to feature it in your carousel, wall, and embed widgets below
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">Select testimonials for your widgets</p>
-                        <p className="text-xs text-muted-foreground">
-                          Click the <Star className="inline h-3 w-3 text-yellow-500" /> star on any card to feature it in your carousel, wall, and embed widgets below
-                        </p>
+                      <div className="text-sm font-medium">
+                        {(study.featuredTestimonialIds || []).length} of {MOCK_TESTIMONIALS.length} selected
                       </div>
                     </div>
-                    <div className="text-sm font-medium">
-                      {(study.featuredTestimonialIds || []).length} of {MOCK_TESTIMONIALS.length} selected
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-yellow-500/20">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSelectTopRated}
+                        className="text-xs h-7"
+                      >
+                        <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                        Select Top 3 Rated
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSelectAll}
+                        className="text-xs h-7"
+                      >
+                        Select All
+                      </Button>
+                      {(study.featuredTestimonialIds || []).length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleClearAll}
+                          className="text-xs h-7 text-muted-foreground"
+                        >
+                          Clear Selection
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-yellow-500/20">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSelectTopRated}
-                      className="text-xs h-7"
-                    >
-                      <Star className="h-3 w-3 mr-1 text-yellow-500" />
-                      Select Top 3 Rated
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSelectAll}
-                      className="text-xs h-7"
-                    >
-                      Select All
-                    </Button>
-                    {(study.featuredTestimonialIds || []).length > 0 && (
+                )}
+
+                {/* Compact Story Cards View */}
+                {storyCardView === "compact" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {MOCK_PARTICIPANT_STORIES.map((story) => (
+                      <div
+                        key={story.id}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedStory(selectedStory === story.id ? null : story.id)}
+                      >
+                        <CompactTestimonialCard story={story} studyId={study.id} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Full Story Cards View */}
+                {storyCardView === "full" && (
+                  <div className="space-y-6">
+                    {MOCK_PARTICIPANT_STORIES.map((story) => (
+                      <FullStudyResultCard
+                        key={story.id}
+                        story={story}
+                        studyId={study.id}
+                        productName={study.productName}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Legacy View (original VideoTestimonialCard with optional rich story data) */}
+                {storyCardView === "legacy" && (
+                  <div className="grid grid-cols-2 gap-6">
+                    {MOCK_TESTIMONIALS.map((testimonial) => {
+                      const testimonialId = String(testimonial.id);
+                      const isFeatured = (study.featuredTestimonialIds || []).includes(testimonialId);
+                      // Match testimonial with rich story data by name
+                      const matchingStory = MOCK_PARTICIPANT_STORIES.find(
+                        s => s.name === testimonial.participant || s.initials === testimonial.initials
+                      );
+
+                      return (
+                        <VideoTestimonialCard
+                          key={testimonial.id}
+                          testimonial={testimonial}
+                          studyId={study.id}
+                          isFeatured={isFeatured}
+                          onToggleFeatured={() => toggleFeaturedTestimonial(study.id, testimonialId)}
+                          story={matchingStory}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Selected Story Detail Panel */}
+                {selectedStory && storyCardView === "compact" && (
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-muted-foreground">Full Story Detail</h4>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleClearAll}
-                        className="text-xs h-7 text-muted-foreground"
+                        onClick={() => setSelectedStory(null)}
+                        className="text-xs"
                       >
-                        Clear Selection
+                        Close
                       </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  {MOCK_TESTIMONIALS.map((testimonial) => {
-                    const testimonialId = String(testimonial.id);
-                    const isFeatured = (study.featuredTestimonialIds || []).includes(testimonialId);
-
-                    return (
-                      <VideoTestimonialCard
-                        key={testimonial.id}
-                        testimonial={testimonial}
+                    </div>
+                    {MOCK_PARTICIPANT_STORIES.filter(s => s.id === selectedStory).map(story => (
+                      <FullStudyResultCard
+                        key={story.id}
+                        story={story}
                         studyId={study.id}
-                        isFeatured={isFeatured}
-                        onToggleFeatured={() => toggleFeaturedTestimonial(study.id, testimonialId)}
+                        productName={study.productName}
                       />
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Aggregate Insights */}
@@ -1366,9 +1471,17 @@ export default function StudyDetailsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <p className="text-muted-foreground">
-                    Add verified story cards to your website with embedded widgets. Each widget links to third-party verified results powered by Reputable Health.
-                  </p>
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-muted-foreground">
+                      Add verified story cards to your website with embedded widgets. Each widget links to third-party verified results powered by Reputable Health.
+                    </p>
+                    <Link href={`/studies/${study.id}/preview-context`}>
+                      <Button variant="outline" size="sm" className="flex-shrink-0">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview in Context
+                      </Button>
+                    </Link>
+                  </div>
 
                   {/* Widget Type Selector */}
                   <div className="grid grid-cols-4 gap-3">

@@ -30,6 +30,50 @@ export interface CustomQuestion {
   likertMaxLabel?: string;
 }
 
+// Baseline questions asked at study enrollment
+export interface BaselineQuestion {
+  id: string;
+  questionText: string;
+  questionType: "text" | "voice_and_text" | "multiple_choice";
+  options?: string[];
+  required: boolean;
+  // Template variables: use [productName] or [villainVariable] for substitution
+  usesProductName?: boolean;
+  usesVillainVariable?: boolean;
+}
+
+// Default baseline questions for every study
+export const DEFAULT_BASELINE_QUESTIONS: BaselineQuestion[] = [
+  {
+    id: "motivation",
+    questionText: "What motivated you to try [productName]?",
+    questionType: "voice_and_text",
+    required: true,
+    usesProductName: true,
+  },
+  {
+    id: "hoped-results",
+    questionText: "What results are you hoping to see?",
+    questionType: "voice_and_text",
+    required: true,
+  },
+  {
+    id: "villain-duration",
+    questionText: "How long have you been dealing with [villainVariable]?",
+    questionType: "multiple_choice",
+    options: ["Less than 1 month", "1-6 months", "6-12 months", "1+ years"],
+    required: true,
+    usesVillainVariable: true,
+  },
+  {
+    id: "tried-other",
+    questionText: "Have you tried other products for this?",
+    questionType: "multiple_choice",
+    options: ["No, this is my first", "Yes, 1-2 others", "Yes, several others"],
+    required: true,
+  },
+];
+
 export interface StudyFormData {
   // Step 1: Product Info
   productName: string;
@@ -48,6 +92,8 @@ export interface StudyFormData {
   villainVariable: string;
   villainQuestionDays: number[];
   customQuestions: CustomQuestion[];
+  // Step 2: Baseline Questions (asked at enrollment)
+  baselineQuestions: BaselineQuestion[];
   // Step 3: Generated Content
   studyTitle: string;
   hookQuestion: string;
@@ -71,6 +117,7 @@ const initialFormData: StudyFormData = {
   villainVariable: "",
   villainQuestionDays: [7, 14, 21, 28],
   customQuestions: [],
+  baselineQuestions: DEFAULT_BASELINE_QUESTIONS,
   studyTitle: "",
   hookQuestion: "",
   discoverItems: [],

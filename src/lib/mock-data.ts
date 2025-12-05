@@ -98,6 +98,62 @@ export interface MockTestimonial {
   videoDuration?: string; // e.g., "0:34"
 }
 
+// Enhanced participant story with profile, baseline, and journey data
+export interface ParticipantStory {
+  id: string;
+  // Basic identity
+  name: string;
+  initials: string;
+  avatarUrl?: string;
+
+  // Profile data (collected progressively from profile questions)
+  profile: {
+    ageRange: string;
+    lifeStage: string;
+    primaryWellnessGoal?: string;
+    baselineStressLevel?: number; // 1-10
+  };
+
+  // Baseline data (collected at study enrollment)
+  baseline: {
+    motivation: string; // Voice/text: "What motivated you to try [product]?"
+    hopedResults: string; // Voice/text: "What results are you hoping to see?"
+    villainDuration: string; // How long dealing with issue
+    triedOther: string; // Previous products tried
+  };
+
+  // Journey data (collected during study)
+  journey: {
+    startDate: string;
+    endDate: string;
+    durationDays: number;
+    villainVariable: string;
+    // Ratings: 1-5 scale (1=much worse, 5=much better)
+    villainRatings: { day: number; rating: number; note?: string }[];
+    keyQuotes: { day: number; quote: string; context: string }[];
+  };
+
+  // Wearable metrics (before/after comparisons)
+  wearableMetrics: {
+    device: string;
+    sleepChange: { before: number; after: number; unit: string; changePercent: number };
+    deepSleepChange?: { before: number; after: number; unit: string; changePercent: number };
+    hrvChange?: { before: number; after: number; unit: string; changePercent: number };
+    restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
+  };
+
+  // Generated story (LLM output)
+  generatedNarrative?: string;
+
+  // Verification
+  verified: boolean;
+  verificationId: string;
+  completedAt: string;
+
+  // Overall rating
+  overallRating: number;
+}
+
 export interface MockDemographicItem {
   label: string;
   value: number;
@@ -203,6 +259,198 @@ export const MOCK_TESTIMONIALS: MockTestimonial[] = [
     verified: true,
     verificationId: "2025-103",
     device: "Garmin",
+  },
+];
+
+// Enhanced participant stories with profile, baseline, and journey data
+export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
+  {
+    id: "story-1",
+    name: "Sarah M.",
+    initials: "SM",
+    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
+    profile: {
+      ageRange: "35-44",
+      lifeStage: "Parent with young children",
+      primaryWellnessGoal: "Get better quality sleep despite busy schedule",
+      baselineStressLevel: 7,
+    },
+    baseline: {
+      motivation: "I was desperate to find something that actually worked for my afternoon crashes. I'd tried supplements and caffeine but nothing stuck. After my second kid, my sleep just never recovered.",
+      hopedResults: "I'm hoping to finally wake up feeling rested and not drag through the afternoons anymore.",
+      villainDuration: "1+ years",
+      triedOther: "Yes, several others",
+    },
+    journey: {
+      startDate: "2024-11-01",
+      endDate: "2024-11-29",
+      durationDays: 28,
+      villainVariable: "afternoon brain fog",
+      villainRatings: [
+        { day: 1, rating: 2, note: "Typical bad day, couldn't focus after lunch" },
+        { day: 7, rating: 2, note: "Maybe slightly better? Hard to tell" },
+        { day: 14, rating: 3, note: "Definitely noticing a difference in the afternoons" },
+        { day: 21, rating: 4, note: "Much clearer afternoons, husband noticed too" },
+        { day: 28, rating: 5, note: "Night and day difference from when I started" },
+      ],
+      keyQuotes: [
+        { day: 14, quote: "I actually made it through a 3pm meeting without zoning out", context: "Weekly check-in" },
+        { day: 28, quote: "My husband noticed I wasn't crashing after lunch anymore. The data backs it up too.", context: "Final reflection" },
+      ],
+    },
+    wearableMetrics: {
+      device: "Oura Ring",
+      sleepChange: { before: 382, after: 429, unit: "min", changePercent: 12 },
+      deepSleepChange: { before: 45, after: 55, unit: "min", changePercent: 23 },
+      hrvChange: { before: 42, after: 51, unit: "ms", changePercent: 21 },
+      restingHrChange: { before: 62, after: 58, unit: "bpm", changePercent: -6 },
+    },
+    generatedNarrative: "Sarah, a 34-year-old parent of two, had been struggling with afternoon brain fog for over a year after her second child. Despite trying several supplements and caffeine, nothing seemed to help her energy crashes. Within two weeks of starting the study, Sarah began noticing improvements in her afternoon focus. By day 21, her husband had noticed the change. Her Oura Ring data showed a 23% increase in deep sleep and 21% improvement in HRV, backing up her subjective experience with objective data.",
+    verified: true,
+    verificationId: "2025-087",
+    completedAt: "2024-11-29",
+    overallRating: 4.8,
+  },
+  {
+    id: "story-2",
+    name: "Emily R.",
+    initials: "ER",
+    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+    profile: {
+      ageRange: "25-34",
+      lifeStage: "Early career professional",
+      primaryWellnessGoal: "Improve recovery between workouts",
+      baselineStressLevel: 6,
+    },
+    baseline: {
+      motivation: "I'm training for a half marathon and my recovery has been terrible. I read that sleep quality matters more than hours, so I wanted to try something that might help.",
+      hopedResults: "Better HRV scores and feeling less sore after long runs.",
+      villainDuration: "6-12 months",
+      triedOther: "Yes, 1-2 others",
+    },
+    journey: {
+      startDate: "2024-11-04",
+      endDate: "2024-12-02",
+      durationDays: 28,
+      villainVariable: "poor recovery",
+      villainRatings: [
+        { day: 1, rating: 2, note: "Still sore from Sunday's run" },
+        { day: 7, rating: 3, note: "Somewhat better, not as dragged out" },
+        { day: 14, rating: 3, note: "Recovery improving, hitting better paces" },
+        { day: 21, rating: 4, note: "PR'd on my tempo run, felt fresh" },
+        { day: 28, rating: 5, note: "Best I've felt in months" },
+      ],
+      keyQuotes: [
+        { day: 21, quote: "I PR'd on my tempo run yesterday and actually felt fresh going into it", context: "Check-in note" },
+        { day: 28, quote: "Skeptical at first, but the data doesn't lie. My HRV improved significantly.", context: "Final reflection" },
+      ],
+    },
+    wearableMetrics: {
+      device: "Whoop",
+      sleepChange: { before: 395, after: 418, unit: "min", changePercent: 6 },
+      deepSleepChange: { before: 52, after: 61, unit: "min", changePercent: 17 },
+      hrvChange: { before: 45, after: 54, unit: "ms", changePercent: 19 },
+      restingHrChange: { before: 58, after: 55, unit: "bpm", changePercent: -5 },
+    },
+    generatedNarrative: "Emily, a 29-year-old early career professional training for a half marathon, was struggling with poor recovery between workouts. Within three weeks, she noticed significant improvements, even setting a personal record on a tempo run. Her Whoop data confirmed her experience: HRV improved by 19% and deep sleep increased by 17%.",
+    verified: true,
+    verificationId: "2025-092",
+    completedAt: "2024-12-02",
+    overallRating: 4.5,
+  },
+  {
+    id: "story-3",
+    name: "Mike T.",
+    initials: "MT",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+    profile: {
+      ageRange: "35-44",
+      lifeStage: "Established professional",
+      primaryWellnessGoal: "Reduce stress-related sleep issues",
+      baselineStressLevel: 8,
+    },
+    baseline: {
+      motivation: "High-pressure job keeps me up at night. I've been tracking my sleep for 3 years and it keeps getting worse. Willing to try anything at this point.",
+      hopedResults: "Fall asleep faster and stop waking up at 3am.",
+      villainDuration: "1+ years",
+      triedOther: "Yes, several others",
+    },
+    journey: {
+      startDate: "2024-11-08",
+      endDate: "2024-12-06",
+      durationDays: 28,
+      villainVariable: "nighttime waking",
+      villainRatings: [
+        { day: 1, rating: 2, note: "Woke up twice last night" },
+        { day: 7, rating: 3, note: "Only woke once, fell back asleep faster" },
+        { day: 14, rating: 4, note: "Slept through most nights this week" },
+        { day: 21, rating: 4, note: "Consistently better, less 3am wake-ups" },
+        { day: 28, rating: 5, note: "Best sleep I've had in years" },
+      ],
+      keyQuotes: [
+        { day: 14, quote: "As someone who's tracked my sleep for 3 years, I can confidently say this made a real difference", context: "Check-in reflection" },
+        { day: 28, quote: "The improvement in my deep sleep was consistent week over week. This is sustainable.", context: "Final note" },
+      ],
+    },
+    wearableMetrics: {
+      device: "Apple Watch",
+      sleepChange: { before: 340, after: 402, unit: "min", changePercent: 18 },
+      deepSleepChange: { before: 38, after: 49, unit: "min", changePercent: 28 },
+      hrvChange: { before: 38, after: 44, unit: "ms", changePercent: 16 },
+      restingHrChange: { before: 65, after: 61, unit: "bpm", changePercent: -6 },
+    },
+    generatedNarrative: "Mike, a 42-year-old professional with a high-pressure job, had been struggling with nighttime waking for over a year. As a dedicated sleep tracker of 3 years, he was skeptical but willing to try. By week two, he was sleeping through most nights. His Apple Watch showed a remarkable 28% increase in deep sleep and 18% more total sleep time.",
+    verified: true,
+    verificationId: "2025-098",
+    completedAt: "2024-12-06",
+    overallRating: 4.9,
+  },
+  {
+    id: "story-4",
+    name: "Lisa K.",
+    initials: "LK",
+    avatarUrl: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100&h=100&fit=crop",
+    profile: {
+      ageRange: "35-44",
+      lifeStage: "Established professional",
+      primaryWellnessGoal: "Manage work stress better",
+      baselineStressLevel: 9,
+    },
+    baseline: {
+      motivation: "Work stress has been off the charts lately. I lie awake thinking about tomorrow's meetings. My Garmin's stress scores are always in the red.",
+      hopedResults: "Lower stress scores and actually being able to relax at night.",
+      villainDuration: "6-12 months",
+      triedOther: "Yes, 1-2 others",
+    },
+    journey: {
+      startDate: "2024-11-10",
+      endDate: "2024-12-08",
+      durationDays: 28,
+      villainVariable: "work-related anxiety",
+      villainRatings: [
+        { day: 1, rating: 2, note: "Couldn't stop thinking about work" },
+        { day: 7, rating: 2, note: "Still anxious but slightly better" },
+        { day: 14, rating: 3, note: "More able to disconnect in evenings" },
+        { day: 21, rating: 4, note: "Stress feels more manageable" },
+        { day: 28, rating: 4, note: "Much better at leaving work at work" },
+      ],
+      keyQuotes: [
+        { day: 21, quote: "My Garmin showed steady improvements in both sleep quality and recovery scores", context: "Check-in note" },
+        { day: 28, quote: "I'm finally able to disconnect from work in the evenings. That alone is worth it.", context: "Final reflection" },
+      ],
+    },
+    wearableMetrics: {
+      device: "Garmin",
+      sleepChange: { before: 365, after: 398, unit: "min", changePercent: 9 },
+      deepSleepChange: { before: 42, after: 51, unit: "min", changePercent: 21 },
+      hrvChange: { before: 40, after: 47, unit: "ms", changePercent: 17 },
+      restingHrChange: { before: 64, after: 60, unit: "bpm", changePercent: -6 },
+    },
+    generatedNarrative: "Lisa, a 38-year-old professional dealing with intense work stress, struggled to disconnect at night. Her Garmin consistently showed stress scores in the red zone. By week three, she noticed a real shift in her ability to leave work at work. Her device showed steady improvements: 21% more deep sleep and 17% better HRV scores.",
+    verified: true,
+    verificationId: "2025-103",
+    completedAt: "2024-12-08",
+    overallRating: 4.6,
   },
 ];
 

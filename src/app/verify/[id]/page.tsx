@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VerificationPage } from "@/components/verification-page";
-import { MOCK_TESTIMONIALS } from "@/lib/mock-data";
+import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES } from "@/lib/mock-data";
 import { ArrowLeft } from "lucide-react";
 
 // This page displays the verification landing page for a specific testimonial
@@ -18,6 +18,15 @@ export default function VerifyPage() {
   const testimonial = MOCK_TESTIMONIALS.find(
     (t) => t.verificationId === verificationId
   );
+
+  // Also find matching rich story data
+  const story = testimonial
+    ? MOCK_PARTICIPANT_STORIES.find(
+        (s) => s.verificationId === verificationId ||
+               s.name === testimonial.participant ||
+               s.initials === testimonial.initials
+      )
+    : undefined;
 
   if (!testimonial) {
     return (
@@ -57,6 +66,7 @@ export default function VerifyPage() {
       productName={studyData.productName}
       studyDuration={studyData.studyDuration}
       studyId={studyData.studyId}
+      story={story}
     />
   );
 }

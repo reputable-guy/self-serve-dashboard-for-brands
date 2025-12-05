@@ -20,7 +20,7 @@ import { useStudies } from "@/lib/studies-store";
 import { StudyPreview } from "@/components/study-preview";
 import { StudyDetailsPreview } from "@/components/study-details-preview";
 import { ImageUpload } from "@/components/image-upload";
-import { DiscoverItem, RoutineStep, ValueItem, CustomQuestion } from "@/lib/study-context";
+import { DiscoverItem, RoutineStep, ValueItem, CustomQuestion, BaselineQuestion, DEFAULT_BASELINE_QUESTIONS } from "@/lib/study-context";
 import { CATEGORIES, DEVICES, METRICS, DEFAULT_VILLAIN_DAYS } from "@/lib/constants";
 import {
   ArrowLeft,
@@ -30,6 +30,8 @@ import {
   Trash2,
   ChevronDown,
   Mic,
+  RotateCcw,
+  ClipboardList,
 } from "lucide-react";
 import {
   Collapsible,
@@ -45,6 +47,7 @@ export default function EditStudyPage() {
   const [openSections, setOpenSections] = useState({
     product: true,
     settings: true,
+    baseline: false,
     checkin: false,
     content: true,
     discover: false,
@@ -52,6 +55,7 @@ export default function EditStudyPage() {
     value: false,
   });
   const [isCustomQuestionsOpen, setIsCustomQuestionsOpen] = useState(false);
+  const [isBaselineQuestionsOpen, setIsBaselineQuestionsOpen] = useState(true);
 
   const study = getStudy(params.id as string);
 
@@ -71,6 +75,7 @@ export default function EditStudyPage() {
     villainVariable: "",
     villainQuestionDays: [7, 14, 21, 28] as number[],
     customQuestions: [] as CustomQuestion[],
+    baselineQuestions: [] as BaselineQuestion[],
     studyTitle: "",
     hookQuestion: "",
     discoverItems: [] as DiscoverItem[],
@@ -96,6 +101,7 @@ export default function EditStudyPage() {
         villainVariable: study.villainVariable || "",
         villainQuestionDays: study.villainQuestionDays || [7, 14, 21, 28],
         customQuestions: study.customQuestions || [],
+        baselineQuestions: study.baselineQuestions || DEFAULT_BASELINE_QUESTIONS,
         studyTitle: study.studyTitle,
         hookQuestion: study.hookQuestion,
         discoverItems: study.discoverItems,
@@ -298,6 +304,74 @@ export default function EditStudyPage() {
       "customQuestions",
       formData.customQuestions.filter((_, i) => i !== index)
     );
+  };
+
+  // Baseline questions handlers
+  const substituteTemplateVars = (text: string) => {
+    return text
+      .replace(/\[productName\]/g, formData.productName || "your product")
+      .replace(/\[villainVariable\]/g, formData.villainVariable || "this issue");
+  };
+
+  const addBaselineQuestion = () => {
+    const newQuestion: BaselineQuestion = {
+      id: `custom-baseline-${Date.now()}`,
+      questionText: "",
+      questionType: "text",
+      required: true,
+    };
+    updateField("baselineQuestions", [...formData.baselineQuestions, newQuestion]);
+  };
+
+  const updateBaselineQuestion = (
+    index: number,
+    field: keyof BaselineQuestion,
+    value: BaselineQuestion[keyof BaselineQuestion]
+  ) => {
+    const updated = [...formData.baselineQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    updateField("baselineQuestions", updated);
+  };
+
+  const updateBaselineQuestionOption = (
+    questionIndex: number,
+    optionIndex: number,
+    value: string
+  ) => {
+    const updated = [...formData.baselineQuestions];
+    const newOptions = [...(updated[questionIndex].options || [])];
+    newOptions[optionIndex] = value;
+    updated[questionIndex] = { ...updated[questionIndex], options: newOptions };
+    updateField("baselineQuestions", updated);
+  };
+
+  const addOptionToBaselineQuestion = (questionIndex: number) => {
+    const updated = [...formData.baselineQuestions];
+    updated[questionIndex] = {
+      ...updated[questionIndex],
+      options: [...(updated[questionIndex].options || []), ""],
+    };
+    updateField("baselineQuestions", updated);
+  };
+
+  const removeOptionFromBaselineQuestion = (questionIndex: number, optionIndex: number) => {
+    const updated = [...formData.baselineQuestions];
+    updated[questionIndex] = {
+      ...updated[questionIndex],
+      options: (updated[questionIndex].options || []).filter((_, i) => i !== optionIndex),
+    };
+    updateField("baselineQuestions", updated);
+  };
+
+  const removeBaselineQuestion = (index: number) => {
+    updateField(
+      "baselineQuestions",
+      formData.baselineQuestions.filter((_, i) => i !== index)
+    );
+  };
+
+  const resetBaselineQuestions = () => {
+    updateField("baselineQuestions", DEFAULT_BASELINE_QUESTIONS);
   };
 
   const handleSave = async () => {
@@ -571,6 +645,227 @@ export default function EditStudyPage() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+
+            {/* Baseline Questions */}
+            <Collapsible
+              open={openSections.baseline}
+              onOpenChange={() => toggleSection("baseline")}
+            >
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-[#00D1C1]" />
+                        Baseline Questions
+                      </CardTitle>
+                      <ChevronDown
+                        className={`h-5 w-5 transition-transform ${
+                          openSections.baseline ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-6">
+                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <p className="text-sm text-blue-600">
+                        These questions are asked when a participant first enrolls in this study.
+                        Use <code className="bg-blue-500/20 px-1 rounded">[productName]</code> and{" "}
+                        <code className="bg-blue-500/20 px-1 rounded">[villainVariable]</code> as
+                        placeholders that will be replaced with study-specific values.
+                      </p>
+                    </div>
+
+                    <Collapsible open={isBaselineQuestionsOpen} onOpenChange={setIsBaselineQuestionsOpen}>
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 text-sm font-medium hover:text-[#00D1C1] transition-colors"
+                        >
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${
+                              isBaselineQuestionsOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                          {formData.baselineQuestions.length} question{formData.baselineQuestions.length !== 1 ? "s" : ""} configured
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-4 space-y-4">
+                        {formData.baselineQuestions.map((question, qIndex) => (
+                          <div key={question.id} className="p-4 border rounded-lg space-y-4 bg-muted/30">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Question {qIndex + 1}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeBaselineQuestion(qIndex)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Question Text</Label>
+                              <Input
+                                value={question.questionText}
+                                onChange={(e) =>
+                                  updateBaselineQuestion(qIndex, "questionText", e.target.value)
+                                }
+                                placeholder="Enter your question..."
+                              />
+                              {(question.usesProductName || question.usesVillainVariable) && (
+                                <p className="text-xs text-muted-foreground">
+                                  Preview: {substituteTemplateVars(question.questionText)}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Question Type</Label>
+                                <Select
+                                  value={question.questionType}
+                                  onValueChange={(val) =>
+                                    updateBaselineQuestion(
+                                      qIndex,
+                                      "questionType",
+                                      val as BaselineQuestion["questionType"]
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="text">Text Response</SelectItem>
+                                    <SelectItem value="voice_and_text">Voice & Text</SelectItem>
+                                    <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Required</Label>
+                                <Select
+                                  value={question.required ? "yes" : "no"}
+                                  onValueChange={(val) =>
+                                    updateBaselineQuestion(qIndex, "required", val === "yes")
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="yes">Required</SelectItem>
+                                    <SelectItem value="no">Optional</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {question.questionType === "multiple_choice" && (
+                              <div className="space-y-2">
+                                <Label>Options</Label>
+                                {(question.options || []).map((option, oIndex) => (
+                                  <div key={oIndex} className="flex gap-2">
+                                    <Input
+                                      value={option}
+                                      onChange={(e) =>
+                                        updateBaselineQuestionOption(qIndex, oIndex, e.target.value)
+                                      }
+                                      placeholder={`Option ${oIndex + 1}`}
+                                    />
+                                    {(question.options || []).length > 2 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeOptionFromBaselineQuestion(qIndex, oIndex)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addOptionToBaselineQuestion(qIndex)}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add Option
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Question Preview */}
+                            {question.questionText && (
+                              <div className="space-y-2 pt-2 border-t">
+                                <Label className="text-xs text-muted-foreground">Preview</Label>
+                                <div className="bg-[#111827] rounded-xl p-4 border border-gray-700">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[#00D1C1]/20 flex items-center justify-center flex-shrink-0">
+                                      <ClipboardList className="h-4 w-4 text-[#00D1C1]" />
+                                    </div>
+                                    <div className="space-y-2 flex-1">
+                                      <p className="text-white text-sm font-medium">
+                                        {substituteTemplateVars(question.questionText)}
+                                      </p>
+                                      {question.questionType === "multiple_choice" && (
+                                        <div className="space-y-1">
+                                          {(question.options || [])
+                                            .filter((o) => o.trim())
+                                            .map((option, i) => (
+                                              <div
+                                                key={i}
+                                                className="px-3 py-2 rounded-lg bg-gray-700/50 text-gray-300 text-sm"
+                                              >
+                                                {option}
+                                              </div>
+                                            ))}
+                                        </div>
+                                      )}
+                                      {question.questionType === "text" && (
+                                        <div className="px-3 py-2 rounded-lg bg-gray-700/50 text-gray-500 text-sm">
+                                          Type your answer...
+                                        </div>
+                                      )}
+                                      {question.questionType === "voice_and_text" && (
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700/50 text-gray-400 text-sm">
+                                          <Mic className="w-4 h-4" />
+                                          <span>Tap to record or type...</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        <Button
+                          variant="outline"
+                          onClick={addBaselineQuestion}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Baseline Question
+                        </Button>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Reset to Defaults */}
+                    <div className="flex justify-end pt-4 border-t">
+                      <Button variant="outline" onClick={resetBaselineQuestions}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Reset to Defaults
+                      </Button>
                     </div>
                   </CardContent>
                 </CollapsibleContent>
