@@ -9,17 +9,13 @@ import {
   BadgeCheck,
   Watch,
   Quote,
-  TrendingUp,
   Calendar,
   Clock,
   ChevronDown,
   ChevronUp,
-  User,
   Target,
   MessageSquare,
   Activity,
-  Heart,
-  Moon,
   Zap,
 } from "lucide-react";
 
@@ -103,7 +99,7 @@ function VillainTrajectory({ ratings, villainVariable }: {
       </div>
 
       <div className="space-y-2">
-        {ratings.map((r, idx) => (
+        {ratings.map((r) => (
           <div key={r.day} className="flex items-start gap-3">
             <div className="w-12 text-xs text-gray-400">Day {r.day}</div>
             <div className="flex-1">
@@ -137,7 +133,7 @@ function VillainTrajectory({ ratings, villainVariable }: {
   );
 }
 
-export function FullStudyResultCard({ story, studyId, productName }: FullStudyResultCardProps) {
+export function FullStudyResultCard({ story }: FullStudyResultCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (

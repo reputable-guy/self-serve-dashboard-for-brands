@@ -1,7 +1,7 @@
 "use client";
 
 import { ParticipantStory } from "@/lib/mock-data";
-import { BadgeCheck, Watch, TrendingUp, TrendingDown } from "lucide-react";
+import { BadgeCheck, Watch } from "lucide-react";
 
 interface CompactTestimonialCardProps {
   story: ParticipantStory;
@@ -26,7 +26,7 @@ function RatingDots({ rating, maxRating = 5 }: { rating: number; maxRating?: num
 }
 
 // Format metric change with appropriate sign and color
-function MetricChange({ value, label, unit }: { value: number; label: string; unit?: string }) {
+function MetricChange({ value, label }: { value: number; label: string }) {
   const isPositive = label.toLowerCase().includes("hr") ? value < 0 : value > 0;
   const displayValue = value > 0 ? `+${value}%` : `${value}%`;
 
@@ -40,9 +40,7 @@ function MetricChange({ value, label, unit }: { value: number; label: string; un
   );
 }
 
-export function CompactTestimonialCard({ story, studyId, className = "" }: CompactTestimonialCardProps) {
-  // Get the primary metric to highlight (deep sleep is usually most impactful)
-  const primaryMetric = story.wearableMetrics.deepSleepChange || story.wearableMetrics.sleepChange;
+export function CompactTestimonialCard({ story, className = "" }: CompactTestimonialCardProps) {
 
   // Get first and last villain ratings for trajectory
   const firstRating = story.journey.villainRatings[0];

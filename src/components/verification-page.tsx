@@ -163,7 +163,7 @@ function VillainJourneyProgress({ ratings, villainVariable }: {
         <span className="capitalize">{villainVariable} Progress</span>
       </div>
       <div className="space-y-3">
-        {ratings.map((r, idx) => (
+        {ratings.map((r) => (
           <div key={r.day} className="flex items-center gap-4">
             <div className="w-16 text-sm text-muted-foreground">Day {r.day}</div>
             <div className="flex-1">
@@ -208,7 +208,6 @@ export function VerificationPage({
 }: VerificationPageProps) {
   const [showMethodology, setShowMethodology] = useState(false);
   const [showRawData, setShowRawData] = useState(false);
-  const [showFullStory, setShowFullStory] = useState(false);
 
   // Mock timeline data
   const timeline = [

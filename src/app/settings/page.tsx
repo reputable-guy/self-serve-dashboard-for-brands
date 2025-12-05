@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import {
   ProfileQuestion,
-  DEFAULT_PROFILE_QUESTIONS,
   loadProfileQuestions,
   saveProfileQuestions,
   resetProfileQuestions,
