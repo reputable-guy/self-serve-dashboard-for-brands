@@ -1332,23 +1332,39 @@ export function generateParticipantStories(
   return stories;
 }
 
-// Get stories for a specific study - uses generated stories if villain variable doesn't match defaults
+// Get stories for a specific study - generates contextual stories based on villain variable
 export function getStoriesForStudy(
   villainVariable: string,
   productName?: string,
   studyDurationDays: number = 28
 ): ParticipantStory[] {
-  // Check if the villain variable matches our default sleep-related stories
-  const sleepKeywords = ["sleep", "rest", "insomnia", "tired", "fatigue", "brain fog", "waking", "recovery"];
-  const isSleepRelated = sleepKeywords.some(kw =>
-    villainVariable.toLowerCase().includes(kw) ||
-    (productName || "").toLowerCase().includes(kw)
-  );
+  const searchText = `${villainVariable} ${productName || ""}`.toLowerCase();
 
-  // Use the hardcoded stories for sleep-related studies, generate new ones otherwise
+  // Check for non-sleep categories first (more specific)
+  const nonSleepCategories = {
+    digestion: ["digestion", "bloating", "gut", "stomach", "digestive", "morning routine", "regularity"],
+    stress: ["stress", "anxiety", "calm", "relax", "cortisol", "mood", "mental"],
+    energy: ["energy", "vitality", "focus", "productivity", "concentration"],
+    fitness: ["fitness", "workout", "muscle", "strength", "athletic", "performance", "exercise"],
+    weight: ["weight", "metabolism", "fat", "lean", "body composition", "appetite", "cravings"],
+  };
+
+  // Check if it matches a non-sleep category
+  for (const [, keywords] of Object.entries(nonSleepCategories)) {
+    if (keywords.some(kw => searchText.includes(kw))) {
+      // Generate category-specific stories
+      return generateParticipantStories(villainVariable, productName, studyDurationDays, 4);
+    }
+  }
+
+  // Default: Check for sleep-related keywords - use hardcoded stories for these
+  const sleepKeywords = ["sleep", "rest", "insomnia", "tired", "fatigue", "brain fog", "waking", "recovery"];
+  const isSleepRelated = sleepKeywords.some(kw => searchText.includes(kw));
+
   if (isSleepRelated) {
     return MOCK_PARTICIPANT_STORIES;
   }
 
+  // Fallback: generate stories based on whatever was provided
   return generateParticipantStories(villainVariable, productName, studyDurationDays, 4);
 }
