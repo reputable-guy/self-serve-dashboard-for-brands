@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useStudies } from "@/lib/studies-store";
 import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, ParticipantStory } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   Star,
@@ -17,8 +16,6 @@ import {
   RotateCcw,
   BadgeCheck,
   Heart,
-  Minus,
-  Plus,
   Watch,
   Moon,
   X,
@@ -133,9 +130,8 @@ function TrustBadge({
 }
 
 // Journey progress visualization - shows the transformation over time
-function JourneyTimeline({ ratings, villainVariable }: {
+function JourneyTimeline({ ratings }: {
   ratings: ParticipantStory["journey"]["villainRatings"];
-  villainVariable: string
 }) {
   const getRatingColor = (rating: number) => {
     if (rating >= 4) return "bg-green-500";
@@ -154,7 +150,7 @@ function JourneyTimeline({ ratings, villainVariable }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        {ratings.map((r, idx) => (
+        {ratings.map((r) => (
           <div key={r.day} className="flex flex-col items-center flex-1">
             <div
               className={`h-3 w-3 rounded-full ${getRatingColor(r.rating)} ring-2 ring-white shadow-sm`}
@@ -186,13 +182,11 @@ function StoriesModal({
   onClose,
   testimonials,
   initialIndex,
-  studyName,
 }: {
   isOpen: boolean;
   onClose: () => void;
   testimonials: typeof MOCK_TESTIMONIALS;
   initialIndex: number;
-  studyName: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
 
@@ -339,7 +333,6 @@ function StoriesModal({
 
                   <JourneyTimeline
                     ratings={story.journey.villainRatings}
-                    villainVariable={story.journey.villainVariable}
                   />
 
                   {/* Key turning point quotes */}
@@ -548,7 +541,6 @@ export default function PreviewContextPage() {
   const params = useParams();
   const router = useRouter();
   const { getStudy } = useStudies();
-  const [quantity, setQuantity] = useState(1);
   const [selectedOption, setSelectedOption] = useState<"challenge" | "standard">("challenge");
   const [activeSection, setActiveSection] = useState<"pdp" | "landing" | "results">("pdp");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -584,7 +576,6 @@ export default function PreviewContextPage() {
   const rebateAmount = Number(study.rebateAmount) || 50;
   const productPrice = Number(study.productPrice) || 99.99;
   const challengePrice = productPrice;
-  const effectivePrice = productPrice - rebateAmount;
 
   return (
     <div className="min-h-screen bg-white">
@@ -712,7 +703,7 @@ export default function PreviewContextPage() {
                       {selectedOption === "challenge" && <div className="h-2 w-2 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1">
-                      <div className="font-bold text-gray-900">Join {study.studyDays || 30}-Day Challenge</div>
+                      <div className="font-bold text-gray-900">Join {study.durationDays || 30}-Day Challenge</div>
                       <div className="text-sm text-gray-500">Track with your wearable & earn cash back</div>
                       <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed border-[#00D1C1]/30">
                         <div className="h-4 w-4 rounded-full bg-[#00D1C1] flex items-center justify-center">
@@ -824,7 +815,7 @@ export default function PreviewContextPage() {
                 Finally, Sleep That Actually Works
               </h1>
               <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Join the {study.studyDays || 30}-day challenge. If it works for you, you keep your ${rebateAmount} rebate.
+                Join the {study.durationDays || 30}-day challenge. If it works for you, you keep your ${rebateAmount} rebate.
               </p>
 
               {/* Hero Widget Area */}
@@ -1018,7 +1009,6 @@ export default function PreviewContextPage() {
         onClose={() => setIsModalOpen(false)}
         testimonials={MOCK_TESTIMONIALS}
         initialIndex={modalInitialIndex}
-        studyName={study.productName}
       />
 
       {/* Footer */}

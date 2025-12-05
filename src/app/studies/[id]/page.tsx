@@ -50,7 +50,7 @@ import {
   MOCK_PARTICIPANT_STORIES,
 } from "@/lib/mock-data";
 import { CompactTestimonialCard } from "@/components/compact-testimonial-card";
-import { FullStudyResultCard, CompactFullCard } from "@/components/full-study-result-card";
+import { FullStudyResultCard } from "@/components/full-study-result-card";
 import {
   CarouselWidgetPreview,
   DataCardWidgetPreview,
