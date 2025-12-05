@@ -47,7 +47,7 @@ import {
   MOCK_TESTIMONIALS,
   MOCK_DEMOGRAPHICS,
   MOCK_BASELINE_DATA,
-  MOCK_PARTICIPANT_STORIES,
+  getStoriesForStudy,
 } from "@/lib/mock-data";
 import { CompactTestimonialCard } from "@/components/compact-testimonial-card";
 import { FullStudyResultCard } from "@/components/full-study-result-card";
@@ -173,6 +173,13 @@ export default function StudyDetailsPage() {
   const status = STUDY_STATUSES[study.status];
   const device = DEVICE_LABELS[study.requiredDevice] || "Any Device";
   const totalSpots = parseInt(study.totalSpots) || 50; // Default to 50 if not set
+
+  // Generate contextually appropriate participant stories based on study's villain variable
+  const participantStories = getStoriesForStudy(
+    study.villainVariable || "sleep quality",
+    study.productName,
+    parseInt(study.durationDays) || 28
+  );
   const spotsRemaining = totalSpots - study.enrolledCount;
   const rebateNum = parseFloat(study.rebateAmount || "0");
   const heartbeats = rebateNum > 0 ? Math.round(rebateNum * 100) : 0;
@@ -1304,7 +1311,7 @@ export default function StudyDetailsPage() {
                 {/* Compact Story Cards View */}
                 {storyCardView === "compact" && (
                   <div className="grid grid-cols-2 gap-4">
-                    {MOCK_PARTICIPANT_STORIES.map((story) => (
+                    {participantStories.map((story) => (
                       <div
                         key={story.id}
                         className="cursor-pointer"
@@ -1319,7 +1326,7 @@ export default function StudyDetailsPage() {
                 {/* Full Story Cards View */}
                 {storyCardView === "full" && (
                   <div className="space-y-6">
-                    {MOCK_PARTICIPANT_STORIES.map((story) => (
+                    {participantStories.map((story) => (
                       <FullStudyResultCard
                         key={story.id}
                         story={story}
@@ -1337,7 +1344,7 @@ export default function StudyDetailsPage() {
                       const testimonialId = String(testimonial.id);
                       const isFeatured = (study.featuredTestimonialIds || []).includes(testimonialId);
                       // Match testimonial with rich story data by name
-                      const matchingStory = MOCK_PARTICIPANT_STORIES.find(
+                      const matchingStory = participantStories.find(
                         s => s.name === testimonial.participant || s.initials === testimonial.initials
                       );
 
@@ -1369,7 +1376,7 @@ export default function StudyDetailsPage() {
                         Close
                       </Button>
                     </div>
-                    {MOCK_PARTICIPANT_STORIES.filter(s => s.id === selectedStory).map(story => (
+                    {participantStories.filter(s => s.id === selectedStory).map(story => (
                       <FullStudyResultCard
                         key={story.id}
                         story={story}

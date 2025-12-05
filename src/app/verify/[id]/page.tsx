@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VerificationPage } from "@/components/verification-page";
-import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES } from "@/lib/mock-data";
+import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, getStoriesForStudy } from "@/lib/mock-data";
 import { ArrowLeft } from "lucide-react";
 
 // This page displays the verification landing page for a specific testimonial
@@ -20,10 +20,14 @@ export default function VerifyPage() {
   );
 
   // Also find matching rich story data
+  // Try default stories first, then fall back to generated stories if needed
   const story = testimonial
     ? MOCK_PARTICIPANT_STORIES.find(
         (s) => s.verificationId === verificationId ||
                s.name === testimonial.participant ||
+               s.initials === testimonial.initials
+      ) || getStoriesForStudy("sleep quality", "SleepWell Premium", 28).find(
+        (s) => s.name === testimonial.participant ||
                s.initials === testimonial.initials
       )
     : undefined;

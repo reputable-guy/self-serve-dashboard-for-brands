@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStudies } from "@/lib/studies-store";
-import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, ParticipantStory } from "@/lib/mock-data";
+import { MOCK_TESTIMONIALS, getStoriesForStudy, ParticipantStory } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -182,11 +182,13 @@ function StoriesModal({
   onClose,
   testimonials,
   initialIndex,
+  stories,
 }: {
   isOpen: boolean;
   onClose: () => void;
   testimonials: typeof MOCK_TESTIMONIALS;
   initialIndex: number;
+  stories: ParticipantStory[];
 }) {
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
 
@@ -198,8 +200,8 @@ function StoriesModal({
 
   const current = testimonials[selectedIndex];
 
-  // Find matching rich story data
-  const story = MOCK_PARTICIPANT_STORIES.find(
+  // Find matching rich story data from passed stories
+  const story = stories.find(
     s => s.name === current.participant || s.initials === current.initials
   );
 
@@ -556,6 +558,13 @@ export default function PreviewContextPage() {
       </div>
     );
   }
+
+  // Generate contextually appropriate participant stories based on study's villain variable
+  const participantStories = getStoriesForStudy(
+    study.villainVariable || "sleep quality",
+    study.productName,
+    parseInt(study.durationDays) || 28
+  );
 
   // Get featured testimonials for the widget
   const featuredTestimonials = MOCK_TESTIMONIALS.filter(t =>
@@ -1009,6 +1018,7 @@ export default function PreviewContextPage() {
         onClose={() => setIsModalOpen(false)}
         testimonials={MOCK_TESTIMONIALS}
         initialIndex={modalInitialIndex}
+        stories={participantStories}
       />
 
       {/* Footer */}

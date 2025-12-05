@@ -907,3 +907,448 @@ export function generateParticipantDetailForStudy(
     syncHistory: generateSyncHistory(numDays, participant.compliance),
   };
 }
+
+// =============================================================================
+// DYNAMIC STORY GENERATOR
+// Generates contextually appropriate participant stories based on study type
+// =============================================================================
+
+// Health category definitions with relevant metrics and narratives
+interface HealthCategory {
+  keywords: string[];
+  villainVariables: string[];
+  metrics: {
+    primary: { label: string; unit: string; beforeRange: [number, number]; changeRange: [number, number] };
+    secondary: { label: string; unit: string; beforeRange: [number, number]; changeRange: [number, number] }[];
+  };
+  motivations: string[];
+  hopedResults: string[];
+  journeyNotes: { day: number; improving: string; struggling: string }[];
+  keyQuotes: { context: string; quotes: string[] }[];
+  lifeStages: string[];
+  wellnessGoals: string[];
+}
+
+const HEALTH_CATEGORIES: Record<string, HealthCategory> = {
+  digestion: {
+    keywords: ["digestion", "bloating", "gut", "stomach", "digestive", "morning routine", "regularity"],
+    villainVariables: ["bloating", "digestive discomfort", "irregular digestion", "stomach issues", "morning sluggishness"],
+    metrics: {
+      primary: { label: "Bloating episodes", unit: "per week", beforeRange: [5, 8], changeRange: [-60, -80] },
+      secondary: [
+        { label: "Digestive comfort", unit: "score", beforeRange: [4, 6], changeRange: [30, 50] },
+        { label: "Energy levels", unit: "score", beforeRange: [5, 6], changeRange: [20, 35] },
+        { label: "Morning alertness", unit: "score", beforeRange: [4, 5], changeRange: [25, 45] },
+      ],
+    },
+    motivations: [
+      "I've been dealing with bloating after almost every meal. It's uncomfortable and embarrassing.",
+      "My morning routine has been a mess - I feel sluggish and my digestion is all over the place.",
+      "I read that gut health affects everything from mood to energy. I want to finally fix this.",
+      "After years of digestive issues, I'm ready to try something that actually addresses the root cause.",
+    ],
+    hopedResults: [
+      "I'm hoping to eat without worrying about bloating afterward.",
+      "I want to feel lighter and more energetic in the mornings.",
+      "I'd love to have regular, comfortable digestion again.",
+      "I'm looking for consistent energy throughout the day without the afternoon slump.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "First day, feeling hopeful", struggling: "Usual bloating after lunch" },
+      { day: 7, improving: "Noticing less bloating after meals", struggling: "Still some discomfort, but maybe slightly better" },
+      { day: 14, improving: "Digestion feels smoother, less heavy after eating", struggling: "Good days and bad days still" },
+      { day: 21, improving: "My pants fit better - less bloat!", struggling: "Improvement is slow but there" },
+      { day: 28, improving: "Feel like a different person - light and energetic", struggling: "Consistent improvement, really pleased" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "I actually wore my fitted jeans to dinner without worrying about bloating",
+        "My morning routine is completely different now - I feel ready to tackle the day",
+        "I used to dread eating out, now I can enjoy meals again",
+      ]},
+      { context: "Final reflection", quotes: [
+        "The difference in my digestion is night and day. I wish I'd found this sooner.",
+        "I finally feel comfortable in my own body after meals.",
+        "My energy is so much more consistent now that my gut is happy.",
+      ]},
+    ],
+    lifeStages: ["Busy professional", "New parent", "Health-conscious adult", "Active lifestyle seeker"],
+    wellnessGoals: ["Improve digestive health", "Reduce bloating", "Better gut health", "More consistent energy"],
+  },
+
+  sleep: {
+    keywords: ["sleep", "rest", "insomnia", "tired", "fatigue", "energy", "recovery"],
+    villainVariables: ["poor sleep", "insomnia", "nighttime waking", "afternoon brain fog", "low energy"],
+    metrics: {
+      primary: { label: "Deep sleep", unit: "min", beforeRange: [35, 50], changeRange: [15, 30] },
+      secondary: [
+        { label: "Sleep score", unit: "pts", beforeRange: [60, 72], changeRange: [12, 22] },
+        { label: "HRV", unit: "ms", beforeRange: [35, 45], changeRange: [15, 25] },
+        { label: "Resting HR", unit: "bpm", beforeRange: [62, 68], changeRange: [-8, -4] },
+      ],
+    },
+    motivations: [
+      "I've tried many sleep supplements, but nothing seems to work long-term.",
+      "My wearable shows terrible sleep scores. I need to fix this.",
+      "I'm exhausted all day but can't fall asleep at night. It's affecting everything.",
+      "Work stress keeps me up at night. I need something to help me wind down.",
+    ],
+    hopedResults: [
+      "I want to wake up feeling actually rested for once.",
+      "I'm hoping for better deep sleep numbers on my tracker.",
+      "I want to fall asleep faster and stay asleep through the night.",
+      "I'd love to have consistent energy without caffeine crashes.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "Taking it before bed as directed", struggling: "Same old sleep issues" },
+      { day: 7, improving: "Maybe falling asleep a bit faster?", struggling: "Hard to tell if it's working yet" },
+      { day: 14, improving: "Definitely sleeping more soundly", struggling: "Some improvement in sleep quality" },
+      { day: 21, improving: "Waking up refreshed more often", struggling: "Getting better, husband noticed" },
+      { day: 28, improving: "Best sleep I've had in years", struggling: "Solid improvement overall" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "I actually made it through a 3pm meeting without zoning out",
+        "My Oura ring is showing the best scores I've seen in months",
+        "I finally feel like myself again in the mornings",
+      ]},
+      { context: "Final reflection", quotes: [
+        "The data doesn't lie - my sleep has genuinely improved.",
+        "I was skeptical, but the consistent results won me over.",
+        "My energy levels are completely different now.",
+      ]},
+    ],
+    lifeStages: ["Parent of young kids", "High-stress professional", "Shift worker", "Established professional"],
+    wellnessGoals: ["Better sleep quality", "More energy", "Improve recovery", "Reduce stress"],
+  },
+
+  stress: {
+    keywords: ["stress", "anxiety", "calm", "relax", "cortisol", "mood", "mental"],
+    villainVariables: ["work-related anxiety", "chronic stress", "racing thoughts", "tension", "overwhelm"],
+    metrics: {
+      primary: { label: "Stress score", unit: "pts", beforeRange: [70, 85], changeRange: [-25, -40] },
+      secondary: [
+        { label: "HRV", unit: "ms", beforeRange: [32, 42], changeRange: [18, 30] },
+        { label: "Resting HR", unit: "bpm", beforeRange: [68, 75], changeRange: [-10, -6] },
+        { label: "Recovery score", unit: "pts", beforeRange: [45, 55], changeRange: [20, 35] },
+      ],
+    },
+    motivations: [
+      "My stress levels have been through the roof. My watch says I'm always in the red zone.",
+      "I can't seem to turn my brain off at night. The anxiety is constant.",
+      "Work pressure is affecting my health. I need to find a way to manage it better.",
+      "I've tried meditation apps but need something more to help me stay calm.",
+    ],
+    hopedResults: [
+      "I want to feel calm and in control, even during busy days.",
+      "I'm hoping for lower stress scores on my wearable.",
+      "I'd love to be able to relax without feeling guilty or anxious.",
+      "I want to respond to stress better, not just react.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "Starting with hope", struggling: "Another stressful day at work" },
+      { day: 7, improving: "Feeling slightly calmer during meetings", struggling: "Still pretty stressed overall" },
+      { day: 14, improving: "Handling pressure better at work", struggling: "Better days appearing more often" },
+      { day: 21, improving: "Colleagues noticed I seem calmer", struggling: "Definite improvement in my reactions" },
+      { day: 28, improving: "Feel like I have my stress under control", struggling: "Much better ability to cope" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "My team said I seemed more relaxed in our strategy meeting",
+        "I didn't snap at my kids after a hard day - that's new",
+        "My stress score dropped from red to yellow for the first time",
+      ]},
+      { context: "Final reflection", quotes: [
+        "I finally feel like stress isn't controlling my life anymore.",
+        "The improvement in my HRV tells the whole story.",
+        "I'm the calm one in meetings now. My team can't believe it.",
+      ]},
+    ],
+    lifeStages: ["Startup founder", "Executive", "Caregiver", "Busy parent"],
+    wellnessGoals: ["Manage stress better", "Improve mental clarity", "Better emotional balance", "Lower cortisol"],
+  },
+
+  energy: {
+    keywords: ["energy", "fatigue", "vitality", "focus", "productivity", "concentration"],
+    villainVariables: ["low energy", "afternoon fatigue", "brain fog", "lack of focus", "mental fatigue"],
+    metrics: {
+      primary: { label: "Energy score", unit: "pts", beforeRange: [45, 55], changeRange: [25, 40] },
+      secondary: [
+        { label: "Focus time", unit: "hrs", beforeRange: [2, 3], changeRange: [40, 60] },
+        { label: "Recovery score", unit: "pts", beforeRange: [50, 60], changeRange: [15, 30] },
+        { label: "Activity minutes", unit: "min", beforeRange: [25, 35], changeRange: [30, 50] },
+      ],
+    },
+    motivations: [
+      "I hit a wall every afternoon around 2pm. Coffee doesn't help anymore.",
+      "I used to have so much energy but now I'm dragging through every day.",
+      "I can't focus for more than 30 minutes without feeling exhausted.",
+      "My productivity has tanked because I just don't have the energy.",
+    ],
+    hopedResults: [
+      "I want consistent energy throughout the day without caffeine.",
+      "I'm hoping to be productive past 3pm for once.",
+      "I'd love to have enough energy for both work and workouts.",
+      "I want to feel sharp and focused during important meetings.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "Excited to start", struggling: "Typical afternoon crash" },
+      { day: 7, improving: "Maybe a bit more alert in the afternoon?", struggling: "Still fatigued but perhaps less" },
+      { day: 14, improving: "Noticeably more energy after lunch", struggling: "Good days are becoming more common" },
+      { day: 21, improving: "Powered through a 4pm meeting easily", struggling: "Energy is definitely more stable" },
+      { day: 28, improving: "Have energy for evening workouts again!", struggling: "Feel consistently better" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "I actually went for a run after work - haven't done that in months",
+        "My 3pm slump is basically gone",
+        "Finished a whole project without reaching for more coffee",
+      ]},
+      { context: "Final reflection", quotes: [
+        "The difference in my productivity is measurable. I'm getting so much more done.",
+        "I forgot what it felt like to have real energy. This brought it back.",
+        "My team asked if I changed my diet. Nope, just found something that works.",
+      ]},
+    ],
+    lifeStages: ["Remote worker", "Entrepreneur", "Graduate student", "Creative professional"],
+    wellnessGoals: ["More sustainable energy", "Better focus", "Increased productivity", "Athletic performance"],
+  },
+
+  fitness: {
+    keywords: ["fitness", "workout", "muscle", "strength", "athletic", "performance", "recovery", "exercise"],
+    villainVariables: ["poor recovery", "muscle soreness", "performance plateau", "slow gains", "workout fatigue"],
+    metrics: {
+      primary: { label: "Recovery score", unit: "pts", beforeRange: [50, 60], changeRange: [20, 35] },
+      secondary: [
+        { label: "HRV", unit: "ms", beforeRange: [40, 50], changeRange: [15, 25] },
+        { label: "Strain capacity", unit: "pts", beforeRange: [12, 14], changeRange: [15, 25] },
+        { label: "Resting HR", unit: "bpm", beforeRange: [55, 62], changeRange: [-8, -5] },
+      ],
+    },
+    motivations: [
+      "I'm training hard but not seeing the gains I should. Recovery is definitely the issue.",
+      "My WHOOP tells me I'm always in the red. I can't train as hard as I want.",
+      "I'm sore for days after workouts. It's affecting my consistency.",
+      "I want to optimize my recovery so I can train more and see better results.",
+    ],
+    hopedResults: [
+      "I want to recover faster between workouts.",
+      "I'm hoping for better HRV and recovery scores.",
+      "I'd love to train 5 days a week without feeling broken.",
+      "I want to see my performance actually improve, not just maintain.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "Ready to see if this helps", struggling: "Still sore from yesterday's workout" },
+      { day: 7, improving: "Recovery feels slightly faster", struggling: "Hard to tell if it's working yet" },
+      { day: 14, improving: "Able to hit PR on deadlift - feeling fresh", struggling: "Definitely recovering better" },
+      { day: 21, improving: "Training 5x/week now without issue", struggling: "Consistent improvement in recovery" },
+      { day: 28, improving: "Best training block I've had in a year", struggling: "Really pleased with the results" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "Hit a PR on my tempo run - actually felt fresh going into it",
+        "My WHOOP finally showed green recovery for 5 days straight",
+        "I'm not dreading leg day anymore because I know I'll recover",
+      ]},
+      { context: "Final reflection", quotes: [
+        "The data backs up how I feel - my recovery metrics are the best they've been.",
+        "I was skeptical, but you can't argue with PRs and green recovery days.",
+        "This is now a permanent part of my training stack.",
+      ]},
+    ],
+    lifeStages: ["Competitive athlete", "Fitness enthusiast", "Weekend warrior", "CrossFit devotee"],
+    wellnessGoals: ["Faster recovery", "Better performance", "More training capacity", "Reduce soreness"],
+  },
+
+  weight: {
+    keywords: ["weight", "metabolism", "fat", "lean", "body composition", "appetite", "cravings"],
+    villainVariables: ["stubborn weight", "slow metabolism", "cravings", "appetite control", "body composition"],
+    metrics: {
+      primary: { label: "Cravings intensity", unit: "score", beforeRange: [7, 9], changeRange: [-40, -60] },
+      secondary: [
+        { label: "Satiety", unit: "score", beforeRange: [4, 5], changeRange: [35, 55] },
+        { label: "Energy stability", unit: "score", beforeRange: [4, 6], changeRange: [25, 40] },
+        { label: "Metabolic markers", unit: "score", beforeRange: [50, 60], changeRange: [15, 25] },
+      ],
+    },
+    motivations: [
+      "I've tried every diet. The cravings always win. I need help with appetite control.",
+      "My metabolism seems to have stalled. Nothing I do moves the needle.",
+      "I eat healthy but still can't shake the last 10 pounds.",
+      "I need something to support my metabolism while I work on my diet.",
+    ],
+    hopedResults: [
+      "I want to stop thinking about food constantly.",
+      "I'm hoping to feel satisfied with normal portion sizes.",
+      "I'd love for my hard work in the gym to finally show.",
+      "I want to support my metabolism naturally.",
+    ],
+    journeyNotes: [
+      { day: 1, improving: "Starting fresh", struggling: "Same old cravings hit at 3pm" },
+      { day: 7, improving: "Afternoon cravings seem less intense", struggling: "Maybe slightly better appetite control" },
+      { day: 14, improving: "Skipped my usual stress snack without trying", struggling: "Noticing I'm less hungry overall" },
+      { day: 21, improving: "Feel satisfied with smaller portions", struggling: "Definite change in my relationship with food" },
+      { day: 28, improving: "Down a belt notch - and not from restriction", struggling: "Really pleased with the changes" },
+    ],
+    keyQuotes: [
+      { context: "Weekly check-in", quotes: [
+        "I walked past the office candy without even thinking about it",
+        "My afternoon snack cravings have basically disappeared",
+        "I'm finally eating because I'm hungry, not because I'm bored or stressed",
+      ]},
+      { context: "Final reflection", quotes: [
+        "For the first time, I feel in control of my appetite rather than controlled by it.",
+        "The changes were subtle at first but now they're unmistakable.",
+        "This wasn't a quick fix - it was a genuine shift in how my body signals hunger.",
+      ]},
+    ],
+    lifeStages: ["Post-pregnancy", "Desk job professional", "Pre-wedding", "Health transformation"],
+    wellnessGoals: ["Better appetite control", "Support metabolism", "Reduce cravings", "Healthy body composition"],
+  },
+};
+
+// Base participant templates for story generation
+const PARTICIPANT_TEMPLATES = [
+  { name: "Sarah M.", initials: "SM", avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop", ageRange: "25-34", baseRating: 4.8 },
+  { name: "Emily R.", initials: "ER", avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop", ageRange: "25-34", baseRating: 4.5 },
+  { name: "Mike T.", initials: "MT", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop", ageRange: "35-44", baseRating: 4.9 },
+  { name: "Lisa K.", initials: "LK", avatarUrl: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100&h=100&fit=crop", ageRange: "35-44", baseRating: 4.6 },
+  { name: "David H.", initials: "DH", avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop", ageRange: "45-54", baseRating: 4.7 },
+  { name: "Jennifer W.", initials: "JW", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop", ageRange: "25-34", baseRating: 4.4 },
+];
+
+// Detect health category from villain variable or product name
+function detectHealthCategory(villainVariable: string, productName?: string): HealthCategory {
+  const searchText = `${villainVariable} ${productName || ""}`.toLowerCase();
+
+  // Check each category for keyword matches
+  for (const [, category] of Object.entries(HEALTH_CATEGORIES)) {
+    for (const keyword of category.keywords) {
+      if (searchText.includes(keyword.toLowerCase())) {
+        return category;
+      }
+    }
+  }
+
+  // Default to sleep if no match (most common wellness category)
+  return HEALTH_CATEGORIES.sleep;
+}
+
+// Generate a random value within a range
+function randomInRange(min: number, max: number): number {
+  return Math.round(min + Math.random() * (max - min));
+}
+
+// Generate wearable metrics based on category
+function generateWearableMetrics(category: HealthCategory): ParticipantStory["wearableMetrics"] {
+  const devices = ["Oura Ring", "Apple Watch", "WHOOP", "Garmin", "Fitbit"];
+  const device = devices[Math.floor(Math.random() * devices.length)];
+
+  const primaryBefore = randomInRange(category.metrics.primary.beforeRange[0], category.metrics.primary.beforeRange[1]);
+  const primaryChange = randomInRange(category.metrics.primary.changeRange[0], category.metrics.primary.changeRange[1]);
+  const primaryAfter = Math.round(primaryBefore * (1 + primaryChange / 100));
+
+  const secondary = category.metrics.secondary[0];
+  const secBefore = randomInRange(secondary.beforeRange[0], secondary.beforeRange[1]);
+  const secChange = randomInRange(secondary.changeRange[0], secondary.changeRange[1]);
+  const secAfter = Math.round(secBefore * (1 + secChange / 100));
+
+  return {
+    device,
+    sleepChange: { before: primaryBefore, after: primaryAfter, unit: category.metrics.primary.unit, changePercent: primaryChange },
+    deepSleepChange: { before: secBefore, after: secAfter, unit: secondary.unit, changePercent: secChange },
+  };
+}
+
+// Generate participant stories dynamically based on study villain variable
+export function generateParticipantStories(
+  villainVariable: string,
+  productName?: string,
+  studyDurationDays: number = 28,
+  count: number = 4
+): ParticipantStory[] {
+  const category = detectHealthCategory(villainVariable, productName);
+  const stories: ParticipantStory[] = [];
+
+  for (let i = 0; i < Math.min(count, PARTICIPANT_TEMPLATES.length); i++) {
+    const template = PARTICIPANT_TEMPLATES[i];
+    const villainVar = category.villainVariables[i % category.villainVariables.length];
+    const motivation = category.motivations[i % category.motivations.length];
+    const hopedResult = category.hopedResults[i % category.hopedResults.length];
+    const lifeStage = category.lifeStages[i % category.lifeStages.length];
+    const wellnessGoal = category.wellnessGoals[i % category.wellnessGoals.length];
+
+    // Generate journey ratings with improvement trend
+    const villainRatings = category.journeyNotes.map(note => ({
+      day: note.day,
+      rating: note.day === 1 ? 2 : note.day <= 7 ? (2 + Math.floor(Math.random() * 2)) : note.day <= 14 ? 3 : note.day <= 21 ? 4 : 5,
+      note: Math.random() > 0.5 ? note.improving : note.struggling,
+    }));
+
+    // Pick random quotes from available options
+    const keyQuotes = category.keyQuotes.flatMap(kq =>
+      kq.quotes.slice(0, 1).map(quote => ({
+        day: kq.context === "Final reflection" ? studyDurationDays : Math.floor(studyDurationDays / 2),
+        quote,
+        context: kq.context,
+      }))
+    ).slice(0, 2);
+
+    const wearableMetrics = generateWearableMetrics(category);
+
+    stories.push({
+      id: `generated-story-${i + 1}`,
+      name: template.name,
+      initials: template.initials,
+      avatarUrl: template.avatarUrl,
+      profile: {
+        ageRange: template.ageRange,
+        lifeStage,
+        primaryWellnessGoal: wellnessGoal,
+        baselineStressLevel: randomInRange(5, 8),
+      },
+      baseline: {
+        motivation,
+        hopedResults: hopedResult,
+        villainDuration: ["3-6 months", "6-12 months", "1+ years"][Math.floor(Math.random() * 3)],
+        triedOther: ["Yes, 1-2 others", "Yes, several others", "No, this is my first"][Math.floor(Math.random() * 3)],
+      },
+      journey: {
+        startDate: new Date(Date.now() - studyDurationDays * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        endDate: new Date().toISOString().split("T")[0],
+        durationDays: studyDurationDays,
+        villainVariable: villainVar,
+        villainRatings,
+        keyQuotes,
+      },
+      wearableMetrics,
+      verified: true,
+      verificationId: `2025-${100 + i}`,
+      completedAt: new Date().toISOString().split("T")[0],
+      overallRating: template.baseRating + (Math.random() * 0.4 - 0.2),
+    });
+  }
+
+  return stories;
+}
+
+// Get stories for a specific study - uses generated stories if villain variable doesn't match defaults
+export function getStoriesForStudy(
+  villainVariable: string,
+  productName?: string,
+  studyDurationDays: number = 28
+): ParticipantStory[] {
+  // Check if the villain variable matches our default sleep-related stories
+  const sleepKeywords = ["sleep", "rest", "insomnia", "tired", "fatigue", "brain fog", "waking", "recovery"];
+  const isSleepRelated = sleepKeywords.some(kw =>
+    villainVariable.toLowerCase().includes(kw) ||
+    (productName || "").toLowerCase().includes(kw)
+  );
+
+  // Use the hardcoded stories for sleep-related studies, generate new ones otherwise
+  if (isSleepRelated) {
+    return MOCK_PARTICIPANT_STORIES;
+  }
+
+  return generateParticipantStories(villainVariable, productName, studyDurationDays, 4);
+}
