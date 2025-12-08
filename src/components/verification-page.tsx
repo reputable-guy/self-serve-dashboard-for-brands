@@ -260,27 +260,25 @@ function ComparisonTable() {
   );
 }
 
-// How We Verify Modal/Expandable Section
+// How We Verify Modal/Expandable Section - detailed content for skeptics
 function HowWeVerifySection({
   testimonial,
   formattedDataPoints,
   studyDuration,
-  story,
 }: {
   testimonial: MockTestimonial;
   formattedDataPoints: string;
   studyDuration: number;
-  story?: ParticipantStory;
 }) {
   const [showRawData, setShowRawData] = useState(false);
 
   return (
     <div className="space-y-6 pt-4">
-      {/* Trust Stack - 4 pillars in a compact grid */}
+      {/* Trust Stack - 4 pillars with distinct icons */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-lg">👤</span>
             <span className="font-medium text-green-900">Real Person</span>
           </div>
           <p className="text-sm text-green-800">
@@ -289,7 +287,7 @@ function HowWeVerifySection({
         </div>
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-lg">⌚</span>
             <span className="font-medium text-green-900">Real Device</span>
           </div>
           <p className="text-sm text-green-800">
@@ -298,16 +296,16 @@ function HowWeVerifySection({
         </div>
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-lg">📅</span>
             <span className="font-medium text-green-900">Real Participation</span>
           </div>
           <p className="text-sm text-green-800">
-            {story?.journey.durationDays || studyDuration} days active participation. Rebate given regardless of feedback.
+            {studyDuration} days active participation. Rebate given regardless of feedback.
           </p>
         </div>
         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-lg">📊</span>
             <span className="font-medium text-green-900">Real Results</span>
           </div>
           <p className="text-sm text-green-800">
@@ -341,11 +339,31 @@ function HowWeVerifySection({
         </div>
       </div>
 
-      {/* Methodology */}
-      <div className="space-y-3 text-sm text-muted-foreground">
+      {/* Methodology - scannable icon-prefixed points */}
+      <div className="space-y-4">
         <h4 className="font-medium text-foreground">Our Methodology</h4>
-        <p>All biometric data was collected directly from the participant&apos;s {testimonial.device} via secure API. Results compare against a 7-day baseline period before product use.</p>
-        <p>Reputable Health independently verifies all data. Brands can choose which stories to feature but cannot alter the underlying data.</p>
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <div className="flex items-start gap-3">
+            <span className="text-base flex-shrink-0">🔗</span>
+            <p>All biometric data was collected directly from the participant&apos;s {testimonial.device} via secure API. Results compare against a 7-day baseline period before product use.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-base flex-shrink-0">💰</span>
+            <p>Brands pay us the same whether results are positive or negative. They cannot edit any data.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-base flex-shrink-0">📉</span>
+            <p>We show non-responders. If a product doesn&apos;t work, our data will show that.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-base flex-shrink-0">🔍</span>
+            <p>Full study results are public. View all participants — not just top responders.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-base flex-shrink-0">✓</span>
+            <p>Brands can choose which stories to feature but cannot alter the underlying data.</p>
+          </div>
+        </div>
       </div>
 
       {/* Raw data toggle */}
@@ -396,7 +414,7 @@ export function VerificationPage({
   const [showHowWeVerify, setShowHowWeVerify] = useState(false);
 
   // Calculate data points
-  const dataPointsCollected = (story?.journey.durationDays || studyDuration) * 24 * 30;
+  const dataPointsCollected = studyDuration * 24 * 30;
   const formattedDataPoints = dataPointsCollected.toLocaleString();
 
   // Build detailed metrics
@@ -493,7 +511,7 @@ export function VerificationPage({
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Unlike reviews that can be faked or paid for, this is a{" "}
               <span className="font-semibold text-foreground">real person</span> who participated for{" "}
-              <span className="font-semibold text-foreground">{story?.journey.durationDays || studyDuration} days</span>{" "}
+              <span className="font-semibold text-foreground">{studyDuration} days</span>{" "}
               with no incentive to exaggerate.
             </p>
           </div>
@@ -516,7 +534,6 @@ export function VerificationPage({
                   testimonial={testimonial}
                   formattedDataPoints={formattedDataPoints}
                   studyDuration={studyDuration}
-                  story={story}
                 />
               </CardContent>
             </Card>
@@ -744,7 +761,7 @@ export function VerificationPage({
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <p className="text-2xl font-bold text-[#00D1C1]">{story?.journey.durationDays || studyDuration}</p>
+                <p className="text-2xl font-bold text-[#00D1C1]">{studyDuration}</p>
                 <p className="text-sm text-muted-foreground">Days in Study</p>
               </div>
               <div className="text-center p-4 bg-muted/30 rounded-lg">
@@ -752,7 +769,7 @@ export function VerificationPage({
                 <p className="text-sm text-muted-foreground">Compliance Rate</p>
               </div>
               <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <p className="text-2xl font-bold text-[#00D1C1]">{(story?.journey.durationDays || studyDuration) * 24}</p>
+                <p className="text-2xl font-bold text-[#00D1C1]">{studyDuration * 24}</p>
                 <p className="text-sm text-muted-foreground">Hours of Data</p>
               </div>
             </div>

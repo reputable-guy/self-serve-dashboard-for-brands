@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VerificationPage } from "@/components/verification-page";
-import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, getStoriesForStudy } from "@/lib/mock-data";
+import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, getStoriesForStudy, getTestimonialsForStudy } from "@/lib/mock-data";
 import { ArrowLeft } from "lucide-react";
 
 // This page displays the verification landing page for a specific testimonial
@@ -14,10 +14,26 @@ export default function VerifyPage() {
   const verificationId = params.id as string;
 
   // Find the testimonial by verification ID
+  // First check static mock data, then check dynamically generated testimonials
   // In production, this would be an API call
-  const testimonial = MOCK_TESTIMONIALS.find(
+  let testimonial = MOCK_TESTIMONIALS.find(
     (t) => t.verificationId === verificationId
   );
+
+  // If not found in static data, check dynamically generated testimonials
+  // The dynamic testimonials use IDs like "2025-87", "2025-88", etc.
+  if (!testimonial) {
+    // Try various villain variables that might be used
+    const villainVariables = ["sleep quality", "energy", "stress", "bloating", "focus"];
+    for (const villain of villainVariables) {
+      const generated = getTestimonialsForStudy(villain);
+      const found = generated.find((t) => t.verificationId === verificationId);
+      if (found) {
+        testimonial = found;
+        break;
+      }
+    }
+  }
 
   // Also find matching rich story data
   // Try default stories first, then fall back to generated stories if needed
