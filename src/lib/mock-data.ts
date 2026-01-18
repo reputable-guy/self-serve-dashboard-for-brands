@@ -2,6 +2,7 @@
 // This data is used when no real participants have enrolled
 
 import { CustomQuestion } from "./study-context";
+import { TierLevel, AssessmentResult, getCategoryConfig, getAssessmentById } from "./assessments";
 
 export interface MockParticipant {
   id: number;
@@ -106,6 +107,9 @@ export interface ParticipantStory {
   initials: string;
   avatarUrl?: string;
 
+  // Tier information (determines what data is primary)
+  tier: TierLevel;
+
   // Profile data (collected progressively from profile questions)
   profile: {
     ageRange: string;
@@ -133,13 +137,34 @@ export interface ParticipantStory {
     keyQuotes: { day: number; quote: string; context: string }[];
   };
 
-  // Wearable metrics (before/after comparisons)
-  wearableMetrics: {
+  // Wearable metrics (before/after comparisons) - optional for assessment-only studies (Tier 3-4)
+  // All metric fields are optional because different categories track different metrics
+  // (e.g., anxiety only tracks HRV, not sleep)
+  wearableMetrics?: {
     device: string;
-    sleepChange: { before: number; after: number; unit: string; changePercent: number };
+    sleepChange?: { before: number; after: number; unit: string; changePercent: number };
     deepSleepChange?: { before: number; after: number; unit: string; changePercent: number };
     hrvChange?: { before: number; after: number; unit: string; changePercent: number };
     restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
+    // Activity metrics for energy studies (tier 3)
+    stepsChange?: { before: number; after: number; unit: string; changePercent: number };
+    activeMinutesChange?: { before: number; after: number; unit: string; changePercent: number };
+  };
+
+  // Assessment result (Tiers 2-4 only)
+  assessmentResult?: AssessmentResult;
+
+  // Testimonial responses (Tier 1 only - for story content)
+  testimonialResponses?: {
+    day: number;
+    question: string;
+    response: string;
+  }[];
+
+  // Photo documentation (Tier 4 categories with requiresPhotos)
+  photoDocumentation?: {
+    beforePhoto?: string;
+    afterPhoto?: string;
   };
 
   // Generated story (LLM output)
@@ -269,6 +294,7 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
     name: "Sarah M.",
     initials: "SM",
     avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
+    tier: 1, // Sleep is Tier 1 - wearables primary
     profile: {
       ageRange: "35-44",
       lifeStage: "Parent with young children",
@@ -305,6 +331,12 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
       hrvChange: { before: 42, after: 51, unit: "ms", changePercent: 21 },
       restingHrChange: { before: 62, after: 58, unit: "bpm", changePercent: -6 },
     },
+    // Tier 1 testimonial responses (for story content, not measurement)
+    testimonialResponses: [
+      { day: 1, question: "What's your biggest challenge with sleep right now?", response: "I wake up feeling exhausted no matter how long I sleep. The afternoons are the worst - complete brain fog." },
+      { day: 30, question: "How has your sleep changed over the past month?", response: "Night and day difference! I'm actually waking up refreshed and the afternoon crashes are basically gone." },
+      { day: 30, question: "What surprised you most about this experience?", response: "How quickly my wearable data reflected the changes I was feeling. The objective proof made it real." },
+    ],
     generatedNarrative: "Sarah, a 34-year-old parent of two, had been struggling with afternoon brain fog for over a year after her second child. Despite trying several supplements and caffeine, nothing seemed to help her energy crashes. Within two weeks of starting the study, Sarah began noticing improvements in her afternoon focus. By day 21, her husband had noticed the change. Her Oura Ring data showed a 23% increase in deep sleep and 21% improvement in HRV, backing up her subjective experience with objective data.",
     verified: true,
     verificationId: "2025-087",
@@ -316,6 +348,7 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
     name: "Emily R.",
     initials: "ER",
     avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+    tier: 1, // Recovery is Tier 1 - wearables primary
     profile: {
       ageRange: "25-34",
       lifeStage: "Early career professional",
@@ -352,6 +385,11 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
       hrvChange: { before: 45, after: 54, unit: "ms", changePercent: 19 },
       restingHrChange: { before: 58, after: 55, unit: "bpm", changePercent: -5 },
     },
+    testimonialResponses: [
+      { day: 1, question: "What's your biggest challenge with recovery right now?", response: "I'm constantly sore and my WHOOP shows red recovery scores most days. It's limiting my training." },
+      { day: 30, question: "How has your recovery changed over the past month?", response: "My recovery scores are consistently green now. I can train harder and more often without feeling broken." },
+      { day: 30, question: "What surprised you most about this experience?", response: "How much better sleep quality affected my athletic performance. The HRV improvement was real." },
+    ],
     generatedNarrative: "Emily, a 29-year-old early career professional training for a half marathon, was struggling with poor recovery between workouts. Within three weeks, she noticed significant improvements, even setting a personal record on a tempo run. Her Whoop data confirmed her experience: HRV improved by 19% and deep sleep increased by 17%.",
     verified: true,
     verificationId: "2025-092",
@@ -363,6 +401,7 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
     name: "Mike T.",
     initials: "MT",
     avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+    tier: 1, // Sleep is Tier 1 - wearables primary
     profile: {
       ageRange: "35-44",
       lifeStage: "Established professional",
@@ -399,6 +438,11 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
       hrvChange: { before: 38, after: 44, unit: "ms", changePercent: 16 },
       restingHrChange: { before: 65, after: 61, unit: "bpm", changePercent: -6 },
     },
+    testimonialResponses: [
+      { day: 1, question: "What's your biggest challenge with sleep right now?", response: "I wake up at 3am almost every night thinking about work. Can't turn my brain off." },
+      { day: 30, question: "How has your sleep changed over the past month?", response: "I'm sleeping through the night consistently now. The 3am wake-ups are rare." },
+      { day: 30, question: "What surprised you most about this experience?", response: "As a data nerd who's tracked sleep for years, seeing consistent week-over-week improvement was remarkable." },
+    ],
     generatedNarrative: "Mike, a 42-year-old professional with a high-pressure job, had been struggling with nighttime waking for over a year. As a dedicated sleep tracker of 3 years, he was skeptical but willing to try. By week two, he was sleeping through most nights. His Apple Watch showed a remarkable 28% increase in deep sleep and 18% more total sleep time.",
     verified: true,
     verificationId: "2025-098",
@@ -410,6 +454,7 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
     name: "Lisa K.",
     initials: "LK",
     avatarUrl: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100&h=100&fit=crop",
+    tier: 2, // Stress is Tier 2 - co-primary (wearables + assessment)
     profile: {
       ageRange: "35-44",
       lifeStage: "Established professional",
@@ -446,7 +491,37 @@ export const MOCK_PARTICIPANT_STORIES: ParticipantStory[] = [
       hrvChange: { before: 40, after: 47, unit: "ms", changePercent: 17 },
       restingHrChange: { before: 64, after: 60, unit: "bpm", changePercent: -6 },
     },
-    generatedNarrative: "Lisa, a 38-year-old professional dealing with intense work stress, struggled to disconnect at night. Her Garmin consistently showed stress scores in the red zone. By week three, she noticed a real shift in her ability to leave work at work. Her device showed steady improvements: 21% more deep sleep and 17% better HRV scores.",
+    // Tier 2 includes both wearable data AND assessment result
+    assessmentResult: {
+      assessmentId: "reputable-stress",
+      assessmentName: "Reputable Stress Assessment",
+      categoryLabel: "Stress",
+      baseline: {
+        date: new Date("2024-11-10"),
+        compositeScore: 42, // 0-100 scale (Fair)
+        primaryScore: 30, // Stress level 7/10 normalized and reversed
+        primaryRaw: 7, // Raw stress level (7/10)
+        primaryMax: 10,
+        responses: [],
+      },
+      endpoint: {
+        date: new Date("2024-12-08"),
+        compositeScore: 71, // 0-100 scale (Good)
+        primaryScore: 78, // Stress level 3/10 normalized and reversed
+        primaryRaw: 3, // Raw stress level (3/10)
+        primaryMax: 10,
+        responses: [],
+      },
+      change: {
+        compositePoints: 29,
+        compositePercent: 69,
+        primaryPoints: 48,
+        primaryPercent: 160,
+      },
+      improved: true,
+      headline: "Stress improved from 7/10 to 3/10 (+57%)",
+    },
+    generatedNarrative: "Lisa, a 38-year-old professional dealing with intense work stress, struggled to disconnect at night. Her Garmin consistently showed stress scores in the red zone. By week three, she noticed a real shift in her ability to leave work at work. Her device showed steady improvements: 21% more deep sleep and 17% better HRV scores. Her stress assessment score improved from 'Fair' (4.2) to 'Good' (7.1), a 69% improvement that matched her objective wearable data.",
     verified: true,
     verificationId: "2025-103",
     completedAt: "2024-12-08",
@@ -1240,10 +1315,42 @@ function randomInRange(min: number, max: number): number {
 }
 
 // Generate wearable metrics based on category
-function generateWearableMetrics(category: HealthCategory): ParticipantStory["wearableMetrics"] {
+// Returns undefined for tier 4 categories (gut, weight) which are assessment-only
+// Returns activity-related metrics for energy category
+function generateWearableMetrics(category: HealthCategory, categoryValue?: string): ParticipantStory["wearableMetrics"] | undefined {
+  // Tier 4 categories (gut, weight) should NOT have wearable metrics
+  const tier4Categories = ["gut", "weight", "digestion"];
+  if (categoryValue && tier4Categories.includes(categoryValue)) {
+    return undefined;
+  }
+
   const devices = ["Oura Ring", "Apple Watch", "WHOOP", "Garmin", "Fitbit"];
   const device = devices[Math.floor(Math.random() * devices.length)];
 
+  // For energy category (tier 3), use activity-related metrics instead of sleep
+  if (categoryValue === "energy") {
+    // Use fixed values to avoid hydration mismatch (server vs client random)
+    // Steps: ~5000 before, +45% improvement
+    const stepsBefore = 5200;
+    const stepsChangePercent = 45;
+    const stepsAfter = Math.round(stepsBefore * (1 + stepsChangePercent / 100));
+
+    // Active minutes: ~28 before, +50% improvement
+    const activeMinBefore = 28;
+    const activeMinChangePercent = 50;
+    const activeMinAfter = Math.round(activeMinBefore * (1 + activeMinChangePercent / 100));
+
+    return {
+      device,
+      // Required sleepChange field with zeros (not displayed for energy)
+      sleepChange: { before: 0, after: 0, unit: "min", changePercent: 0 },
+      // Activity metrics using the correct field names
+      stepsChange: { before: stepsBefore, after: stepsAfter, unit: "steps", changePercent: stepsChangePercent },
+      activeMinutesChange: { before: activeMinBefore, after: activeMinAfter, unit: "min", changePercent: activeMinChangePercent },
+    };
+  }
+
+  // Default: sleep-related metrics for sleep, stress, recovery, fitness categories
   const primaryBefore = randomInRange(category.metrics.primary.beforeRange[0], category.metrics.primary.beforeRange[1]);
   const primaryChange = randomInRange(category.metrics.primary.changeRange[0], category.metrics.primary.changeRange[1]);
   const primaryAfter = Math.round(primaryBefore * (1 + primaryChange / 100));
@@ -1260,33 +1367,171 @@ function generateWearableMetrics(category: HealthCategory): ParticipantStory["we
   };
 }
 
+// Map health category keywords to assessment categories
+function getCategoryValueFromKeywords(keywords: string[]): string {
+  const categoryMap: Record<string, string> = {
+    sleep: "sleep",
+    recovery: "recovery",
+    fitness: "fitness",
+    stress: "stress",
+    energy: "energy",
+    focus: "focus",
+    mood: "mood",
+    anxiety: "anxiety",
+    pain: "pain",
+    skin: "skin",
+    digestion: "gut",
+    gut: "gut",
+    immunity: "immunity",
+    hair: "hair",
+    weight: "weight",
+    libido: "libido",
+  };
+
+  for (const keyword of keywords) {
+    const mapped = categoryMap[keyword.toLowerCase()];
+    if (mapped) return mapped;
+  }
+  return "sleep"; // default
+}
+
+// Primary metric question texts for generating meaningful headlines
+// Uses the primary survey question for each category instead of generic category labels
+const PRIMARY_METRIC_QUESTIONS: Record<string, string> = {
+  "reputable-energy": "Overall energy level",
+  "reputable-gut": "Digestive comfort",
+  "reputable-weight": "Appetite control",
+  "reputable-sleep": "Sleep quality",
+  "reputable-stress": "Stress level",
+  "reputable-focus": "Mental clarity",
+  "reputable-mood": "Overall mood",
+  "reputable-anxiety": "Anxiety level",
+  "reputable-pain": "Average pain",
+  "reputable-skin": "Skin appearance",
+  "reputable-hair": "Hair health",
+  "reputable-immunity": "Immune resilience",
+  "reputable-recovery": "Recovery feeling",
+  "reputable-fitness": "Fitness level",
+};
+
+// Generate assessment result for tiers 2-4 using 0-100 scoring
+function generateAssessmentResult(assessmentId: string): AssessmentResult | undefined {
+  const assessment = getAssessmentById(assessmentId);
+  if (!assessment) return undefined;
+
+  // Generate realistic baseline (25-49 = Fair) and endpoint (50-80 = Good)
+  const baselineComposite = randomInRange(30, 48);
+  const endpointComposite = randomInRange(62, 82);
+  const baselinePrimary = randomInRange(25, 45);
+  const endpointPrimary = randomInRange(65, 85);
+
+  // Generate raw primary scores for headline (based on scale type)
+  // Most assessments use 1-10 for primary metrics
+  const baselinePrimaryRaw = randomInRange(3, 5);
+  const endpointPrimaryRaw = randomInRange(7, 9);
+  const primaryMax = 10;
+
+  const compositePoints = endpointComposite - baselineComposite;
+  const compositePercent = Math.round((compositePoints / baselineComposite) * 100);
+  const primaryPoints = endpointPrimary - baselinePrimary;
+  const primaryPercent = Math.round((primaryPoints / baselinePrimary) * 100);
+
+  // Derive category label from assessment name
+  const categoryLabel = assessment.name.replace('Reputable ', '').replace(' Assessment', '');
+
+  // Use the primary metric question for a more meaningful headline instead of category label
+  const primaryMetricLabel = PRIMARY_METRIC_QUESTIONS[assessmentId] || categoryLabel;
+
+  // Calculate percent change for headline using raw values
+  const rawPercentChange = Math.round(((endpointPrimaryRaw - baselinePrimaryRaw) / baselinePrimaryRaw) * 100);
+  const headline = `${primaryMetricLabel} improved from ${baselinePrimaryRaw}/${primaryMax} to ${endpointPrimaryRaw}/${primaryMax} (+${rawPercentChange}%)`;
+
+  return {
+    assessmentId: assessment.id,
+    assessmentName: assessment.name,
+    categoryLabel,
+    baseline: {
+      date: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+      compositeScore: baselineComposite,
+      primaryScore: baselinePrimary,
+      primaryRaw: baselinePrimaryRaw,
+      primaryMax,
+      responses: [],
+    },
+    endpoint: {
+      date: new Date(),
+      compositeScore: endpointComposite,
+      primaryScore: endpointPrimary,
+      primaryRaw: endpointPrimaryRaw,
+      primaryMax,
+      responses: [],
+    },
+    change: {
+      compositePoints,
+      compositePercent,
+      primaryPoints,
+      primaryPercent,
+    },
+    improved: compositePoints > 0,
+    headline,
+  };
+}
+
+// Generate testimonial responses for Tier 1
+function generateTestimonialResponses(categoryLabel: string): ParticipantStory["testimonialResponses"] {
+  const responses: { day: number; question: string; response: string }[] = [
+    {
+      day: 1,
+      question: `What's your biggest challenge with ${categoryLabel.toLowerCase()} right now?`,
+      response: `I've been really struggling with this for months. It's affecting my daily life and I'm ready for a change.`,
+    },
+    {
+      day: 30,
+      question: `How has your ${categoryLabel.toLowerCase()} changed over the past month?`,
+      response: `The improvement has been significant. I can see it in my wearable data and I can feel it every day.`,
+    },
+    {
+      day: 30,
+      question: "What surprised you most about this experience?",
+      response: `How quickly the changes showed up in my device data. The objective proof made the experience feel real and validated.`,
+    },
+  ];
+  return responses;
+}
+
 // Generate participant stories dynamically based on study villain variable
 export function generateParticipantStories(
   villainVariable: string,
   productName?: string,
   studyDurationDays: number = 28,
-  count: number = 4
+  count: number = 4,
+  studyCategory?: string // Optional: explicitly pass the study category
 ): ParticipantStory[] {
-  const category = detectHealthCategory(villainVariable, productName);
+  const healthCategory = detectHealthCategory(villainVariable, productName);
   const stories: ParticipantStory[] = [];
+
+  // Determine the category config (tier, assessment, etc.)
+  const categoryValue = studyCategory || getCategoryValueFromKeywords(healthCategory.keywords);
+  const categoryConfig = getCategoryConfig(categoryValue);
+  const tier: TierLevel = categoryConfig?.tier || 1;
 
   for (let i = 0; i < Math.min(count, PARTICIPANT_TEMPLATES.length); i++) {
     const template = PARTICIPANT_TEMPLATES[i];
-    const villainVar = category.villainVariables[i % category.villainVariables.length];
-    const motivation = category.motivations[i % category.motivations.length];
-    const hopedResult = category.hopedResults[i % category.hopedResults.length];
-    const lifeStage = category.lifeStages[i % category.lifeStages.length];
-    const wellnessGoal = category.wellnessGoals[i % category.wellnessGoals.length];
+    const villainVar = healthCategory.villainVariables[i % healthCategory.villainVariables.length];
+    const motivation = healthCategory.motivations[i % healthCategory.motivations.length];
+    const hopedResult = healthCategory.hopedResults[i % healthCategory.hopedResults.length];
+    const lifeStage = healthCategory.lifeStages[i % healthCategory.lifeStages.length];
+    const wellnessGoal = healthCategory.wellnessGoals[i % healthCategory.wellnessGoals.length];
 
     // Generate journey ratings with improvement trend
-    const villainRatings = category.journeyNotes.map(note => ({
+    const villainRatings = healthCategory.journeyNotes.map(note => ({
       day: note.day,
       rating: note.day === 1 ? 2 : note.day <= 7 ? (2 + Math.floor(Math.random() * 2)) : note.day <= 14 ? 3 : note.day <= 21 ? 4 : 5,
       note: Math.random() > 0.5 ? note.improving : note.struggling,
     }));
 
     // Pick random quotes from available options
-    const keyQuotes = category.keyQuotes.flatMap(kq =>
+    const keyQuotes = healthCategory.keyQuotes.flatMap(kq =>
       kq.quotes.slice(0, 1).map(quote => ({
         day: kq.context === "Final reflection" ? studyDurationDays : Math.floor(studyDurationDays / 2),
         quote,
@@ -1294,13 +1539,29 @@ export function generateParticipantStories(
       }))
     ).slice(0, 2);
 
-    const wearableMetrics = generateWearableMetrics(category);
+    // Generate wearable metrics (undefined for tier 4, activity-based for energy)
+    const wearableMetrics = generateWearableMetrics(healthCategory, categoryValue);
+
+    // Generate tier-specific data
+    let assessmentResult: AssessmentResult | undefined;
+    let testimonialResponses: ParticipantStory["testimonialResponses"];
+
+    if (tier >= 2 && categoryConfig?.assessmentId) {
+      // Tiers 2-4: Generate assessment result
+      assessmentResult = generateAssessmentResult(categoryConfig.assessmentId);
+    }
+
+    if (tier === 1) {
+      // Tier 1: Generate testimonial responses
+      testimonialResponses = generateTestimonialResponses(categoryConfig?.label || "sleep");
+    }
 
     stories.push({
       id: `generated-story-${i + 1}`,
       name: template.name,
       initials: template.initials,
       avatarUrl: template.avatarUrl,
+      tier,
       profile: {
         ageRange: template.ageRange,
         lifeStage,
@@ -1322,6 +1583,8 @@ export function generateParticipantStories(
         keyQuotes,
       },
       wearableMetrics,
+      assessmentResult,
+      testimonialResponses,
       verified: true,
       verificationId: `2025-${100 + i}`,
       completedAt: new Date().toISOString().split("T")[0],
@@ -1336,9 +1599,21 @@ export function generateParticipantStories(
 export function getStoriesForStudy(
   villainVariable: string,
   productName?: string,
-  studyDurationDays: number = 28
+  studyDurationDays: number = 28,
+  studyCategory?: string // Optional: explicitly pass the study category for tier determination
 ): ParticipantStory[] {
   const searchText = `${villainVariable} ${productName || ""}`.toLowerCase();
+
+  // If a category is explicitly provided, use it to determine tier
+  if (studyCategory) {
+    const categoryConfig = getCategoryConfig(studyCategory);
+    // For Tier 1 sleep/recovery/fitness categories, use hardcoded stories
+    if (categoryConfig?.tier === 1 && ["sleep", "recovery", "fitness"].includes(studyCategory)) {
+      return MOCK_PARTICIPANT_STORIES;
+    }
+    // For other categories, generate tier-appropriate stories
+    return generateParticipantStories(villainVariable, productName, studyDurationDays, 4, studyCategory);
+  }
 
   // Check for non-sleep categories first (more specific)
   const nonSleepCategories = {
@@ -1350,10 +1625,18 @@ export function getStoriesForStudy(
   };
 
   // Check if it matches a non-sleep category
-  for (const [, keywords] of Object.entries(nonSleepCategories)) {
+  for (const [categoryKey, keywords] of Object.entries(nonSleepCategories)) {
     if (keywords.some(kw => searchText.includes(kw))) {
-      // Generate category-specific stories
-      return generateParticipantStories(villainVariable, productName, studyDurationDays, 4);
+      // Map to actual category value for tier determination
+      const categoryMap: Record<string, string> = {
+        digestion: "gut",
+        stress: "stress",
+        energy: "energy",
+        fitness: "fitness",
+        weight: "weight",
+      };
+      // Generate category-specific stories with tier info
+      return generateParticipantStories(villainVariable, productName, studyDurationDays, 4, categoryMap[categoryKey]);
     }
   }
 

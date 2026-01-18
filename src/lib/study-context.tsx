@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
+import { TierLevel } from "./assessments";
 
 export interface DiscoverItem {
   question: string;
@@ -82,6 +83,11 @@ export interface StudyFormData {
   productPrice: string;
   productUrl: string;
   category: string;
+  // Tier system (auto-populated based on category)
+  tier: TierLevel;
+  selectedAssessmentId: string | null;
+  checkInDays: number[];
+  requiresPhotos: boolean;
   // Step 2: Study Settings
   rebateAmount: string;
   durationDays: string;
@@ -94,6 +100,12 @@ export interface StudyFormData {
   customQuestions: CustomQuestion[];
   // Step 2: Baseline Questions (asked at enrollment)
   baselineQuestions: BaselineQuestion[];
+  // Step 2: Testimonial Questions (Tier 1 only - for story content)
+  testimonialQuestions: {
+    day: number;
+    question: string;
+    type: "text" | "voice_and_text";
+  }[];
   // Step 3: Generated Content
   studyTitle: string;
   hookQuestion: string;
@@ -109,6 +121,11 @@ const initialFormData: StudyFormData = {
   productPrice: "",
   productUrl: "",
   category: "",
+  // Tier defaults (will be auto-set when category is selected)
+  tier: 1,
+  selectedAssessmentId: null,
+  checkInDays: [1, 30],
+  requiresPhotos: false,
   rebateAmount: "",
   durationDays: "30",
   totalSpots: "",
@@ -118,6 +135,7 @@ const initialFormData: StudyFormData = {
   villainQuestionDays: [7, 14, 21, 28],
   customQuestions: [],
   baselineQuestions: DEFAULT_BASELINE_QUESTIONS,
+  testimonialQuestions: [],
   studyTitle: "",
   hookQuestion: "",
   discoverItems: [],

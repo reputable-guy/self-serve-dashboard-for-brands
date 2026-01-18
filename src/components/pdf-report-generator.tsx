@@ -534,9 +534,10 @@ export async function generateStudyPDF(data: ReportData): Promise<void> {
   doc.setTextColor(...darkColor);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
+  const deviceLabel = study.requiredDevice ? DEVICE_LABELS[study.requiredDevice] || "Various" : "Various";
   const methodology = [
-    "• All participants verified through connected wearable devices (" + (DEVICE_LABELS[study.requiredDevice] || "Various") + ")",
-    "• Biometric data collected continuously throughout the " + study.durationDays + "-day study period",
+    "• All participants verified through connected wearable devices (" + deviceLabel + ")",
+    "• Biometric data collected continuously throughout the " + (study.durationDays || 28) + "-day study period",
     "• Baseline measurements established during 7-day pre-study period",
     "• Results independently verified by Reputable Health platform",
     "• Each testimonial linked to verifiable third-party data page",
@@ -602,7 +603,8 @@ export async function generateStudyPDF(data: ReportData): Promise<void> {
   }
 
   // Save the PDF
-  const fileName = `${study.productName.replace(/\s+/g, "-")}-Study-Report.pdf`;
+  const studyName = study.name || study.productName || "Study";
+  const fileName = `${studyName.replace(/\s+/g, "-")}-Study-Report.pdf`;
   doc.save(fileName);
 }
 

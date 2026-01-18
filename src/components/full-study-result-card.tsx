@@ -177,10 +177,12 @@ export function FullStudyResultCard({ story }: FullStudyResultCardProps) {
               <BadgeCheck className="w-4 h-4" />
               <span className="text-xs font-medium">Verified</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Watch className="w-3 h-3" />
-              <span>{story.wearableMetrics.device}</span>
-            </div>
+            {story.wearableMetrics && story.tier !== 4 && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Watch className="w-3 h-3" />
+                <span>{story.wearableMetrics?.device}</span>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -218,53 +220,73 @@ export function FullStudyResultCard({ story }: FullStudyResultCardProps) {
           />
         </div>
 
-        {/* Wearable Insights Section */}
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-2 mb-4">
-            <Watch className="w-4 h-4 text-purple-500" />
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Wearable Insights</h4>
-            <span className="text-xs text-gray-400 ml-auto flex items-center gap-1">
-              <span>Data from</span>
-              <span className="font-medium">{story.wearableMetrics.device}</span>
-            </span>
-          </div>
+        {/* Wearable Insights Section - Only show for tiers 1-3 with wearable data */}
+        {story.wearableMetrics && story.tier !== 4 && (
+          <div className="p-6 border-b">
+            <div className="flex items-center gap-2 mb-4">
+              <Watch className="w-4 h-4 text-purple-500" />
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Wearable Insights</h4>
+              <span className="text-xs text-gray-400 ml-auto flex items-center gap-1">
+                <span>Data from</span>
+                <span className="font-medium">{story.wearableMetrics?.device}</span>
+              </span>
+            </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            {story.wearableMetrics.sleepChange && (
-              <ProgressBar
-                before={story.wearableMetrics.sleepChange.before}
-                after={story.wearableMetrics.sleepChange.after}
-                label="Total Sleep"
-                unit="min"
-              />
-            )}
-            {story.wearableMetrics.deepSleepChange && (
-              <ProgressBar
-                before={story.wearableMetrics.deepSleepChange.before}
-                after={story.wearableMetrics.deepSleepChange.after}
-                label="Deep Sleep"
-                unit="min"
-              />
-            )}
-            {story.wearableMetrics.hrvChange && (
-              <ProgressBar
-                before={story.wearableMetrics.hrvChange.before}
-                after={story.wearableMetrics.hrvChange.after}
-                label="HRV"
-                unit="ms"
-              />
-            )}
-            {story.wearableMetrics.restingHrChange && (
-              <ProgressBar
-                before={story.wearableMetrics.restingHrChange.before}
-                after={story.wearableMetrics.restingHrChange.after}
-                label="Resting HR"
-                unit="bpm"
-                isNegativeBetter
-              />
-            )}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Activity metrics (energy studies) */}
+              {story.wearableMetrics?.stepsChange && (
+                <ProgressBar
+                  before={story.wearableMetrics.stepsChange.before}
+                  after={story.wearableMetrics.stepsChange.after}
+                  label="Daily Steps"
+                  unit=""
+                />
+              )}
+              {story.wearableMetrics?.activeMinutesChange && (
+                <ProgressBar
+                  before={story.wearableMetrics.activeMinutesChange.before}
+                  after={story.wearableMetrics.activeMinutesChange.after}
+                  label="Active Minutes"
+                  unit={story.wearableMetrics.activeMinutesChange.unit}
+                />
+              )}
+              {/* Sleep metrics (sleep/recovery/stress studies) - only show if has actual sleep data */}
+              {story.wearableMetrics?.sleepChange && story.wearableMetrics.sleepChange.changePercent > 0 && (
+                <ProgressBar
+                  before={story.wearableMetrics.sleepChange.before}
+                  after={story.wearableMetrics.sleepChange.after}
+                  label="Total Sleep"
+                  unit={story.wearableMetrics.sleepChange.unit}
+                />
+              )}
+              {story.wearableMetrics?.deepSleepChange && !story.wearableMetrics?.stepsChange && (
+                <ProgressBar
+                  before={story.wearableMetrics.deepSleepChange.before}
+                  after={story.wearableMetrics.deepSleepChange.after}
+                  label="Deep Sleep"
+                  unit={story.wearableMetrics.deepSleepChange.unit}
+                />
+              )}
+              {story.wearableMetrics?.hrvChange && (
+                <ProgressBar
+                  before={story.wearableMetrics.hrvChange.before}
+                  after={story.wearableMetrics.hrvChange.after}
+                  label="HRV"
+                  unit="ms"
+                />
+              )}
+              {story.wearableMetrics?.restingHrChange && (
+                <ProgressBar
+                  before={story.wearableMetrics.restingHrChange.before}
+                  after={story.wearableMetrics.restingHrChange.after}
+                  label="Resting HR"
+                  unit="bpm"
+                  isNegativeBetter
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Key Quotes Section */}
         {story.journey.keyQuotes.length > 0 && (
@@ -345,7 +367,7 @@ export function FullStudyResultCard({ story }: FullStudyResultCardProps) {
 // Compact version for grid displays
 export function CompactFullCard({ story }: { story: ParticipantStory }) {
   const lastRating = story.journey.villainRatings[story.journey.villainRatings.length - 1];
-  const primaryMetric = story.wearableMetrics.deepSleepChange || story.wearableMetrics.sleepChange;
+  const primaryMetric = story.wearableMetrics?.deepSleepChange || story.wearableMetrics?.sleepChange;
   const bestQuote = story.journey.keyQuotes[story.journey.keyQuotes.length - 1]?.quote || story.baseline.motivation;
   const truncatedQuote = bestQuote.length > 100 ? bestQuote.slice(0, 97) + "..." : bestQuote;
 
@@ -381,7 +403,7 @@ export function CompactFullCard({ story }: { story: ParticipantStory }) {
               +{primaryMetric?.changePercent || 0}%
             </div>
             <div className="text-xs text-gray-500">
-              {primaryMetric === story.wearableMetrics.deepSleepChange ? "Deep Sleep" : "Sleep"}
+              {primaryMetric === story.wearableMetrics?.deepSleepChange ? "Deep Sleep" : "Sleep"}
             </div>
           </div>
           <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
@@ -409,7 +431,7 @@ export function CompactFullCard({ story }: { story: ParticipantStory }) {
         <div className="flex items-center justify-between pt-2 border-t text-xs text-gray-400">
           <div className="flex items-center gap-1">
             <Watch className="w-3 h-3" />
-            <span>{story.wearableMetrics.device}</span>
+            <span>{story.wearableMetrics?.device}</span>
           </div>
           <span>{story.journey.durationDays} days</span>
         </div>

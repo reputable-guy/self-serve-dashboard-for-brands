@@ -378,48 +378,52 @@ export function VideoTestimonialCard({ testimonial, studyId, isFeatured = false,
                   )}
 
                   {/* Detailed Wearable Metrics */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Watch className="h-4 w-4 text-[#00D1C1]" />
-                      <span>Verified Wearable Data ({story.wearableMetrics.device})</span>
+                  {story.wearableMetrics && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Watch className="h-4 w-4 text-[#00D1C1]" />
+                        <span>Verified Wearable Data ({story.wearableMetrics.device})</span>
+                      </div>
+                      <div className="space-y-1">
+                        {story.wearableMetrics.sleepChange && (
+                          <MetricComparison
+                            label="Total Sleep"
+                            before={Math.round(story.wearableMetrics.sleepChange.before / 60 * 10) / 10}
+                            after={Math.round(story.wearableMetrics.sleepChange.after / 60 * 10) / 10}
+                            unit="hrs"
+                            changePercent={story.wearableMetrics.sleepChange.changePercent}
+                          />
+                        )}
+                        {story.wearableMetrics.deepSleepChange && (
+                          <MetricComparison
+                            label="Deep Sleep"
+                            before={story.wearableMetrics.deepSleepChange.before}
+                            after={story.wearableMetrics.deepSleepChange.after}
+                            unit="min"
+                            changePercent={story.wearableMetrics.deepSleepChange.changePercent}
+                          />
+                        )}
+                        {story.wearableMetrics.hrvChange && (
+                          <MetricComparison
+                            label="HRV"
+                            before={story.wearableMetrics.hrvChange.before}
+                            after={story.wearableMetrics.hrvChange.after}
+                            unit="ms"
+                            changePercent={story.wearableMetrics.hrvChange.changePercent}
+                          />
+                        )}
+                        {story.wearableMetrics.restingHrChange && (
+                          <MetricComparison
+                            label="Resting HR"
+                            before={story.wearableMetrics.restingHrChange.before}
+                            after={story.wearableMetrics.restingHrChange.after}
+                            unit="bpm"
+                            changePercent={story.wearableMetrics.restingHrChange.changePercent}
+                          />
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <MetricComparison
-                        label="Total Sleep"
-                        before={Math.round(story.wearableMetrics.sleepChange.before / 60 * 10) / 10}
-                        after={Math.round(story.wearableMetrics.sleepChange.after / 60 * 10) / 10}
-                        unit="hrs"
-                        changePercent={story.wearableMetrics.sleepChange.changePercent}
-                      />
-                      {story.wearableMetrics.deepSleepChange && (
-                        <MetricComparison
-                          label="Deep Sleep"
-                          before={story.wearableMetrics.deepSleepChange.before}
-                          after={story.wearableMetrics.deepSleepChange.after}
-                          unit="min"
-                          changePercent={story.wearableMetrics.deepSleepChange.changePercent}
-                        />
-                      )}
-                      {story.wearableMetrics.hrvChange && (
-                        <MetricComparison
-                          label="HRV"
-                          before={story.wearableMetrics.hrvChange.before}
-                          after={story.wearableMetrics.hrvChange.after}
-                          unit="ms"
-                          changePercent={story.wearableMetrics.hrvChange.changePercent}
-                        />
-                      )}
-                      {story.wearableMetrics.restingHrChange && (
-                        <MetricComparison
-                          label="Resting HR"
-                          before={story.wearableMetrics.restingHrChange.before}
-                          after={story.wearableMetrics.restingHrChange.after}
-                          unit="bpm"
-                          changePercent={story.wearableMetrics.restingHrChange.changePercent}
-                        />
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Generated Narrative */}
                   {story.generatedNarrative && (

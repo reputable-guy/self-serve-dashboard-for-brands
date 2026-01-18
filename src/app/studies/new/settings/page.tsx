@@ -24,7 +24,8 @@ import {
 import { StudyPreview } from "@/components/study-preview";
 import { useStudyForm, CustomQuestion, BaselineQuestion, DEFAULT_BASELINE_QUESTIONS } from "@/lib/study-context";
 import { DEVICES, METRICS, DEFAULT_VILLAIN_DAYS } from "@/lib/constants";
-import { ChevronDown, Plus, Trash2, Mic, ClipboardList } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Mic, ClipboardList, Activity, FileText, Camera } from "lucide-react";
+import { getAssessmentForCategory, AssessmentQuestion } from "@/lib/assessments";
 
 export default function CreateStudyStep2() {
   const router = useRouter();
@@ -32,6 +33,12 @@ export default function CreateStudyStep2() {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isCustomQuestionsOpen, setIsCustomQuestionsOpen] = useState(false);
   const [isBaselineOpen, setIsBaselineOpen] = useState(false);
+  const [isAssessmentOpen, setIsAssessmentOpen] = useState(true);
+  const [isTestimonialOpen, setIsTestimonialOpen] = useState(true);
+
+  // Get tier and assessment for current category
+  const tier = formData.tier || 1;
+  const assessment = getAssessmentForCategory(formData.category);
 
   const handleMetricToggle = (metricId: string) => {
     const currentMetrics = formData.metricsToTrack;
@@ -301,13 +308,168 @@ export default function CreateStudyStep2() {
                     </Select>
                   </div>
 
-                  {/* Metrics to Track */}
+                  {/* Assessment Section - Tier 2, 3, 4 only */}
+                  {tier >= 2 && assessment && (
+                    <Collapsible open={isAssessmentOpen} onOpenChange={setIsAssessmentOpen}>
+                      <Card className={`border-2 ${tier === 2 ? 'border-purple-300 bg-purple-50/30' : 'border-[#00D1C1]/30 bg-[#00D1C1]/5'}`}>
+                        <CollapsibleTrigger asChild>
+                          <div className="p-4 cursor-pointer hover:bg-opacity-50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <FileText className={`h-5 w-5 ${tier === 2 ? 'text-purple-600' : 'text-[#00D1C1]'}`} />
+                                <div>
+                                  <h3 className="font-medium flex items-center gap-2">
+                                    {assessment.name}
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                      tier === 2
+                                        ? 'bg-purple-100 text-purple-700'
+                                        : 'bg-[#00D1C1] text-white'
+                                    }`}>
+                                      {tier === 2 ? 'CO-PRIMARY' : 'PRIMARY'}
+                                    </span>
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {assessment.description}
+                                  </p>
+                                </div>
+                              </div>
+                              <ChevronDown className={`h-5 w-5 transition-transform ${isAssessmentOpen ? "rotate-180" : ""}`} />
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="pt-0 space-y-4">
+                            <div className="p-3 rounded-lg bg-muted/50">
+                              <p className="text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground">{assessment.inspiredBy}</span>
+                                {" · "}Administered at enrollment and study completion.
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {assessment.questions.length} Questions (Preview)
+                              </Label>
+                              <div className="space-y-2">
+                                {assessment.questions.map((q: AssessmentQuestion, idx: number) => (
+                                  <div key={q.id} className="p-3 rounded-lg border bg-background">
+                                    <p className="text-sm">{idx + 1}. {q.text}</p>
+                                    {q.responseOptions && q.responseOptions.length > 0 && (
+                                      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                                        <span>{q.responseOptions[0]?.label}</span>
+                                        <span className="text-[#00D1C1]">{q.responseOptions[0]?.value} — {q.responseOptions[q.responseOptions.length - 1]?.value}</span>
+                                        <span>{q.responseOptions[q.responseOptions.length - 1]?.label}</span>
+                                      </div>
+                                    )}
+                                    {q.responseType === 'open_text' && (
+                                      <div className="mt-2 text-xs text-muted-foreground italic">Text response</div>
+                                    )}
+                                    {q.responseType === 'photo' && (
+                                      <div className="mt-2 text-xs text-muted-foreground italic">Photo upload</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  )}
+
+                  {/* Photo Documentation - Tier 4 categories that require photos */}
+                  {tier === 4 && formData.requiresPhotos && (
+                    <Card className="border-2 border-orange-300 bg-orange-50/30">
+                      <div className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Camera className="h-5 w-5 text-orange-600" />
+                          <div>
+                            <h3 className="font-medium flex items-center gap-2">
+                              Photo Documentation
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                                REQUIRED
+                              </span>
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Participants will capture before/after photos on Day 1 and Day 28
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Testimonial Questions - Tier 1 only */}
+                  {tier === 1 && (
+                    <Collapsible open={isTestimonialOpen} onOpenChange={setIsTestimonialOpen}>
+                      <Card className="border-2 border-blue-300 bg-blue-50/30">
+                        <CollapsibleTrigger asChild>
+                          <div className="p-4 cursor-pointer hover:bg-opacity-50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Mic className="h-5 w-5 text-blue-600" />
+                                <div>
+                                  <h3 className="font-medium flex items-center gap-2">
+                                    Testimonial Questions
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                                      FOR STORY CONTENT
+                                    </span>
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    Brief questions on Day 1 and Day 30 for testimonial quotes
+                                  </p>
+                                </div>
+                              </div>
+                              <ChevronDown className={`h-5 w-5 transition-transform ${isTestimonialOpen ? "rotate-180" : ""}`} />
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="pt-0 space-y-3">
+                            <div className="p-3 rounded-lg bg-blue-50">
+                              <p className="text-sm text-blue-800">
+                                Since wearables measure your outcome directly, we only ask a few questions for story content—not for measurement.
+                              </p>
+                            </div>
+                            {formData.testimonialQuestions.map((q, idx) => (
+                              <div key={idx} className="p-3 rounded-lg border bg-background">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs px-2 py-0.5 rounded bg-muted">Day {q.day}</span>
+                                </div>
+                                <p className="text-sm">{q.question}</p>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  )}
+
+                  {/* Metrics to Track - with tier-appropriate badge */}
                   <div className="space-y-3">
-                    <Label>Metrics to Track</Label>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                        <Label>Wearable Metrics</Label>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          tier === 1
+                            ? 'bg-blue-100 text-blue-700'
+                            : tier === 2
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {tier === 1 ? 'PRIMARY' : tier === 2 ? 'CO-PRIMARY' : 'SECONDARY'}
+                        </span>
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground -mt-1">
-                      Select the health metrics relevant to your product
+                      {tier === 1
+                        ? "These metrics directly measure your product's outcome"
+                        : tier === 2
+                          ? "Wearable data provides objective measurement alongside assessment"
+                          : "Wearable data validates participant engagement and provides supporting evidence"}
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid grid-cols-2 gap-3 ${tier >= 3 ? 'opacity-75' : ''}`}>
                       {METRICS.map((metric) => (
                         <label
                           key={metric.id}

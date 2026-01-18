@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
+import { ConditionalSidebar } from "@/components/conditional-sidebar";
 import { Providers } from "./providers";
 
 const geistSans = localFont({
@@ -32,7 +32,7 @@ export default function RootLayout({
       >
         <Providers>
           <div className="flex min-h-screen">
-            <Sidebar />
+            <ConditionalSidebar />
             <main className="flex-1 overflow-auto bg-background">
               {children}
             </main>

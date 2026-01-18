@@ -1,19 +1,26 @@
 import { PhoneMockup } from "./phone-mockup";
 import { Watch, Clock, Check } from "lucide-react";
-import { DiscoverItem, RoutineStep, ValueItem } from "@/lib/study-context";
+
+// Support both complex types (from study-context) and simple types (from studies-store)
+interface ValueItem {
+  icon?: string;
+  item: string;
+  note: string;
+  value: string;
+}
 
 interface StudyDetailsPreviewProps {
-  productName: string;
-  productImage: string;
-  studyTitle: string;
-  hookQuestion: string;
-  rebateAmount: string;
-  durationDays: string;
-  totalSpots: string;
-  requiredDevice: string;
-  discoverItems: DiscoverItem[];
-  dailyRoutine: RoutineStep[];
-  whatYouGet: ValueItem[];
+  productName?: string;
+  productImage?: string;
+  studyTitle?: string;
+  hookQuestion?: string;
+  rebateAmount?: string | number;
+  durationDays?: string | number;
+  totalSpots?: string | number;
+  requiredDevice?: string;
+  discoverItems?: string[];  // Simple array of strings
+  dailyRoutine?: string;     // Single string description
+  whatYouGet?: ValueItem[];
 }
 
 const deviceLabels: Record<string, string> = {
@@ -37,7 +44,7 @@ export function StudyDetailsPreview({
   dailyRoutine,
   whatYouGet,
 }: StudyDetailsPreviewProps) {
-  const rebateNum = parseFloat(rebateAmount || "0");
+  const rebateNum = typeof rebateAmount === 'number' ? rebateAmount : parseFloat(rebateAmount || "0");
   const heartbeats = rebateNum > 0 ? Math.round(rebateNum * 100) : 0;
   const heartbeatsFormatted = heartbeats > 0 ? heartbeats.toLocaleString() : "--";
   const rebateFormatted = rebateNum > 0 ? rebateNum.toFixed(0) : "--";
@@ -46,7 +53,7 @@ export function StudyDetailsPreview({
   const device = requiredDevice ? deviceLabels[requiredDevice] || "Any Device" : "Any Device";
 
   // Calculate total value
-  const totalValue = whatYouGet.reduce((sum, item) => {
+  const totalValue = (whatYouGet || []).reduce((sum, item) => {
     const match = item.value.match(/\$(\d+)/);
     return sum + (match ? parseInt(match[1]) : 0);
   }, 0);
@@ -106,13 +113,10 @@ export function StudyDetailsPreview({
               <span>✨</span> What You&apos;ll Discover About You
             </h2>
             <div className="space-y-2">
-              {discoverItems.slice(0, 3).map((item, index) => (
+              {(discoverItems || []).slice(0, 3).map((item, index) => (
                 <div key={index} className="flex gap-2">
                   <Check className="w-3.5 h-3.5 text-[#00D1C1] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-white font-medium">{item.question}</p>
-                    <p className="text-[10px] text-gray-500">{item.explanation}</p>
-                  </div>
+                  <p className="text-xs text-white">{item}</p>
                 </div>
               ))}
             </div>
@@ -135,40 +139,32 @@ export function StudyDetailsPreview({
           <div className="mb-5">
             <h2 className="text-sm font-semibold text-white mb-2">📋 What You&apos;ll Do</h2>
             <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Your Daily Routine</p>
-            <div className="space-y-2">
-              {dailyRoutine.map((step, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <div className="w-4 h-4 rounded-full bg-[#00D1C1]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-[8px] text-[#00D1C1] font-medium">{index + 1}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-white font-medium">{step.action}</p>
-                    <p className="text-[10px] text-gray-500">{step.details}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-gray-400">{dailyRoutine || "Complete daily check-ins and track your progress."}</p>
           </div>
 
           {/* What You'll Get */}
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold text-white mb-2">🎁 What You&apos;ll Get</h2>
-            <div className="space-y-2">
-              {whatYouGet.map((item, index) => (
-                <div key={index} className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-white">{item.item}</p>
-                    <p className="text-[10px] text-gray-500">{item.note}</p>
+          {(whatYouGet && whatYouGet.length > 0) && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-white mb-2">🎁 What You&apos;ll Get</h2>
+              <div className="space-y-2">
+                {whatYouGet.map((item, index) => (
+                  <div key={index} className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-white">{item.item}</p>
+                      <p className="text-[10px] text-gray-500">{item.note}</p>
+                    </div>
+                    <span className="text-xs text-white font-medium">{item.value}</span>
                   </div>
-                  <span className="text-xs text-white font-medium">{item.value}</span>
+                ))}
+              </div>
+              {totalValue > 0 && (
+                <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-800">
+                  <span className="text-xs text-white font-semibold">Total Value</span>
+                  <span className="text-sm text-[#00D1C1] font-bold">${totalValue}+</span>
                 </div>
-              ))}
+              )}
             </div>
-            <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-800">
-              <span className="text-xs text-white font-semibold">Total Value</span>
-              <span className="text-sm text-[#00D1C1] font-bold">${totalValue}+</span>
-            </div>
-          </div>
+          )}
 
           {/* CTA Button - scrolls with content */}
           <div className="bg-[#00D1C1] text-center py-2.5 rounded-lg mb-4">

@@ -9,7 +9,7 @@ export function PhoneMockup({ children, className }: PhoneMockupProps) {
   return (
     <div
       className={cn(
-        "relative bg-gray-900 rounded-[40px] p-2 shadow-xl border border-gray-700",
+        "relative bg-gray-900 rounded-[40px] p-2 shadow-xl border border-gray-700 w-[375px] max-w-full",
         className
       )}
     >

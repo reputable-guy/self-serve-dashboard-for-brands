@@ -21,10 +21,15 @@ import { StudyPreview } from "@/components/study-preview";
 import { useStudyForm } from "@/lib/study-context";
 import { CATEGORIES } from "@/lib/constants";
 import { validateProductInfo, getFieldError, ValidationError } from "@/lib/validation";
+import {
+  getCategoryConfig,
+  getTierDisplayInfo,
+  TIER_1_TESTIMONIAL_QUESTIONS,
+} from "@/lib/assessments";
 
 export default function CreateStudyStep1() {
   const router = useRouter();
-  const { formData, updateField } = useStudyForm();
+  const { formData, updateField, updateFields } = useStudyForm();
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -189,7 +194,25 @@ export default function CreateStudyStep1() {
                     <Select
                       value={formData.category}
                       onValueChange={(value) => {
-                        updateField("category", value);
+                        // Get tier configuration for the selected category
+                        const config = getCategoryConfig(value);
+
+                        // Update all tier-related fields at once
+                        updateFields({
+                          category: value,
+                          tier: config?.tier || 1,
+                          selectedAssessmentId: config?.assessmentId || null,
+                          checkInDays: config?.checkInDays || [1, 30],
+                          requiresPhotos: config?.requiresPhotos || false,
+                          metricsToTrack: config?.wearableMetrics || [],
+                          // Set testimonial questions for Tier 1 categories
+                          testimonialQuestions: config?.tier === 1
+                            ? TIER_1_TESTIMONIAL_QUESTIONS.map(q => ({
+                                ...q,
+                                question: q.question.replace('[category]', config.label.toLowerCase())
+                              }))
+                            : [],
+                        });
                         setTouched((prev) => ({ ...prev, category: true }));
                       }}
                     >
@@ -197,13 +220,70 @@ export default function CreateStudyStep1() {
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((category) => (
+                        {/* Tier 1: Wearables Primary */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          Wearables Primary
+                        </div>
+                        {CATEGORIES.filter(c => c.tier === 1).map((category) => (
                           <SelectItem key={category.value} value={category.value}>
-                            {category.label}
+                            <span className="flex items-center gap-2">
+                              {category.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+
+                        {/* Tier 2: Co-Primary */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                          Co-Primary (Wearables + Assessment)
+                        </div>
+                        {CATEGORIES.filter(c => c.tier === 2).map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            <span className="flex items-center gap-2">
+                              {category.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+
+                        {/* Tier 3: Assessment Primary */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                          Assessment Primary
+                        </div>
+                        {CATEGORIES.filter(c => c.tier === 3).map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            <span className="flex items-center gap-2">
+                              {category.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+
+                        {/* Tier 4: Assessment Only */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">
+                          Assessment Only
+                        </div>
+                        {CATEGORIES.filter(c => c.tier === 4).map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            <span className="flex items-center gap-2">
+                              {category.label}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {formData.category && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          formData.tier === 1 ? 'bg-blue-100 text-blue-700' :
+                          formData.tier === 2 ? 'bg-purple-100 text-purple-700' :
+                          formData.tier === 3 ? 'bg-green-100 text-green-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {getTierDisplayInfo(formData.tier).label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {getTierDisplayInfo(formData.tier).description}
+                        </span>
+                      </div>
+                    )}
                     {getError("category") && (
                       <p className="text-xs text-red-500">{getError("category")}</p>
                     )}

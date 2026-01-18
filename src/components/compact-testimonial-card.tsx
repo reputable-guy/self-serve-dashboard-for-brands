@@ -102,22 +102,28 @@ export function CompactTestimonialCard({ story, className = "" }: CompactTestimo
 
       {/* Metrics Row */}
       <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4">
-        {story.wearableMetrics.deepSleepChange && (
+        {story.wearableMetrics?.deepSleepChange && (
           <MetricChange
             value={story.wearableMetrics.deepSleepChange.changePercent}
             label="Deep Sleep"
           />
         )}
-        {story.wearableMetrics.hrvChange && (
+        {story.wearableMetrics?.hrvChange && (
           <MetricChange
             value={story.wearableMetrics.hrvChange.changePercent}
             label="HRV"
           />
         )}
-        {story.wearableMetrics.sleepChange && !story.wearableMetrics.deepSleepChange && (
+        {story.wearableMetrics?.sleepChange && !story.wearableMetrics?.deepSleepChange && (
           <MetricChange
             value={story.wearableMetrics.sleepChange.changePercent}
             label="Sleep"
+          />
+        )}
+        {story.assessmentResult && (
+          <MetricChange
+            value={story.assessmentResult.change.compositePercent}
+            label={story.assessmentResult.categoryLabel}
           />
         )}
       </div>
@@ -126,7 +132,7 @@ export function CompactTestimonialCard({ story, className = "" }: CompactTestimo
       <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <Watch className="w-3 h-3" />
-          <span>{story.wearableMetrics.device}</span>
+          <span>{story.wearableMetrics?.device || "Assessment"}</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
           <BadgeCheck className="w-3.5 h-3.5" />
@@ -139,7 +145,7 @@ export function CompactTestimonialCard({ story, className = "" }: CompactTestimo
 
 // Minimal version for social embeds
 export function MinimalTestimonialCard({ story }: { story: ParticipantStory }) {
-  const primaryMetric = story.wearableMetrics.deepSleepChange || story.wearableMetrics.sleepChange;
+  const primaryMetric = story.wearableMetrics?.deepSleepChange || story.wearableMetrics?.sleepChange;
   const lastRating = story.journey.villainRatings[story.journey.villainRatings.length - 1];
 
   return (
@@ -166,7 +172,7 @@ export function MinimalTestimonialCard({ story }: { story: ParticipantStory }) {
         </div>
         {primaryMetric && (
           <span className="font-bold text-[#00D1C1]">
-            +{primaryMetric.changePercent}% {primaryMetric === story.wearableMetrics.deepSleepChange ? "deep sleep" : "sleep"}
+            +{primaryMetric.changePercent}% {primaryMetric === story.wearableMetrics?.deepSleepChange ? "deep sleep" : "sleep"}
           </span>
         )}
       </div>

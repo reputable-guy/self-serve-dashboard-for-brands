@@ -311,7 +311,7 @@ export function ParticipantDetailPanel({ participant, study, onClose }: Particip
   const detail = useMemo(() => {
     return generateParticipantDetailForStudy(
       participant,
-      study.villainVariable,
+      study.villainVariable || "sleep_quality",
       study.villainQuestionDays || [7, 14, 21, 28],
       study.customQuestions || []
     );

@@ -1,39 +1,25 @@
-// Centralized constants for categories, devices, and metrics
+/**
+ * Constants for categories, devices, and metrics
+ *
+ * NOTE: Categories are now defined in categories.ts as the single source of truth.
+ * This file re-exports them for backwards compatibility.
+ */
 
-export const CATEGORIES = [
-  { value: "sleep", label: "Sleep & Recovery" },
-  { value: "stress", label: "Stress & Mood" },
-  { value: "energy", label: "Energy & Focus" },
-  { value: "fitness", label: "Fitness & Performance" },
-  { value: "nutrition", label: "Nutrition & Gut Health" },
-  { value: "longevity", label: "Longevity & Anti-Aging" },
-  { value: "immunity", label: "Immunity & Wellness" },
-  { value: "cognitive", label: "Cognitive & Brain Health" },
-  { value: "skin", label: "Skin & Beauty" },
-] as const;
+// Re-export categories from single source of truth
+export {
+  CATEGORIES,
+  CATEGORIES_LEGACY,
+  CATEGORY_LABELS,
+  getCategory,
+  getCategoryLabel,
+  getCategoriesByTier,
+  categorySupportsWearables,
+  isHigherBetter,
+  shouldShowWearableData,
+} from "./categories";
 
-export type CategoryValue = (typeof CATEGORIES)[number]["value"];
-
-// Simple category names for display (backwards compatible)
-export const CATEGORY_LABELS: Record<string, string> = {
-  sleep: "Sleep & Recovery",
-  stress: "Stress & Mood",
-  energy: "Energy & Focus",
-  fitness: "Fitness & Performance",
-  nutrition: "Nutrition & Gut Health",
-  longevity: "Longevity & Anti-Aging",
-  immunity: "Immunity & Wellness",
-  cognitive: "Cognitive & Brain Health",
-  skin: "Skin & Beauty",
-  // Legacy mappings for old category values
-  Sleep: "Sleep & Recovery",
-  Stress: "Stress & Mood",
-  Energy: "Energy & Focus",
-  Recovery: "Sleep & Recovery",
-  Fitness: "Fitness & Performance",
-  Nutrition: "Nutrition & Gut Health",
-  Skin: "Skin & Beauty",
-};
+// Re-export types
+export type { CategoryValue, TierLevel } from "./types";
 
 export const DEVICES = [
   { value: "any", label: "Any Device" },
@@ -79,6 +65,8 @@ export const STUDY_STATUSES = {
   "filling-fast": { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Filling Fast" },
   full: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Full" },
   completed: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Completed" },
+  active: { bg: "bg-green-500/20", text: "text-green-400", label: "Active" },
+  archived: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Archived" },
 } as const;
 
 export type StudyStatus = keyof typeof STUDY_STATUSES;
