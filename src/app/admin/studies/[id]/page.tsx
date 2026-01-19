@@ -40,7 +40,20 @@ import {
   getLYFEfuelStoriesForStudy,
   getLYFEfuelStudyStats,
 } from "@/lib/lyfefuel-demo-stories";
-import { SENSATE_REAL_STORIES } from "@/lib/sensate-real-data";
+import {
+  getSortedSensateStories,
+  getSensateStudyStats,
+  getSensateDemographics,
+} from "@/lib/sensate-real-data";
+
+// Pre-compute sorted stories and stats for performance
+const SORTED_SENSATE_STORIES = getSortedSensateStories();
+const sensateStats = getSensateStudyStats();
+const SENSATE_STATS = {
+  positive: sensateStats.improved,
+  neutral: sensateStats.neutral,
+  negative: sensateStats.noImprovement,
+};
 
 // ============================================
 // TYPES & MOCK DATA
@@ -889,15 +902,15 @@ function OverviewTab({
           </div>
           <CardDescription>
             {isSensateRealStudy
-              ? "Verified participant stories from the Sensate study (5 positive, 2 negative)"
+              ? `Verified participant stories from the Sensate study (${SENSATE_STATS.positive} positive, ${SENSATE_STATS.neutral} neutral, ${SENSATE_STATS.negative} negative)`
               : "Click to see how verified participant stories will appear"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isSensateRealStudy ? (
-            // Real Sensate participants
+            // Real Sensate participants - sorted by improvement score
             <div className="grid gap-3 sm:grid-cols-2">
-              {SENSATE_REAL_STORIES.slice(0, 4).map((story) => (
+              {SORTED_SENSATE_STORIES.slice(0, 4).map((story) => (
                 <Link key={story.id} href={`/verify/${story.verificationId}`}>
                   <div className="p-3 rounded-lg border border-emerald-200 bg-white flex items-center gap-3 hover:bg-emerald-50 hover:border-emerald-300 transition-colors cursor-pointer group">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#00D1C1] to-[#00A89D] flex items-center justify-center text-sm font-semibold text-white">
@@ -948,7 +961,7 @@ function OverviewTab({
           )}
           <p className="text-xs text-muted-foreground mt-3">
             {isSensateRealStudy
-              ? "View the Results tab for all 7 verified stories including 2 with negative results"
+              ? `View the Results tab for all ${SORTED_SENSATE_STORIES.length} verified stories including ${SENSATE_STATS.negative} with negative results`
               : "View the Results tab for all sample stories and participant insights"}
           </p>
         </CardContent>
@@ -968,6 +981,12 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
 
   const participants = generateMockParticipants(study.category);
   const insights = getParticipantInsights(study.category);
+
+  // Get real demographics for Sensate study
+  const sensateDemographics = isSensateRealStudy ? getSensateDemographics() : null;
+
+  // Use real demographics for Sensate study, fallback to mock for others
+  const demographics = sensateDemographics || MOCK_DEMOGRAPHICS;
 
   return (
     <div className="space-y-6">
@@ -1055,7 +1074,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           {isSensateRealStudy
-            ? "These are REAL participant stories from the Sensate study. Includes 5 positive results and 2 negative/no improvement for credibility."
+            ? `These are REAL participant stories from the Sensate study. Includes ${SENSATE_STATS.positive} positive, ${SENSATE_STATS.neutral} neutral, and ${SENSATE_STATS.negative} negative results for credibility.`
             : isLYFEfuelStudy
             ? "These stories show the type of verified evidence LYFEfuel can expect from their Daily Essentials studies."
             : "Preview how verified participant stories will appear. Click any card to see the full verification page."}
@@ -1147,10 +1166,10 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
           </div>
         )}
 
-        {/* Real Sensate Stories */}
+        {/* Real Sensate Stories - sorted by improvement score */}
         {isSensateRealStudy && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SENSATE_REAL_STORIES.map((story) => (
+            {SORTED_SENSATE_STORIES.map((story) => (
               <Card
                 key={story.id}
                 className={`overflow-hidden hover:shadow-md transition-shadow ${
@@ -1184,14 +1203,16 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
                             <Star
                               key={i}
                               className={`h-3 w-3 ${
-                                i < Math.floor(story.finalTestimonial?.overallRating || 0) / 2
+                                i < Math.floor(story.finalTestimonial?.overallRating || 0)
                                   ? "text-yellow-400 fill-yellow-400"
                                   : "text-gray-300"
                               }`}
                             />
                           ))}
                           <span className="text-xs text-muted-foreground ml-1">
-                            {story.finalTestimonial?.overallRating}/10
+                            {story.finalTestimonial?.npsScore !== undefined
+                              ? `${story.finalTestimonial.npsScore}/10 NPS`
+                              : `${story.finalTestimonial?.overallRating}/5`}
                           </span>
                         </div>
                       </div>
@@ -1433,7 +1454,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
             <div>
               <h4 className="text-sm font-medium mb-4">Wearable Devices</h4>
               <div className="space-y-3">
-                {MOCK_DEMOGRAPHICS.wearableDevices.map((item) => (
+                {demographics.wearableDevices.map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between text-sm mb-1">
                       <span>{item.label}</span>
@@ -1455,7 +1476,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
               <h4 className="text-sm font-medium mb-4">Age & Gender</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  {MOCK_DEMOGRAPHICS.age.map((item) => (
+                  {demographics.age.map((item) => (
                     <div key={item.label} className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
@@ -1467,7 +1488,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
                   ))}
                 </div>
                 <div className="space-y-2">
-                  {MOCK_DEMOGRAPHICS.gender.map((item) => (
+                  {demographics.gender.map((item) => (
                     <div key={item.label} className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
@@ -1480,6 +1501,98 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
                 </div>
               </div>
             </div>
+
+            {/* Additional Sensate Demographics - Education */}
+            {sensateDemographics && sensateDemographics.education.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Education Level</h4>
+                <div className="space-y-3">
+                  {sensateDemographics.education.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Sensate Demographics - Employment */}
+            {sensateDemographics && sensateDemographics.employment.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Employment Status</h4>
+                <div className="space-y-3">
+                  {sensateDemographics.employment.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-500 rounded-full"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Sensate Demographics - Income */}
+            {sensateDemographics && sensateDemographics.income.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Household Income</h4>
+                <div className="space-y-3">
+                  {sensateDemographics.income.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Sensate Demographics - Satisfaction */}
+            {sensateDemographics && sensateDemographics.satisfaction.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Overall Satisfaction</h4>
+                <div className="space-y-3">
+                  {sensateDemographics.satisfaction.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-pink-500 rounded-full"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

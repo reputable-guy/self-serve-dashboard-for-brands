@@ -45,6 +45,13 @@ interface StudyProtocol {
   compensationNote?: string;
 }
 
+interface StudyStats {
+  totalParticipants: number;
+  improved: number;
+  neutral: number;
+  noImprovement: number;
+}
+
 interface VerificationPageProps {
   testimonial: MockTestimonial;
   studyTitle: string;
@@ -56,6 +63,7 @@ interface VerificationPageProps {
   productDescription?: string;
   productImage?: string;
   protocol?: StudyProtocol;
+  studyStats?: StudyStats;
 }
 
 // Collapsible section wrapper component
@@ -107,12 +115,23 @@ export function VerificationPage({
   hasWearable: hasWearableProp,
   productDescription: _productDescription,
   productImage: _productImage,
-  protocol: _protocol,
+  protocol,
+  studyStats,
 }: VerificationPageProps) {
   // These props are available for future use
   void _productDescription;
   void _productImage;
-  void _protocol;
+  void studyTitle;
+  void studyId;
+
+  // Default study stats (fallback for non-real studies)
+  const defaultStats: StudyStats = {
+    totalParticipants: 47,
+    improved: 38,
+    neutral: 0,
+    noImprovement: 9,
+  };
+  const stats = studyStats || defaultStats;
 
   // Determine if this is a wearable-based verification
   const hasWearable = hasWearableProp ?? (
@@ -254,11 +273,38 @@ export function VerificationPage({
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
                   <span>{testimonial.age} years old</span>
+                  {story?.profile?.gender && (
+                    <span>{story.profile.gender}</span>
+                  )}
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
                     {testimonial.location}
                   </span>
                 </div>
+
+                {/* Demographics - Education and Employment */}
+                {(story?.profile?.educationLevel || story?.profile?.employmentStatus) && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+                    {story?.profile?.educationLevel && (
+                      <span className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 rounded-full">
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                        </svg>
+                        {story.profile.educationLevel}
+                      </span>
+                    )}
+                    {story?.profile?.employmentStatus && (
+                      <span className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 rounded-full">
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                        {story.profile.employmentStatus}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Product and tracking context */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-3 pb-3 border-b">
@@ -325,33 +371,46 @@ export function VerificationPage({
               About This Study
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              {firstName} was one of <span className="font-medium text-foreground">47 real people</span> who tested {productName} in an independent {studyDuration}-day study.
+              {firstName} was one of <span className="font-medium text-foreground">{stats.totalParticipants} real people</span> who tested {productName} in an independent {studyDuration}-day study.
             </p>
             <div className="mb-2">
               <div className="h-2 rounded-full bg-muted overflow-hidden flex">
-                <div className="h-full bg-green-500" style={{ width: '81%' }} />
-                <div className="h-full bg-gray-300" style={{ width: '19%' }} />
+                <div
+                  className="h-full bg-green-500"
+                  style={{ width: `${Math.round((stats.improved / stats.totalParticipants) * 100)}%` }}
+                />
+                {stats.neutral > 0 && (
+                  <div
+                    className="h-full bg-yellow-400"
+                    style={{ width: `${Math.round((stats.neutral / stats.totalParticipants) * 100)}%` }}
+                  />
+                )}
+                <div
+                  className="h-full bg-gray-300"
+                  style={{ width: `${Math.round((stats.noImprovement / stats.totalParticipants) * 100)}%` }}
+                />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>38 improved</span>
-                <span>9 didn&apos;t</span>
+                <span>{stats.improved} improved</span>
+                {stats.neutral > 0 && <span>{stats.neutral} neutral</span>}
+                <span>{stats.noImprovement} didn&apos;t</span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
               We show everyone&apos;s results — not just success stories.
             </p>
             <a
-              href={`/verify/${testimonial.verificationId}/results`}
+              href={`/admin/studies/study-sensate-real`}
               className="text-sm text-[#00D1C1] hover:underline font-medium flex items-center gap-1"
             >
-              View all 47 verified results
+              View all {stats.totalParticipants} verified results
               <ExternalLink className="h-3 w-3" />
             </a>
           </CardContent>
         </Card>
 
-        {/* SECTION 4: What [Name] Was Trying to Improve */}
-        {story && (
+        {/* SECTION 4: What [Name] Was Trying to Improve - Only show if villain ratings exist */}
+        {story && story.journey.villainRatings && story.journey.villainRatings.length > 0 && (
           <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-white">
             <CardContent className="p-5">
               <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
@@ -376,21 +435,19 @@ export function VerificationPage({
               </div>
               <div className="flex justify-between items-center text-xs mt-1">
                 <span className="text-amber-600">Day 1</span>
-                {story.journey.villainRatings.length > 0 && (
-                  <span className={`font-semibold ${
-                    story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 4
-                      ? "text-green-600"
-                      : story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 3
-                      ? "text-yellow-600"
-                      : "text-red-500"
-                  }`}>
-                    {story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 4
-                      ? "Significantly Improved"
-                      : story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 3
-                      ? "Some Improvement"
-                      : "No Improvement"}
-                  </span>
-                )}
+                <span className={`font-semibold ${
+                  story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 4
+                    ? "text-green-600"
+                    : story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 3
+                    ? "text-yellow-600"
+                    : "text-red-500"
+                }`}>
+                  {story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 4
+                    ? "Significantly Improved"
+                    : story.journey.villainRatings[story.journey.villainRatings.length - 1].rating >= 3
+                    ? "Some Improvement"
+                    : "No Improvement"}
+                </span>
                 <span className="text-amber-600">Day {story.journey.durationDays}</span>
               </div>
             </CardContent>
@@ -448,15 +505,17 @@ export function VerificationPage({
         {story && (
           <CollapsibleSection title="Participant Context" icon={User} defaultOpen={false}>
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${story.baseline.villainDuration ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <p className="text-sm text-muted-foreground">Life Stage</p>
                   <p className="font-medium">{story.profile.lifeStage}</p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Duration Dealing with Issue</p>
-                  <p className="font-medium">{story.baseline.villainDuration}</p>
-                </div>
+                {story.baseline.villainDuration && (
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Duration Dealing with Issue</p>
+                    <p className="font-medium">{story.baseline.villainDuration}</p>
+                  </div>
+                )}
               </div>
 
               {story.baseline.triedOther && story.baseline.triedOther !== "No" && (
@@ -494,8 +553,8 @@ export function VerificationPage({
           </CollapsibleSection>
         )}
 
-        {/* Self-Reported Progress - Collapsed by default */}
-        {story && (
+        {/* Self-Reported Progress - Collapsed by default, only show if villain ratings exist */}
+        {story && story.journey.villainRatings && story.journey.villainRatings.length > 0 && (
           <CollapsibleSection title="Self-Reported Progress" icon={TrendingUp} defaultOpen={false}>
             <VillainJourneyProgress
               ratings={story.journey.villainRatings}
@@ -534,6 +593,60 @@ export function VerificationPage({
             hasWearable={hasWearable}
           />
         </CollapsibleSection>
+
+        {/* Study Protocol - Collapsed by default */}
+        {protocol && (
+          <CollapsibleSection title="Study Protocol" icon={Target} defaultOpen={false}>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This study followed a rigorous protocol to ensure reliable results.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-xs text-muted-foreground mb-1">Baseline Period</div>
+                  <div className="text-lg font-semibold">{protocol.baselineDays} days</div>
+                  <div className="text-xs text-muted-foreground">No product, tracking only</div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-xs text-muted-foreground mb-1">Intervention Period</div>
+                  <div className="text-lg font-semibold">{protocol.interventionDays} days</div>
+                  <div className="text-xs text-muted-foreground">Daily product use</div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Watch className="h-5 w-5 text-[#00D1C1] mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Tracked with</div>
+                    <div className="text-sm text-muted-foreground">
+                      {protocol.wearableTypes.join(", ")}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-[#00D1C1] mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">Daily Instructions</div>
+                    <div className="text-sm text-muted-foreground">
+                      {protocol.dailyInstructions}
+                    </div>
+                  </div>
+                </div>
+                {protocol.compensationNote && (
+                  <div className="flex items-start gap-3">
+                    <BadgeCheck className="h-5 w-5 text-[#00D1C1] mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium">Compensation</div>
+                      <div className="text-sm text-muted-foreground">
+                        {protocol.compensationNote}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
 
         {/* Timeline - Collapsed by default */}
         <CollapsibleSection title="Participant Journey" icon={Clock} defaultOpen={false}>

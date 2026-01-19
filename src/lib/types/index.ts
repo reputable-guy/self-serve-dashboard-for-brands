@@ -434,8 +434,8 @@ export interface ParticipantStory {
   baseline: {
     motivation: string;
     hopedResults: string;
-    villainDuration: string;
-    triedOther: string;
+    villainDuration?: string; // Optional - not collected in all studies
+    triedOther?: string; // Optional - not collected in all studies
   };
   journey: {
     startDate: string;
@@ -453,6 +453,9 @@ export interface ParticipantStory {
     overallRating: number;
     wouldRecommend: boolean;
     reportedBenefits: string[];
+    // Extended fields for real study data
+    npsScore?: number; // Original NPS score (0-10) before conversion to stars
+    satisfaction?: string; // "Very satisfied", "Satisfied", "Neutral", etc.
   };
   verification?: {
     id: string;

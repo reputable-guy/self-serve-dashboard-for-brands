@@ -8,7 +8,7 @@ import { VerificationPage } from "@/components/verification-page";
 import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, getStoriesForStudy, MockTestimonial } from "@/lib/mock-data";
 import { ALL_LYFEFUEL_STORIES } from "@/lib/lyfefuel-demo-stories";
 import { ALL_SENSATE_STORIES } from "@/lib/sensate-demo-stories";
-import { SENSATE_REAL_STORIES } from "@/lib/sensate-real-data";
+import { SENSATE_REAL_STORIES, getSensateStudyStats } from "@/lib/sensate-real-data";
 import { SAMPLE_STORIES_BY_CATEGORY } from "@/lib/sample-stories";
 import type { StudyProtocol } from "@/lib/types";
 import { ArrowLeft, CheckCircle2, Users, TrendingUp, ExternalLink } from "lucide-react";
@@ -448,6 +448,9 @@ export default function VerifyPage() {
         device: realStory.wearableMetrics?.device || "Oura Ring",
       };
 
+      // Get real study stats
+      const sensateStats = getSensateStudyStats();
+
       return (
         <VerificationPage
           testimonial={mockTestimonial}
@@ -460,6 +463,7 @@ export default function VerifyPage() {
           productDescription={realStudyInfo.productDescription}
           productImage={realStudyInfo.productImage}
           protocol={realProtocol}
+          studyStats={sensateStats}
         />
       );
     }
