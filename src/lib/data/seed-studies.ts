@@ -24,10 +24,10 @@ export const SEED_STUDIES: Study[] = [
     categoryLabel: "Stress & Sleep",
     status: "completed",
     tier: 2,
-    participants: 25,
+    participants: 18,  // 18 completed out of 25 enrolled (72% completion)
     targetParticipants: 25,
-    startDate: "2025-11-01T00:00:00.000Z",
-    endDate: "2025-12-29T00:00:00.000Z",
+    startDate: "2024-09-25T00:00:00.000Z",
+    endDate: "2024-11-17T00:00:00.000Z",
     rebateAmount: 75,
     hasWearables: true,
     productDescription:

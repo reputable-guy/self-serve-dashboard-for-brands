@@ -30,6 +30,8 @@ import {
   Settings,
   FileText,
   Sparkles,
+  Minus,
+  TrendingDown,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
 import { useStudiesStore } from "@/lib/studies-store";
@@ -44,15 +46,27 @@ import {
   getSortedSensateStories,
   getSensateStudyStats,
   getSensateDemographics,
+  getSensateAverageMetrics,
+  categorizeParticipant,
 } from "@/lib/sensate-real-data";
 
 // Pre-compute sorted stories and stats for performance
 const SORTED_SENSATE_STORIES = getSortedSensateStories();
 const sensateStats = getSensateStudyStats();
+const sensateMetrics = getSensateAverageMetrics();
 const SENSATE_STATS = {
   positive: sensateStats.improved,
   neutral: sensateStats.neutral,
   negative: sensateStats.noImprovement,
+};
+const SENSATE_METRICS = {
+  avgHrvChange: sensateMetrics.avgHrvChange,
+  avgDeepSleepChange: sensateMetrics.avgDeepSleepChange,
+  enrolled: sensateMetrics.enrolled,
+  completed: sensateMetrics.completed,
+  completionRate: sensateMetrics.completionRate,
+  avgNps: sensateMetrics.avgNps,
+  wouldRecommendPercent: sensateMetrics.wouldRecommendPercent,
 };
 
 // ============================================
@@ -548,6 +562,36 @@ const MOCK_STUDIES: Record<
     howItWorks:
       "Gut Health Pro contains 50 billion CFU of clinically-studied probiotic strains plus prebiotic fiber to support digestive health and microbiome balance.",
   },
+  "study-sensate-real": {
+    id: "study-sensate-real",
+    name: "Sensate Sleep & Stress Study (Real Data)",
+    brandId: "brand-sensate",
+    category: "stress",
+    categoryLabel: "Stress & Sleep",
+    status: "completed",
+    participants: 18,
+    targetParticipants: 25,
+    startDate: "2024-09-25",
+    endDate: "2024-11-17",
+    avgImprovement: SENSATE_METRICS.avgHrvChange,
+    completionRate: SENSATE_METRICS.completionRate,
+    tier: 2,
+    rebateAmount: 75,
+    hasWearables: true,
+    productDescription:
+      "The 10-Minute Vagus Nerve Device Shown to Cut Stress by 48% and Boost Sleep. Sensate uses gentle sound vibrations to quickly calm your nervous system.",
+    productImage: "/images/sensate-device.png",
+    whatYoullDiscover: [
+      "How Sensate affects your daily stress levels and HRV",
+      "Whether 10 minutes of vagus nerve stimulation improves sleep quality",
+      "Changes in deep sleep and sleep efficiency over 28 days",
+      "Your body's stress response and recovery improvements",
+    ],
+    dailyRoutine:
+      "Use Sensate for 10 minutes during your bedtime routine. Your Oura Ring tracks sleep and HRV automatically. Complete weekly stress and sleep assessments (2-3 min).",
+    howItWorks:
+      "Sensate uses precise low-frequency vibrations delivered through bone conduction to stimulate the vagus nerve, activating your parasympathetic nervous system and triggering a deep relaxation response that promotes better sleep.",
+  },
 };
 
 // ============================================
@@ -714,11 +758,16 @@ function OverviewTab({
   brand: { id: string; name: string } | undefined;
   onOpenPreview: () => void;
 }) {
-  const progressPercent =
-    (study.participants / study.targetParticipants) * 100;
-
   // Check if this is the real Sensate study
   const isSensateRealStudy = study.id === "study-sensate-real";
+
+  // Use real data for Sensate study, mock data for others
+  const studyParticipants = isSensateRealStudy ? SENSATE_METRICS.completed : study.participants;
+  const studyTargetParticipants = isSensateRealStudy ? SENSATE_METRICS.enrolled : study.targetParticipants;
+  const studyCompletionRate = isSensateRealStudy ? SENSATE_METRICS.completionRate : study.completionRate;
+  const studyAvgImprovement = isSensateRealStudy ? SENSATE_METRICS.avgHrvChange : study.avgImprovement;
+  const studyMetricName = isSensateRealStudy ? "HRV" : "primary metric";
+
   const participants = generateMockParticipants(study.category);
 
   return (
@@ -743,19 +792,14 @@ function OverviewTab({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Participants
+              Enrolled
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {study.participants}/{study.targetParticipants}
+              {studyTargetParticipants}
             </p>
-            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#00D1C1] transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">participants</p>
           </CardContent>
         </Card>
 
@@ -763,12 +807,12 @@ function OverviewTab({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              Completion Rate
+              Completed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{study.completionRate}%</p>
-            <p className="text-sm text-muted-foreground">of enrolled</p>
+            <p className="text-2xl font-bold">{studyParticipants}/{studyTargetParticipants}</p>
+            <p className="text-sm text-muted-foreground">{studyCompletionRate}% completion rate</p>
           </CardContent>
         </Card>
 
@@ -781,9 +825,9 @@ function OverviewTab({
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">
-              +{study.avgImprovement}%
+              +{studyAvgImprovement}%
             </p>
-            <p className="text-sm text-muted-foreground">primary metric</p>
+            <p className="text-sm text-muted-foreground">{studyMetricName}</p>
           </CardContent>
         </Card>
 
@@ -796,17 +840,21 @@ function OverviewTab({
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">28 days</p>
-            <p className="text-sm text-muted-foreground">
-              {new Date(study.startDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}{" "}
-              -{" "}
-              {new Date(study.endDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
+            {isSensateRealStudy ? (
+              <p className="text-sm text-muted-foreground">Rolling enrollment</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {new Date(study.startDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}{" "}
+                -{" "}
+                {new Date(study.endDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -825,14 +873,24 @@ function OverviewTab({
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-semibold">
-                    {brand.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)}
-                  </div>
-                  <p className="font-medium">{brand.name}</p>
+                  {isSensateRealStudy ? (
+                    <img
+                      src="/logos/sensate-logo.png"
+                      alt="Sensate"
+                      className="h-10 w-auto object-contain"
+                    />
+                  ) : (
+                    <>
+                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-semibold">
+                        {brand.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+                      <p className="font-medium">{brand.name}</p>
+                    </>
+                  )}
                 </div>
                 <Link href={`/admin/brands/${brand.id}`}>
                   <Button variant="ghost" size="sm">
@@ -959,11 +1017,18 @@ function OverviewTab({
               ))}
             </div>
           )}
-          <p className="text-xs text-muted-foreground mt-3">
-            {isSensateRealStudy
-              ? `View the Results tab for all ${SORTED_SENSATE_STORIES.length} verified stories including ${SENSATE_STATS.negative} with negative results`
-              : "View the Results tab for all sample stories and participant insights"}
-          </p>
+          {isSensateRealStudy ? (
+            <Link href="/verify/sensate-results" className="block mt-3">
+              <Button variant="outline" size="sm" className="w-full">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View all {SORTED_SENSATE_STORIES.length} verified results
+              </Button>
+            </Link>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-3">
+              View the Results tab for all sample stories and participant insights
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -1009,55 +1074,76 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
               <p className="text-lg font-semibold text-[#00D1C1]">{lyfefuelStats.topHeadline}</p>
             </div>
           )}
+          {/* Sensate-specific key finding */}
+          {isSensateRealStudy && (
+            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+              <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
+              <p className="text-lg font-semibold text-emerald-600">
+                {SENSATE_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
+              </p>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
               <p className="text-sm text-muted-foreground">Primary Outcome</p>
               <p className="text-2xl font-bold text-green-600">
-                +{lyfefuelStats?.averageImprovement || study.avgImprovement}%
+                {isSensateRealStudy ? (
+                  <>{SENSATE_METRICS.avgHrvChange > 0 ? "+" : ""}{SENSATE_METRICS.avgHrvChange}%</>
+                ) : (
+                  <>+{lyfefuelStats?.averageImprovement || study.avgImprovement}%</>
+                )}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                average {study.categoryLabel.toLowerCase()} improvement
+                {isSensateRealStudy ? "average HRV improvement" : `average ${study.categoryLabel.toLowerCase()} improvement`}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 border">
               <p className="text-sm text-muted-foreground">Completion Rate</p>
-              <p className="text-2xl font-bold">{lyfefuelStats?.completionRate || study.completionRate}%</p>
+              <p className="text-2xl font-bold">
+                {isSensateRealStudy ? SENSATE_METRICS.completionRate : (lyfefuelStats?.completionRate || study.completionRate)}%
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
-                finished the full study
+                {isSensateRealStudy ? `${SENSATE_METRICS.completed} of ${SENSATE_METRICS.enrolled} enrolled` : "finished the full study"}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm text-muted-foreground">Avg. Compliance</p>
-              <p className="text-2xl font-bold">91%</p>
+              <p className="text-sm text-muted-foreground">
+                {isSensateRealStudy ? "Avg. NPS Score" : "Avg. Compliance"}
+              </p>
+              <p className="text-2xl font-bold">
+                {isSensateRealStudy ? `${SENSATE_METRICS.avgNps}/10` : "91%"}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
-                daily check-in rate
+                {isSensateRealStudy ? "likelihood to recommend" : "daily check-in rate"}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Participant Insights Highlights */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="p-4 rounded-xl bg-gradient-to-br from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
-          <p className="text-xs text-muted-foreground mb-1">Top Motivation</p>
-          <p className="text-lg font-semibold text-[#00D1C1]">
-            {insights.topMotivation.label} ({insights.topMotivation.value}%)
-          </p>
+      {/* Participant Insights Highlights - Hide for Sensate (no real data for these) */}
+      {!isSensateRealStudy && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
+            <p className="text-xs text-muted-foreground mb-1">Top Motivation</p>
+            <p className="text-lg font-semibold text-[#00D1C1]">
+              {insights.topMotivation.label} ({insights.topMotivation.value}%)
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+            <p className="text-xs text-muted-foreground mb-1">Exercise 3+ days/week</p>
+            <p className="text-lg font-semibold text-green-600">
+              {insights.exerciseActive}%
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+            <p className="text-xs text-muted-foreground mb-1">Already takes supplements</p>
+            <p className="text-lg font-semibold text-purple-600">
+              {insights.takesSupplements}%
+            </p>
+          </div>
         </div>
-        <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-          <p className="text-xs text-muted-foreground mb-1">Exercise 3+ days/week</p>
-          <p className="text-lg font-semibold text-green-600">
-            {insights.exerciseActive}%
-          </p>
-        </div>
-        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
-          <p className="text-xs text-muted-foreground mb-1">Already takes supplements</p>
-          <p className="text-lg font-semibold text-purple-600">
-            {insights.takesSupplements}%
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Sample Participant Stories */}
       <div>
@@ -1166,38 +1252,50 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
           </div>
         )}
 
-        {/* Real Sensate Stories - sorted by improvement score */}
-        {isSensateRealStudy && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SORTED_SENSATE_STORIES.map((story) => (
+        {/* Real Sensate Stories - grouped by category */}
+        {isSensateRealStudy && (() => {
+          // Group stories by category
+          const positiveStories = SORTED_SENSATE_STORIES.filter(s => categorizeParticipant(s) === "positive");
+          const neutralStories = SORTED_SENSATE_STORIES.filter(s => categorizeParticipant(s) === "neutral");
+          const negativeStories = SORTED_SENSATE_STORIES.filter(s => categorizeParticipant(s) === "negative");
+
+          // Reusable card component
+          const renderStoryCard = (story: typeof SORTED_SENSATE_STORIES[0], category: "positive" | "neutral" | "negative") => {
+            const cardStyles = {
+              positive: "border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white",
+              neutral: "border-yellow-200 bg-gradient-to-br from-yellow-50/30 to-white",
+              negative: "border-red-200 bg-gradient-to-br from-red-50/30 to-white",
+            };
+            const avatarStyles = {
+              positive: "bg-gradient-to-br from-[#00D1C1] to-[#00A89D]",
+              neutral: "bg-gradient-to-br from-yellow-400 to-yellow-500",
+              negative: "bg-gradient-to-br from-red-400 to-red-500",
+            };
+            const buttonStyles = {
+              positive: "border-emerald-200 hover:bg-emerald-50",
+              neutral: "border-yellow-200 hover:bg-yellow-50",
+              negative: "border-red-200 hover:bg-red-50",
+            };
+            const idStyles = {
+              positive: "text-emerald-600",
+              neutral: "text-yellow-600",
+              negative: "text-red-600",
+            };
+
+            return (
               <Card
                 key={story.id}
-                className={`overflow-hidden hover:shadow-md transition-shadow ${
-                  story.finalTestimonial?.wouldRecommend === false
-                    ? "border-amber-200 bg-amber-50/30"
-                    : "border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white"
-                }`}
+                className={`overflow-hidden hover:shadow-md transition-shadow ${cardStyles[category]}`}
               >
                 <CardContent className="p-4">
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-semibold text-white ${
-                        story.finalTestimonial?.wouldRecommend === false
-                          ? "bg-gradient-to-br from-amber-400 to-amber-500"
-                          : "bg-gradient-to-br from-[#00D1C1] to-[#00A89D]"
-                      }`}>
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-semibold text-white ${avatarStyles[category]}`}>
                         {story.initials}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{story.name}</p>
-                          {story.finalTestimonial?.wouldRecommend === false && (
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
-                              No Improvement
-                            </Badge>
-                          )}
-                        </div>
+                        <p className="font-medium">{story.name}</p>
                         <div className="flex items-center gap-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
@@ -1219,7 +1317,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
                       <p>{story.journey.durationDays} days</p>
-                      <p className="text-emerald-600">{story.verificationId}</p>
+                      <p className={idStyles[category]}>{story.verificationId}</p>
                     </div>
                   </div>
 
@@ -1265,20 +1363,77 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
 
                   {/* View Story Button */}
                   <Link href={`/verify/${story.verificationId}`}>
-                    <Button variant="outline" size="sm" className={`w-full ${
-                      story.finalTestimonial?.wouldRecommend === false
-                        ? "border-amber-200 hover:bg-amber-50"
-                        : "border-emerald-200 hover:bg-emerald-50"
-                    }`}>
+                    <Button variant="outline" size="sm" className={`w-full ${buttonStyles[category]}`}>
                       <ExternalLink className="h-3 w-3 mr-1" />
                       View Verified Story
                     </Button>
                   </Link>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            );
+          };
+
+          return (
+            <div className="space-y-8">
+              {/* Improved Section */}
+              {positiveStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    <h4 className="font-semibold text-emerald-700">Improved ({positiveStories.length})</h4>
+                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                      {Math.round((positiveStories.length / SORTED_SENSATE_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with objective improvement (HRV or Deep Sleep up 5%+) AND high satisfaction (NPS 7+)
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {positiveStories.map(story => renderStoryCard(story, "positive"))}
+                  </div>
+                </div>
+              )}
+
+              {/* Neutral Section */}
+              {neutralStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Minus className="h-5 w-5 text-yellow-600" />
+                    <h4 className="font-semibold text-yellow-700">Mixed Results ({neutralStories.length})</h4>
+                    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                      {Math.round((neutralStories.length / SORTED_SENSATE_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with either objective improvement but lower satisfaction, or high satisfaction but no measurable improvement
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {neutralStories.map(story => renderStoryCard(story, "neutral"))}
+                  </div>
+                </div>
+              )}
+
+              {/* No Improvement Section */}
+              {negativeStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown className="h-5 w-5 text-red-500" />
+                    <h4 className="font-semibold text-red-600">No Improvement ({negativeStories.length})</h4>
+                    <Badge className="bg-red-100 text-red-700 border-red-200">
+                      {Math.round((negativeStories.length / SORTED_SENSATE_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with low satisfaction (NPS 4 or below) AND no objective improvement in metrics
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {negativeStories.map(story => renderStoryCard(story, "negative"))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Generic Mock Participants (non-LYFEfuel, non-Sensate studies) */}
         {!isLYFEfuelStudy && !isSensateRealStudy && (

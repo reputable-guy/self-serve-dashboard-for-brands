@@ -1338,8 +1338,6 @@ export function categorizeParticipant(story: ParticipantStory): "positive" | "ne
 
   // Objective improvement: at least one metric improved by 5%+
   const hasObjectiveImprovement = hrvChange >= 5 || deepSleepChange >= 5;
-  // Objective decline: both metrics declined
-  const hasObjectiveDecline = hrvChange < 0 && deepSleepChange < 0;
 
   // Subjective: NPS >= 7 is positive, <= 4 is negative
   const isSubjectivePositive = nps >= 7;
@@ -1403,6 +1401,59 @@ export function getSensateStudyStats(): {
   return {
     totalParticipants: SENSATE_REAL_STORIES.length,
     ...stats,
+  };
+}
+
+/**
+ * Get average metrics from Sensate study for dashboard display
+ * Returns average HRV and Deep Sleep changes
+ */
+export function getSensateAverageMetrics(): {
+  avgHrvChange: number;
+  avgDeepSleepChange: number;
+  enrolled: number;
+  completed: number;
+  completionRate: number;
+  avgNps: number;
+  wouldRecommendPercent: number;
+} {
+  let totalHrv = 0;
+  let totalDeepSleep = 0;
+  let hrvCount = 0;
+  let deepSleepCount = 0;
+  let totalNps = 0;
+  let npsCount = 0;
+  let wouldRecommendCount = 0;
+
+  SENSATE_REAL_STORIES.forEach((story) => {
+    if (story.wearableMetrics?.hrvChange?.changePercent !== undefined) {
+      totalHrv += story.wearableMetrics.hrvChange.changePercent;
+      hrvCount++;
+    }
+    if (story.wearableMetrics?.deepSleepChange?.changePercent !== undefined) {
+      totalDeepSleep += story.wearableMetrics.deepSleepChange.changePercent;
+      deepSleepCount++;
+    }
+    if (story.finalTestimonial?.npsScore !== undefined) {
+      totalNps += story.finalTestimonial.npsScore;
+      npsCount++;
+      if (story.finalTestimonial.npsScore >= 7) {
+        wouldRecommendCount++;
+      }
+    }
+  });
+
+  const completed = SENSATE_REAL_STORIES.length;
+  const enrolled = 25; // Total enrolled in the study
+
+  return {
+    avgHrvChange: hrvCount > 0 ? Math.round(totalHrv / hrvCount) : 0,
+    avgDeepSleepChange: deepSleepCount > 0 ? Math.round(totalDeepSleep / deepSleepCount) : 0,
+    enrolled,
+    completed,
+    completionRate: Math.round((completed / enrolled) * 100),
+    avgNps: npsCount > 0 ? Math.round((totalNps / npsCount) * 10) / 10 : 0,
+    wouldRecommendPercent: npsCount > 0 ? Math.round((wouldRecommendCount / npsCount) * 100) : 0,
   };
 }
 

@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   TrendingUp,
@@ -86,7 +85,7 @@ function ParticipantCard({ story, category }: { story: typeof allStories[0], cat
 
           {story.finalTestimonial?.quote && (
             <p className="text-xs text-muted-foreground mt-3 line-clamp-2 italic">
-              "{story.finalTestimonial.quote}"
+              &quot;{story.finalTestimonial.quote}&quot;
             </p>
           )}
 
@@ -137,7 +136,7 @@ export default function SensateResultsPage() {
           <CardContent>
             <p className="text-muted-foreground mb-4">
               These are real results from {stats.totalParticipants} verified participants in an independent 28-day study.
-              We show everyone's results — not just success stories.
+              We show everyone&apos;s results — not just success stories.
             </p>
 
             <div className="mb-4">
@@ -166,7 +165,7 @@ export default function SensateResultsPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded bg-gray-300" />
-                  {stats.noImprovement} didn't ({Math.round((stats.noImprovement / stats.totalParticipants) * 100)}%)
+                  {stats.noImprovement} didn&apos;t ({Math.round((stats.noImprovement / stats.totalParticipants) * 100)}%)
                 </span>
               </div>
             </div>
@@ -176,7 +175,7 @@ export default function SensateResultsPage() {
               <ul className="space-y-1 text-muted-foreground">
                 <li><span className="text-green-600 font-medium">Improved:</span> At least one metric (HRV or Deep Sleep) improved by ≥5% AND NPS ≥ 7</li>
                 <li><span className="text-yellow-600 font-medium">Neutral:</span> Mixed results — objective improvement but low satisfaction, or vice versa</li>
-                <li><span className="text-red-500 font-medium">Didn't improve:</span> Low satisfaction (NPS ≤ 4) AND no objective improvement</li>
+                <li><span className="text-red-500 font-medium">Didn&apos;t improve:</span> Low satisfaction (NPS ≤ 4) AND no objective improvement</li>
               </ul>
             </div>
           </CardContent>
@@ -219,7 +218,7 @@ export default function SensateResultsPage() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <TrendingDown className="h-5 w-5 text-red-500" />
-              <h2 className="text-lg font-semibold">Didn't Improve ({didntImprove.length})</h2>
+              <h2 className="text-lg font-semibold">Didn&apos;t Improve ({didntImprove.length})</h2>
               <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
                 {Math.round((didntImprove.length / stats.totalParticipants) * 100)}%
               </Badge>
