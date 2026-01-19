@@ -413,7 +413,7 @@ export function VerificationPage({
               We show everyone&apos;s results — not just success stories.
             </p>
             <a
-              href={`/admin/studies/study-sensate-real`}
+              href="/verify/sensate-results"
               className="text-sm text-[#00D1C1] hover:underline font-medium flex items-center gap-1"
             >
               View all {stats.totalParticipants} verified results
