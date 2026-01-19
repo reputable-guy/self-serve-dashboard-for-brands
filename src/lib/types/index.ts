@@ -403,6 +403,8 @@ export interface WearableMetrics {
   restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
   stepsChange?: { before: number; after: number; unit: string; changePercent: number };
   activeMinutesChange?: { before: number; after: number; unit: string; changePercent: number };
+  activeCaloriesChange?: { before: number; after: number; unit: string; changePercent: number };
+  sleepEfficiencyChange?: { before: number; after: number; unit: string; changePercent: number };
 }
 
 /** Data source type for distinguishing real vs demo/generated data */
@@ -451,11 +453,13 @@ export interface ParticipantStory {
   finalTestimonial?: {
     quote: string;
     overallRating: number;
-    wouldRecommend: boolean;
+    wouldRecommend?: boolean; // Optional - can be derived from NPS score
     reportedBenefits: string[];
     // Extended fields for real study data
     npsScore?: number; // Original NPS score (0-10) before conversion to stars
     satisfaction?: string; // "Very satisfied", "Satisfied", "Neutral", etc.
+    wouldContinue?: string; // "Likely", "Very likely", "Neutral", etc.
+    challenges?: string; // Any challenges or negative feedback
   };
   verification?: {
     id: string;

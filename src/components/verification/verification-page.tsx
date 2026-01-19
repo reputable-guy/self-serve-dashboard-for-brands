@@ -65,6 +65,7 @@ interface VerificationPageProps {
   brandLogo?: string;
   protocol?: StudyProtocol;
   studyStats?: StudyStats;
+  studyResultsUrl?: string; // URL to the aggregate results page for this study
 }
 
 // Collapsible section wrapper component
@@ -119,12 +120,19 @@ export function VerificationPage({
   brandLogo,
   protocol,
   studyStats,
+  studyResultsUrl,
 }: VerificationPageProps) {
   // These props are available for future use
   void _productDescription;
   void _productImage;
   void studyTitle;
-  void studyId;
+
+  // Derive the results page URL based on studyId if not explicitly provided
+  const resultsUrl = studyResultsUrl || (
+    studyId === "study-lyfefuel-real" ? "/verify/lyfefuel-results" :
+    studyId === "study-sensate-real" ? "/verify/sensate-results" :
+    null // No aggregate results page for demo studies
+  );
 
   // Default study stats (fallback for non-real studies)
   const defaultStats: StudyStats = {
@@ -412,13 +420,15 @@ export function VerificationPage({
             <p className="text-xs text-muted-foreground mb-3">
               We show everyone&apos;s results — not just success stories.
             </p>
-            <a
-              href="/verify/sensate-results"
-              className="text-sm text-[#00D1C1] hover:underline font-medium flex items-center gap-1"
-            >
-              View all {stats.totalParticipants} verified results
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            {resultsUrl && (
+              <a
+                href={resultsUrl}
+                className="text-sm text-[#00D1C1] hover:underline font-medium flex items-center gap-1"
+              >
+                View all {stats.totalParticipants} verified results
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
           </CardContent>
         </Card>
 

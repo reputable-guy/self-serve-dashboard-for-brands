@@ -59,6 +59,52 @@ export const SEED_STUDIES: Study[] = [
     createdAt: "2025-10-15T00:00:00.000Z",
     updatedAt: "2025-12-29T00:00:00.000Z",
   },
+  // LYFEfuel Real Data Study (Verified Participant Data)
+  {
+    id: "study-lyfefuel-real",
+    name: "LYFEfuel Daily Essentials Energy Study (Real Data)",
+    brandId: "brand-lyfefuel",
+    brandName: "LYFEfuel",
+    category: "energy",
+    categoryKey: "energy",
+    categoryLabel: "Energy & Vitality",
+    status: "completed",
+    tier: 2,
+    participants: 22, // 22 completed out of 23 enrolled (96% completion)
+    targetParticipants: 23,
+    startDate: "2025-09-18T00:00:00.000Z",
+    endDate: "2025-10-30T00:00:00.000Z",
+    rebateAmount: 60,
+    hasWearables: true,
+    productDescription:
+      "Daily Essentials Shake - Clean, whole-food nutrition that replaces your protein, multivitamin, and greens. Delivers steady, crash-free energy throughout the day.",
+    productImage: "/logos/lyfefuel-logo.png",
+    hookQuestion:
+      "Can LYFEfuel Daily Essentials give you steady, crash-free energy and improved activity levels?",
+    studyTitle: "LYFEfuel Daily Essentials Energy Study",
+    whatYoullDiscover: [
+      "How Daily Essentials affects your daily activity levels and energy",
+      "Whether your activity minutes increase with consistent use",
+      "Changes in steps, active calories, and overall movement",
+      "Your sleep quality and HRV improvements over 24 days",
+    ],
+    dailyRoutine:
+      "Blend one scoop of Daily Essentials with water or your favorite milk each morning. Your Oura Ring tracks activity, sleep, and HRV automatically. Complete weekly energy assessments (2-3 min).",
+    howItWorks:
+      "Daily Essentials provides clean, whole-food nutrition with complete protein, vitamins, minerals, and superfoods that support sustained energy and improved activity levels without the crash of caffeine or sugar.",
+    protocol: {
+      baselineDays: 14,
+      interventionDays: 24,
+      wearableTypes: ["Oura Ring"],
+      dailyInstructions:
+        "Blend one scoop of Daily Essentials with water or your favorite milk each morning",
+      compensationNote:
+        "Participants received the same rebate regardless of their feedback or results",
+    },
+    assessmentVersion: "1.0",
+    createdAt: "2025-09-01T00:00:00.000Z",
+    updatedAt: "2025-10-30T00:00:00.000Z",
+  },
   // Sensate Vagus Nerve Device Studies (Demo)
   {
     id: "study-sensate-stress",

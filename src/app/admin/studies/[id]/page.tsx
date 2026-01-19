@@ -49,6 +49,13 @@ import {
   getSensateAverageMetrics,
   categorizeParticipant,
 } from "@/lib/sensate-real-data";
+import {
+  getSortedLyfefuelStories,
+  getLyfefuelStudyStats,
+  getLyfefuelDemographics,
+  getLyfefuelAverageMetrics,
+  categorizeLyfefuelParticipant,
+} from "@/lib/lyfefuel-real-data";
 
 // Pre-compute sorted stories and stats for performance
 const SORTED_SENSATE_STORIES = getSortedSensateStories();
@@ -67,6 +74,25 @@ const SENSATE_METRICS = {
   completionRate: sensateMetrics.completionRate,
   avgNps: sensateMetrics.avgNps,
   wouldRecommendPercent: sensateMetrics.wouldRecommendPercent,
+};
+
+// Pre-compute LYFEfuel real data
+const SORTED_LYFEFUEL_STORIES = getSortedLyfefuelStories();
+const lyfefuelRealStats = getLyfefuelStudyStats();
+const lyfefuelRealMetrics = getLyfefuelAverageMetrics();
+const LYFEFUEL_STATS = {
+  positive: lyfefuelRealStats.improved,
+  neutral: lyfefuelRealStats.neutral,
+  negative: lyfefuelRealStats.noImprovement,
+};
+const LYFEFUEL_METRICS = {
+  avgActivityChange: lyfefuelRealMetrics.avgActivityChange,
+  avgStepsChange: lyfefuelRealMetrics.avgStepsChange,
+  enrolled: lyfefuelRealMetrics.enrolled,
+  completed: lyfefuelRealMetrics.completed,
+  completionRate: lyfefuelRealMetrics.completionRate,
+  avgNps: lyfefuelRealMetrics.avgNps,
+  wouldRecommendPercent: lyfefuelRealMetrics.wouldRecommendPercent,
 };
 
 // ============================================
@@ -592,6 +618,36 @@ const MOCK_STUDIES: Record<
     howItWorks:
       "Sensate uses precise low-frequency vibrations delivered through bone conduction to stimulate the vagus nerve, activating your parasympathetic nervous system and triggering a deep relaxation response that promotes better sleep.",
   },
+  "study-lyfefuel-real": {
+    id: "study-lyfefuel-real",
+    name: "LYFEfuel Daily Essentials Energy Study (Real Data)",
+    brandId: "brand-lyfefuel",
+    category: "energy",
+    categoryLabel: "Energy & Vitality",
+    status: "completed",
+    participants: LYFEFUEL_METRICS.completed,
+    targetParticipants: LYFEFUEL_METRICS.enrolled,
+    startDate: "2025-09-18",
+    endDate: "2025-10-30",
+    avgImprovement: LYFEFUEL_METRICS.avgActivityChange,
+    completionRate: LYFEFUEL_METRICS.completionRate,
+    tier: 2,
+    rebateAmount: 60,
+    hasWearables: true,
+    productDescription:
+      "Daily Essentials Shake - Clean, whole-food nutrition that replaces your protein, multivitamin, and greens. Delivers steady, crash-free energy throughout the day.",
+    productImage: "/logos/lyfefuel-logo.png",
+    whatYoullDiscover: [
+      "How Daily Essentials affects your daily activity levels and energy",
+      "Whether your activity minutes increase with consistent use",
+      "Changes in steps, active calories, and overall movement",
+      "Your sleep quality and HRV improvements over 24 days",
+    ],
+    dailyRoutine:
+      "Blend one scoop of Daily Essentials with water or your favorite milk each morning. Your Oura Ring tracks activity, sleep, and HRV automatically. Complete weekly energy assessments (2-3 min).",
+    howItWorks:
+      "Daily Essentials provides clean, whole-food nutrition with complete protein, vitamins, minerals, and superfoods that support sustained energy and improved activity levels without the crash of caffeine or sugar.",
+  },
 };
 
 // ============================================
@@ -758,15 +814,37 @@ function OverviewTab({
   brand: { id: string; name: string } | undefined;
   onOpenPreview: () => void;
 }) {
-  // Check if this is the real Sensate study
+  // Check if this is a real data study
   const isSensateRealStudy = study.id === "study-sensate-real";
+  const isLyfefuelRealStudy = study.id === "study-lyfefuel-real";
+  const isRealDataStudy = isSensateRealStudy || isLyfefuelRealStudy;
 
-  // Use real data for Sensate study, mock data for others
-  const studyParticipants = isSensateRealStudy ? SENSATE_METRICS.completed : study.participants;
-  const studyTargetParticipants = isSensateRealStudy ? SENSATE_METRICS.enrolled : study.targetParticipants;
-  const studyCompletionRate = isSensateRealStudy ? SENSATE_METRICS.completionRate : study.completionRate;
-  const studyAvgImprovement = isSensateRealStudy ? SENSATE_METRICS.avgHrvChange : study.avgImprovement;
-  const studyMetricName = isSensateRealStudy ? "HRV" : "primary metric";
+  // Use real data for Sensate/LYFEfuel study, mock data for others
+  const studyParticipants = isSensateRealStudy
+    ? SENSATE_METRICS.completed
+    : isLyfefuelRealStudy
+    ? LYFEFUEL_METRICS.completed
+    : study.participants;
+  const studyTargetParticipants = isSensateRealStudy
+    ? SENSATE_METRICS.enrolled
+    : isLyfefuelRealStudy
+    ? LYFEFUEL_METRICS.enrolled
+    : study.targetParticipants;
+  const studyCompletionRate = isSensateRealStudy
+    ? SENSATE_METRICS.completionRate
+    : isLyfefuelRealStudy
+    ? LYFEFUEL_METRICS.completionRate
+    : study.completionRate;
+  const studyAvgImprovement = isSensateRealStudy
+    ? SENSATE_METRICS.avgHrvChange
+    : isLyfefuelRealStudy
+    ? LYFEFUEL_METRICS.avgActivityChange
+    : study.avgImprovement;
+  const studyMetricName = isSensateRealStudy
+    ? "HRV"
+    : isLyfefuelRealStudy
+    ? "Activity Minutes"
+    : "primary metric";
 
   const participants = generateMockParticipants(study.category);
 
@@ -839,8 +917,8 @@ function OverviewTab({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">28 days</p>
-            {isSensateRealStudy ? (
+            <p className="text-2xl font-bold">{isLyfefuelRealStudy ? "24" : "28"} days</p>
+            {isRealDataStudy ? (
               <p className="text-sm text-muted-foreground">Rolling enrollment</p>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -877,6 +955,12 @@ function OverviewTab({
                     <img
                       src="/logos/sensate-logo.png"
                       alt="Sensate"
+                      className="h-10 w-auto object-contain"
+                    />
+                  ) : isLyfefuelRealStudy ? (
+                    <img
+                      src="/logos/lyfefuel-logo.png"
+                      alt="LYFEfuel"
                       className="h-10 w-auto object-contain"
                     />
                   ) : (
@@ -945,22 +1029,24 @@ function OverviewTab({
       </div>
 
       {/* Sample Results Preview - Clickable */}
-      <Card className={isSensateRealStudy ? "border-emerald-200 bg-gradient-to-r from-emerald-50/50 to-white" : ""}>
+      <Card className={isRealDataStudy ? "border-emerald-200 bg-gradient-to-r from-emerald-50/50 to-white" : ""}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Sparkles className={`h-4 w-4 ${isSensateRealStudy ? "text-emerald-500" : "text-purple-500"}`} />
-                {isSensateRealStudy ? "Real Participant Stories" : "Sample Results Preview"}
+                <Sparkles className={`h-4 w-4 ${isRealDataStudy ? "text-emerald-500" : "text-purple-500"}`} />
+                {isRealDataStudy ? "Real Participant Stories" : "Sample Results Preview"}
               </CardTitle>
-              <Badge variant="outline" className={`text-xs ${isSensateRealStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
-                {isSensateRealStudy ? "Real Data" : "Demo Data"}
+              <Badge variant="outline" className={`text-xs ${isRealDataStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
+                {isRealDataStudy ? "Real Data" : "Demo Data"}
               </Badge>
             </div>
           </div>
           <CardDescription>
             {isSensateRealStudy
               ? `Verified participant stories from the Sensate study (${SENSATE_STATS.positive} positive, ${SENSATE_STATS.neutral} neutral, ${SENSATE_STATS.negative} negative)`
+              : isLyfefuelRealStudy
+              ? `Verified participant stories from the LYFEfuel study (${LYFEFUEL_STATS.positive} positive, ${LYFEFUEL_STATS.neutral} neutral, ${LYFEFUEL_STATS.negative} negative)`
               : "Click to see how verified participant stories will appear"}
           </CardDescription>
         </CardHeader>
@@ -986,6 +1072,35 @@ function OverviewTab({
                         }`}>
                           {story.wearableMetrics.hrvChange.changePercent > 0 ? "+" : ""}
                           {story.wearableMetrics.hrvChange.changePercent}% HRV
+                        </Badge>
+                      )}
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-[#00D1C1] transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : isLyfefuelRealStudy ? (
+            // Real LYFEfuel participants - sorted by improvement score
+            <div className="grid gap-3 sm:grid-cols-2">
+              {SORTED_LYFEFUEL_STORIES.slice(0, 4).map((story) => (
+                <Link key={story.id} href={`/verify/${story.verificationId}`}>
+                  <div className="p-3 rounded-lg border border-emerald-200 bg-white flex items-center gap-3 hover:bg-emerald-50 hover:border-emerald-300 transition-colors cursor-pointer group">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#00D1C1] to-[#00A89D] flex items-center justify-center text-sm font-semibold text-white">
+                      {story.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm group-hover:text-[#00D1C1] transition-colors">
+                        {story.name}
+                      </p>
+                      {story.wearableMetrics?.activeMinutesChange && (
+                        <Badge className={`text-xs ${
+                          story.wearableMetrics.activeMinutesChange.changePercent > 0
+                            ? "bg-green-100 text-green-700 hover:bg-green-100"
+                            : "bg-red-100 text-red-700 hover:bg-red-100"
+                        }`}>
+                          {story.wearableMetrics.activeMinutesChange.changePercent > 0 ? "+" : ""}
+                          {story.wearableMetrics.activeMinutesChange.changePercent}% Activity
                         </Badge>
                       )}
                     </div>
@@ -1024,6 +1139,13 @@ function OverviewTab({
                 View all {SORTED_SENSATE_STORIES.length} verified results
               </Button>
             </Link>
+          ) : isLyfefuelRealStudy ? (
+            <Link href="/verify/lyfefuel-results" className="block mt-3">
+              <Button variant="outline" size="sm" className="w-full">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View all {SORTED_LYFEFUEL_STORIES.length} verified results
+              </Button>
+            </Link>
           ) : (
             <p className="text-xs text-muted-foreground mt-3">
               View the Results tab for all sample stories and participant insights
@@ -1036,22 +1158,25 @@ function OverviewTab({
 }
 
 function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
-  // Check if this is the real Sensate study
+  // Check if this is a real data study
   const isSensateRealStudy = study.id === "study-sensate-real";
+  const isLyfefuelRealStudy = study.id === "study-lyfefuel-real";
+  const isRealDataStudy = isSensateRealStudy || isLyfefuelRealStudy;
 
   // Check if this is a LYFEfuel study with specific demo stories
   const lyfefuelStats = getLYFEfuelStudyStats(study.id);
   const lyfefuelStories = getLYFEfuelStoriesForStudy(study.id);
-  const isLYFEfuelStudy = lyfefuelStories.length > 0;
+  const isLYFEfuelDemoStudy = lyfefuelStories.length > 0;
 
   const participants = generateMockParticipants(study.category);
   const insights = getParticipantInsights(study.category);
 
-  // Get real demographics for Sensate study
+  // Get real demographics for real studies
   const sensateDemographics = isSensateRealStudy ? getSensateDemographics() : null;
+  const lyfefuelDemographics = isLyfefuelRealStudy ? getLyfefuelDemographics() : null;
 
-  // Use real demographics for Sensate study, fallback to mock for others
-  const demographics = sensateDemographics || MOCK_DEMOGRAPHICS;
+  // Use real demographics for real studies, fallback to mock for others
+  const demographics = sensateDemographics || lyfefuelDemographics || MOCK_DEMOGRAPHICS;
 
   return (
     <div className="space-y-6">
@@ -1074,12 +1199,20 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
               <p className="text-lg font-semibold text-[#00D1C1]">{lyfefuelStats.topHeadline}</p>
             </div>
           )}
-          {/* Sensate-specific key finding */}
+          {/* Real study-specific key finding */}
           {isSensateRealStudy && (
             <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
               <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
               <p className="text-lg font-semibold text-emerald-600">
                 {SENSATE_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
+              </p>
+            </div>
+          )}
+          {isLyfefuelRealStudy && (
+            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+              <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
+              <p className="text-lg font-semibold text-emerald-600">
+                {LYFEFUEL_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
               </p>
             </div>
           )}
@@ -1089,40 +1222,58 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
               <p className="text-2xl font-bold text-green-600">
                 {isSensateRealStudy ? (
                   <>{SENSATE_METRICS.avgHrvChange > 0 ? "+" : ""}{SENSATE_METRICS.avgHrvChange}%</>
+                ) : isLyfefuelRealStudy ? (
+                  <>{LYFEFUEL_METRICS.avgActivityChange > 0 ? "+" : ""}{LYFEFUEL_METRICS.avgActivityChange}%</>
                 ) : (
                   <>+{lyfefuelStats?.averageImprovement || study.avgImprovement}%</>
                 )}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {isSensateRealStudy ? "average HRV improvement" : `average ${study.categoryLabel.toLowerCase()} improvement`}
+                {isSensateRealStudy
+                  ? "average HRV improvement"
+                  : isLyfefuelRealStudy
+                  ? "average activity minutes change"
+                  : `average ${study.categoryLabel.toLowerCase()} improvement`}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 border">
               <p className="text-sm text-muted-foreground">Completion Rate</p>
               <p className="text-2xl font-bold">
-                {isSensateRealStudy ? SENSATE_METRICS.completionRate : (lyfefuelStats?.completionRate || study.completionRate)}%
+                {isSensateRealStudy
+                  ? SENSATE_METRICS.completionRate
+                  : isLyfefuelRealStudy
+                  ? LYFEFUEL_METRICS.completionRate
+                  : (lyfefuelStats?.completionRate || study.completionRate)}%
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {isSensateRealStudy ? `${SENSATE_METRICS.completed} of ${SENSATE_METRICS.enrolled} enrolled` : "finished the full study"}
+                {isSensateRealStudy
+                  ? `${SENSATE_METRICS.completed} of ${SENSATE_METRICS.enrolled} enrolled`
+                  : isLyfefuelRealStudy
+                  ? `${LYFEFUEL_METRICS.completed} of ${LYFEFUEL_METRICS.enrolled} enrolled`
+                  : "finished the full study"}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 border">
               <p className="text-sm text-muted-foreground">
-                {isSensateRealStudy ? "Avg. NPS Score" : "Avg. Compliance"}
+                {isRealDataStudy ? "Avg. NPS Score" : "Avg. Compliance"}
               </p>
               <p className="text-2xl font-bold">
-                {isSensateRealStudy ? `${SENSATE_METRICS.avgNps}/10` : "91%"}
+                {isSensateRealStudy
+                  ? `${SENSATE_METRICS.avgNps}/10`
+                  : isLyfefuelRealStudy
+                  ? `${LYFEFUEL_METRICS.avgNps}/10`
+                  : "91%"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {isSensateRealStudy ? "likelihood to recommend" : "daily check-in rate"}
+                {isRealDataStudy ? "likelihood to recommend" : "daily check-in rate"}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Participant Insights Highlights - Hide for Sensate (no real data for these) */}
-      {!isSensateRealStudy && (
+      {/* Participant Insights Highlights - Hide for real data studies (no real data for these) */}
+      {!isRealDataStudy && (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="p-4 rounded-xl bg-gradient-to-br from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
             <p className="text-xs text-muted-foreground mb-1">Top Motivation</p>
@@ -1150,24 +1301,26 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Star className={`h-5 w-5 ${isSensateRealStudy ? "text-emerald-500" : "text-yellow-500"}`} />
-              {isSensateRealStudy ? "Real Verified Participant Stories" : isLYFEfuelStudy ? "Verified Participant Stories" : "Sample Participant Stories"}
+              <Star className={`h-5 w-5 ${isRealDataStudy ? "text-emerald-500" : "text-yellow-500"}`} />
+              {isRealDataStudy ? "Real Verified Participant Stories" : isLYFEfuelDemoStudy ? "Verified Participant Stories" : "Sample Participant Stories"}
             </h3>
-            <Badge variant="outline" className={`text-xs ${isSensateRealStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
-              {isSensateRealStudy ? "Real Data" : isLYFEfuelStudy ? "LYFEfuel Demo" : "Demo Data"}
+            <Badge variant="outline" className={`text-xs ${isRealDataStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
+              {isRealDataStudy ? "Real Data" : isLYFEfuelDemoStudy ? "LYFEfuel Demo" : "Demo Data"}
             </Badge>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           {isSensateRealStudy
             ? `These are REAL participant stories from the Sensate study. Includes ${SENSATE_STATS.positive} positive, ${SENSATE_STATS.neutral} neutral, and ${SENSATE_STATS.negative} negative results for credibility.`
-            : isLYFEfuelStudy
+            : isLyfefuelRealStudy
+            ? `These are REAL participant stories from the LYFEfuel study. Includes ${LYFEFUEL_STATS.positive} positive, ${LYFEFUEL_STATS.neutral} neutral, and ${LYFEFUEL_STATS.negative} negative results for credibility.`
+            : isLYFEfuelDemoStudy
             ? "These stories show the type of verified evidence LYFEfuel can expect from their Daily Essentials studies."
             : "Preview how verified participant stories will appear. Click any card to see the full verification page."}
         </p>
 
-        {/* LYFEfuel Stories */}
-        {isLYFEfuelStudy && (
+        {/* LYFEfuel Demo Stories */}
+        {isLYFEfuelDemoStudy && (
           <div className="grid gap-4 sm:grid-cols-2">
             {lyfefuelStories.map((story) => (
               <Card
@@ -1251,6 +1404,189 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
             ))}
           </div>
         )}
+
+        {/* Real LYFEfuel Stories - grouped by category */}
+        {isLyfefuelRealStudy && (() => {
+          // Group stories by category
+          const positiveStories = SORTED_LYFEFUEL_STORIES.filter(s => categorizeLyfefuelParticipant(s) === "positive");
+          const neutralStories = SORTED_LYFEFUEL_STORIES.filter(s => categorizeLyfefuelParticipant(s) === "neutral");
+          const negativeStories = SORTED_LYFEFUEL_STORIES.filter(s => categorizeLyfefuelParticipant(s) === "negative");
+
+          // Reusable card component
+          const renderStoryCard = (story: typeof SORTED_LYFEFUEL_STORIES[0], category: "positive" | "neutral" | "negative") => {
+            const cardStyles = {
+              positive: "border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white",
+              neutral: "border-yellow-200 bg-gradient-to-br from-yellow-50/30 to-white",
+              negative: "border-red-200 bg-gradient-to-br from-red-50/30 to-white",
+            };
+            const avatarStyles = {
+              positive: "bg-gradient-to-br from-[#00D1C1] to-[#00A89D]",
+              neutral: "bg-gradient-to-br from-yellow-400 to-yellow-500",
+              negative: "bg-gradient-to-br from-red-400 to-red-500",
+            };
+            const buttonStyles = {
+              positive: "border-emerald-200 hover:bg-emerald-50",
+              neutral: "border-yellow-200 hover:bg-yellow-50",
+              negative: "border-red-200 hover:bg-red-50",
+            };
+            const idStyles = {
+              positive: "text-emerald-600",
+              neutral: "text-yellow-600",
+              negative: "text-red-600",
+            };
+
+            return (
+              <Card
+                key={story.id}
+                className={`overflow-hidden hover:shadow-md transition-shadow ${cardStyles[category]}`}
+              >
+                <CardContent className="p-4">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-semibold text-white ${avatarStyles[category]}`}>
+                        {story.initials}
+                      </div>
+                      <div>
+                        <p className="font-medium">{story.name}</p>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < Math.floor(story.finalTestimonial?.overallRating || 0)
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-xs text-muted-foreground ml-1">
+                            {story.finalTestimonial?.npsScore !== undefined
+                              ? `${story.finalTestimonial.npsScore}/10 NPS`
+                              : `${story.finalTestimonial?.overallRating}/5`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <p>{story.journey.durationDays} days</p>
+                      <p className={idStyles[category]}>{story.verificationId}</p>
+                    </div>
+                  </div>
+
+                  {/* Demographics */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.ageRange}</span>
+                    <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.gender}</span>
+                    {story.profile.educationLevel && (
+                      <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.educationLevel}</span>
+                    )}
+                  </div>
+
+                  {/* Wearable Metrics */}
+                  <div className="mb-3 space-y-2">
+                    {story.wearableMetrics?.activeMinutesChange && (
+                      <Badge className={`text-sm px-3 py-1 ${
+                        story.wearableMetrics.activeMinutesChange.changePercent > 0
+                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                          : "bg-red-100 text-red-700 hover:bg-red-100"
+                      }`}>
+                        Activity: {story.wearableMetrics.activeMinutesChange.changePercent > 0 ? "+" : ""}
+                        {story.wearableMetrics.activeMinutesChange.changePercent}%
+                      </Badge>
+                    )}
+                    {story.wearableMetrics?.stepsChange && (
+                      <Badge className={`text-sm px-3 py-1 ml-1 ${
+                        story.wearableMetrics.stepsChange.changePercent > 0
+                          ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
+                          : "bg-red-100 text-red-700 hover:bg-red-100"
+                      }`}>
+                        Steps: {story.wearableMetrics.stepsChange.changePercent > 0 ? "+" : ""}
+                        {story.wearableMetrics.stepsChange.changePercent}%
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Key Quote */}
+                  {story.finalTestimonial?.quote && (
+                    <p className="text-sm text-muted-foreground italic mb-4 line-clamp-2">
+                      &quot;{story.finalTestimonial.quote}&quot;
+                    </p>
+                  )}
+
+                  {/* View Story Button */}
+                  <Link href={`/verify/${story.verificationId}`}>
+                    <Button variant="outline" size="sm" className={`w-full ${buttonStyles[category]}`}>
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      View Verified Story
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          };
+
+          return (
+            <div className="space-y-8">
+              {/* Improved Section */}
+              {positiveStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    <h4 className="font-semibold text-emerald-700">Improved ({positiveStories.length})</h4>
+                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                      {Math.round((positiveStories.length / SORTED_LYFEFUEL_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with objective improvement (Activity Minutes 10%+ or Steps 20%+) AND high satisfaction (NPS 7+)
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {positiveStories.map(story => renderStoryCard(story, "positive"))}
+                  </div>
+                </div>
+              )}
+
+              {/* Neutral Section */}
+              {neutralStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Minus className="h-5 w-5 text-yellow-600" />
+                    <h4 className="font-semibold text-yellow-700">Mixed Results ({neutralStories.length})</h4>
+                    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                      {Math.round((neutralStories.length / SORTED_LYFEFUEL_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with either objective improvement but lower satisfaction, or high satisfaction but no measurable improvement
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {neutralStories.map(story => renderStoryCard(story, "neutral"))}
+                  </div>
+                </div>
+              )}
+
+              {/* No Improvement Section */}
+              {negativeStories.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown className="h-5 w-5 text-red-500" />
+                    <h4 className="font-semibold text-red-600">No Improvement ({negativeStories.length})</h4>
+                    <Badge className="bg-red-100 text-red-700 border-red-200">
+                      {Math.round((negativeStories.length / SORTED_LYFEFUEL_STORIES.length) * 100)}%
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Participants with low satisfaction (NPS 4 or below) AND no objective improvement in metrics
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {negativeStories.map(story => renderStoryCard(story, "negative"))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Real Sensate Stories - grouped by category */}
         {isSensateRealStudy && (() => {
@@ -1436,7 +1772,7 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
         })()}
 
         {/* Generic Mock Participants (non-LYFEfuel, non-Sensate studies) */}
-        {!isLYFEfuelStudy && !isSensateRealStudy && (
+        {!isLYFEfuelDemoStudy && !isRealDataStudy && (
           <div className="grid gap-4 sm:grid-cols-2">
             {participants.map((participant) => (
               <Card
@@ -1605,57 +1941,146 @@ function ResultsTab({ study }: { study: (typeof MOCK_STUDIES)["study-1"] }) {
               </div>
             </div>
 
-            {/* Wearable Devices */}
-            <div>
-              <h4 className="text-sm font-medium mb-4">Wearable Devices</h4>
-              <div className="space-y-3">
-                {demographics.wearableDevices.map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{item.label}</span>
-                      <span className="font-medium">{item.value}%</span>
+            {/* Wearable Devices - Only show for non-LYFEfuel real studies */}
+            {!isLyfefuelRealStudy && 'wearableDevices' in demographics && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Wearable Devices</h4>
+                <div className="space-y-3">
+                  {(demographics as typeof MOCK_DEMOGRAPHICS).wearableDevices.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 rounded-full"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-purple-500 rounded-full"
-                        style={{ width: `${item.value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Demographics */}
-            <div>
-              <h4 className="text-sm font-medium mb-4">Age & Gender</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  {demographics.age.map((item) => (
-                    <div key={item.label} className="flex items-center gap-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm flex-1">{item.label}</span>
-                      <span className="text-sm font-medium">{item.value}%</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  {demographics.gender.map((item) => (
-                    <div key={item.label} className="flex items-center gap-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm flex-1">{item.label}</span>
-                      <span className="text-sm font-medium">{item.value}%</span>
-                    </div>
-                  ))}
+            {/* Demographics - Age & Gender */}
+            {!isLyfefuelRealStudy && 'age' in demographics && 'gender' in demographics && (
+              <div>
+                <h4 className="text-sm font-medium mb-4">Age & Gender</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    {(demographics as typeof MOCK_DEMOGRAPHICS).age.map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm flex-1">{item.label}</span>
+                        <span className="text-sm font-medium">{item.value}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    {(demographics as typeof MOCK_DEMOGRAPHICS).gender.map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm flex-1">{item.label}</span>
+                        <span className="text-sm font-medium">{item.value}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* LYFEfuel Real Study Demographics */}
+            {lyfefuelDemographics && (
+              <>
+                <div>
+                  <h4 className="text-sm font-medium mb-4">Age Distribution</h4>
+                  <div className="space-y-3">
+                    {lyfefuelDemographics.ageRanges.map((item) => (
+                      <div key={item.range}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>{item.range}</span>
+                          <span className="font-medium">{item.percent}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${item.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-4">Gender Distribution</h4>
+                  <div className="space-y-3">
+                    {lyfefuelDemographics.genders.map((item) => (
+                      <div key={item.gender}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>{item.gender}</span>
+                          <span className="font-medium">{item.percent}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-pink-500 rounded-full"
+                            style={{ width: `${item.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-4">Education Level</h4>
+                  <div className="space-y-3">
+                    {lyfefuelDemographics.education.map((item) => (
+                      <div key={item.level}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>{item.level}</span>
+                          <span className="font-medium">{item.percent}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full"
+                            style={{ width: `${item.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-4">Employment Status</h4>
+                  <div className="space-y-3">
+                    {lyfefuelDemographics.employment.map((item) => (
+                      <div key={item.status}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>{item.status}</span>
+                          <span className="font-medium">{item.percent}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full"
+                            style={{ width: `${item.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Additional Sensate Demographics - Education */}
             {sensateDemographics && sensateDemographics.education.length > 0 && (

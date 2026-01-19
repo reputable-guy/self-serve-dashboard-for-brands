@@ -9,6 +9,7 @@ import { MOCK_TESTIMONIALS, MOCK_PARTICIPANT_STORIES, getStoriesForStudy, MockTe
 import { ALL_LYFEFUEL_STORIES } from "@/lib/lyfefuel-demo-stories";
 import { ALL_SENSATE_STORIES } from "@/lib/sensate-demo-stories";
 import { SENSATE_REAL_STORIES, getSensateStudyStats } from "@/lib/sensate-real-data";
+import { LYFEFUEL_REAL_STORIES, getLyfefuelStudyStats } from "@/lib/lyfefuel-real-data";
 import { SAMPLE_STORIES_BY_CATEGORY } from "@/lib/sample-stories";
 import type { StudyProtocol } from "@/lib/types";
 import { ArrowLeft, CheckCircle2, Users, TrendingUp, ExternalLink } from "lucide-react";
@@ -466,6 +467,94 @@ export default function VerifyPage() {
           brandLogo={realStudyInfo.brandLogo}
           protocol={realProtocol}
           studyStats={sensateStats}
+        />
+      );
+    }
+  }
+
+  // Check if this is a REAL LYFEfuel verification ID (LYFE-REAL-xxx format)
+  const lyfefuelRealMatch = id.match(/^LYFE-REAL-(\d+)$/);
+  if (lyfefuelRealMatch) {
+    // Find the story with this verification ID
+    const realStory = LYFEFUEL_REAL_STORIES.find(s => s.verificationId === id);
+
+    if (realStory) {
+      // Real LYFEfuel study info with protocol
+      const realStudyInfo = {
+        studyTitle: "LYFEfuel Daily Essentials Energy Study (Real Data)",
+        productName: "LYFEfuel Daily Essentials Shake",
+        productDescription: "Clean, whole-food nutrition that replaces your protein, multivitamin, and greens. Delivers steady, crash-free energy throughout the day.",
+        productImage: "/logos/lyfefuel-logo.png",
+        brandLogo: "/logos/lyfefuel-logo.png",
+      };
+
+      const realProtocol: StudyProtocol = {
+        baselineDays: 14,
+        interventionDays: 24,
+        wearableTypes: ["Oura Ring"],
+        dailyInstructions: "Blend one scoop of Daily Essentials with water or your favorite milk each morning",
+        compensationNote: "Participants received the same rebate regardless of their feedback or results",
+      };
+
+      // Parse age from ageRange (e.g., "36-45" -> 38)
+      const ageRange = realStory.profile.ageRange;
+      let age = 35;
+      if (ageRange.includes("-")) {
+        const parts = ageRange.split("-");
+        age = Math.floor((parseInt(parts[0]) + parseInt(parts[1])) / 2);
+      } else if (ageRange.includes("+")) {
+        age = parseInt(ageRange.replace("+", "")) + 2;
+      }
+
+      // Create a mock testimonial from the real story
+      const mockTestimonial: MockTestimonial = {
+        id: parseInt(lyfefuelRealMatch[1]),
+        participant: realStory.name,
+        initials: realStory.initials,
+        age: age,
+        location: realStory.profile.location || "USA",
+        completedDay: realStory.journey.durationDays,
+        overallRating: realStory.finalTestimonial?.overallRating || realStory.overallRating || 4,
+        story: realStory.finalTestimonial?.quote ||
+               realStory.journey.keyQuotes[realStory.journey.keyQuotes.length - 1]?.quote ||
+               `This product made a real difference for my ${realStory.journey.villainVariable}.`,
+        metrics: realStory.wearableMetrics
+          ? [
+              realStory.wearableMetrics.activeMinutesChange && {
+                label: "Activity",
+                value: `${realStory.wearableMetrics.activeMinutesChange.changePercent > 0 ? "+" : ""}${realStory.wearableMetrics.activeMinutesChange.changePercent}%`,
+                positive: realStory.wearableMetrics.activeMinutesChange.changePercent > 0,
+              },
+              realStory.wearableMetrics.stepsChange && {
+                label: "Steps",
+                value: `${realStory.wearableMetrics.stepsChange.changePercent > 0 ? "+" : ""}${realStory.wearableMetrics.stepsChange.changePercent}%`,
+                positive: realStory.wearableMetrics.stepsChange.changePercent > 0,
+              },
+            ].filter(Boolean) as { label: string; value: string; positive: boolean }[]
+          : [],
+        benefits: realStory.finalTestimonial?.reportedBenefits || ["Improved energy", "Better daily activity"],
+        verified: true,
+        verificationId: realStory.verificationId || id,
+        device: realStory.wearableMetrics?.device || "Oura Ring",
+      };
+
+      // Get real study stats
+      const lyfefuelStats = getLyfefuelStudyStats();
+
+      return (
+        <VerificationPage
+          testimonial={mockTestimonial}
+          studyTitle={realStudyInfo.studyTitle}
+          productName={realStudyInfo.productName}
+          studyDuration={realStory.journey.durationDays}
+          studyId="study-lyfefuel-real"
+          story={realStory}
+          hasWearable={true}
+          productDescription={realStudyInfo.productDescription}
+          productImage={realStudyInfo.productImage}
+          brandLogo={realStudyInfo.brandLogo}
+          protocol={realProtocol}
+          studyStats={lyfefuelStats}
         />
       );
     }
