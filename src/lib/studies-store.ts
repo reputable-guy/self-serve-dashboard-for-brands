@@ -11,7 +11,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Import Study type from centralized types (single source of truth)
-import type { Study } from './types';
+import type { Study, LaunchChecklist } from './types';
 
 // Import seed data from separate data file
 import { SEED_STUDIES } from './data/seed-studies';
@@ -31,6 +31,8 @@ interface StudiesStore {
   getStudy: (id: string) => Study | undefined; // Alias for legacy pages
   getStudiesByBrandId: (brandId: string) => Study[];
   launchStudy: (id: string) => void;
+  updateLaunchChecklist: (id: string, updates: Partial<LaunchChecklist>) => void;
+  initializeLaunchChecklist: (id: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -101,6 +103,51 @@ export const useStudiesStore = create<StudiesStore>()(
                   startDate: now.toISOString(),
                   endDate: endDate.toISOString(),
                   updatedAt: now.toISOString(),
+                  launchChecklist: {
+                    ...study.launchChecklist,
+                    settingsComplete: true,
+                    previewReviewed: study.launchChecklist?.previewReviewed ?? true,
+                    inventoryConfirmed: study.launchChecklist?.inventoryConfirmed ?? true,
+                    goLiveAt: now.toISOString(),
+                  },
+                }
+              : study
+          ),
+        }));
+      },
+
+      updateLaunchChecklist: (id, updates) => {
+        set((state) => ({
+          studies: state.studies.map((study) =>
+            study.id === id
+              ? {
+                  ...study,
+                  launchChecklist: {
+                    settingsComplete: true,
+                    previewReviewed: false,
+                    inventoryConfirmed: false,
+                    ...study.launchChecklist,
+                    ...updates,
+                  },
+                  updatedAt: new Date().toISOString(),
+                }
+              : study
+          ),
+        }));
+      },
+
+      initializeLaunchChecklist: (id) => {
+        set((state) => ({
+          studies: state.studies.map((study) =>
+            study.id === id && !study.launchChecklist
+              ? {
+                  ...study,
+                  launchChecklist: {
+                    settingsComplete: true,
+                    previewReviewed: false,
+                    inventoryConfirmed: false,
+                  },
+                  updatedAt: new Date().toISOString(),
                 }
               : study
           ),

@@ -26,6 +26,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "sleep",
     label: "Sleep",
     tier: 1,
+    villainVariable: "sleep quality",
     assessment: {
       metricLabel: "sleep quality",
       higherIsBetter: true,
@@ -43,6 +44,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "recovery",
     label: "Recovery",
     tier: 1,
+    villainVariable: "recovery time",
     assessment: {
       metricLabel: "recovery score",
       higherIsBetter: true,
@@ -60,6 +62,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "fitness",
     label: "Fitness & Activity",
     tier: 1,
+    villainVariable: "fitness performance",
     assessment: {
       metricLabel: "fitness level",
       higherIsBetter: true,
@@ -81,6 +84,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "stress",
     label: "Stress",
     tier: 2,
+    villainVariable: "stress levels",
     assessment: {
       metricLabel: "stress level",
       higherIsBetter: false, // Lower stress is better
@@ -102,6 +106,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "energy",
     label: "Energy & Vitality",
     tier: 3,
+    villainVariable: "energy levels",
     assessment: {
       metricLabel: "energy level",
       higherIsBetter: true,
@@ -119,6 +124,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "focus",
     label: "Focus & Cognition",
     tier: 3,
+    villainVariable: "focus and concentration",
     assessment: {
       metricLabel: "focus duration",
       higherIsBetter: true,
@@ -136,6 +142,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "mood",
     label: "Mood",
     tier: 3,
+    villainVariable: "mood stability",
     assessment: {
       metricLabel: "mood score",
       higherIsBetter: true,
@@ -153,6 +160,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "anxiety",
     label: "Anxiety",
     tier: 3,
+    villainVariable: "anxiety symptoms",
     assessment: {
       metricLabel: "anxiety level",
       higherIsBetter: false, // Lower anxiety is better
@@ -170,6 +178,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "pain",
     label: "Pain & Comfort",
     tier: 3,
+    villainVariable: "pain levels",
     assessment: {
       metricLabel: "pain level",
       higherIsBetter: false, // Lower pain is better
@@ -187,6 +196,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "resilience",
     label: "Mental Resilience",
     tier: 3,
+    villainVariable: "mental resilience",
     assessment: {
       metricLabel: "resilience score",
       higherIsBetter: true,
@@ -208,6 +218,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "skin",
     label: "Skin & Beauty",
     tier: 4,
+    villainVariable: "skin clarity",
     assessment: {
       metricLabel: "skin clarity",
       higherIsBetter: true,
@@ -219,6 +230,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "gut",
     label: "Gut & Digestion",
     tier: 4,
+    villainVariable: "digestive comfort",
     assessment: {
       metricLabel: "gut health",
       higherIsBetter: true,
@@ -230,6 +242,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "immunity",
     label: "Immunity",
     tier: 4,
+    villainVariable: "immune resilience",
     assessment: {
       metricLabel: "immune resilience",
       higherIsBetter: true,
@@ -241,6 +254,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "hair",
     label: "Hair",
     tier: 4,
+    villainVariable: "hair health",
     assessment: {
       metricLabel: "hair health",
       higherIsBetter: true,
@@ -252,6 +266,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "weight",
     label: "Weight & Metabolism",
     tier: 4,
+    villainVariable: "appetite control",
     assessment: {
       metricLabel: "appetite control",
       higherIsBetter: true,
@@ -263,6 +278,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "libido",
     label: "Sexual Wellness",
     tier: 4,
+    villainVariable: "sexual wellness",
     assessment: {
       metricLabel: "sexual wellness",
       higherIsBetter: true,
@@ -274,6 +290,7 @@ export const CATEGORIES: CategoryDefinition[] = [
     value: "satiety",
     label: "Satiety & Fullness",
     tier: 4,
+    villainVariable: "satiety after meals",
     assessment: {
       metricLabel: "satiety",
       higherIsBetter: true,

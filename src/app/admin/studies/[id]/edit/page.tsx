@@ -47,6 +47,7 @@ import {
   CATEGORY_CONFIGS,
   getTierDisplayInfo,
 } from "@/lib/assessments";
+import { getCategory } from "@/lib/categories";
 import {
   getStudyAutoConfig,
   getNonWearableDescription,
@@ -95,6 +96,8 @@ interface EditFormData {
   // Catalog card fields
   studyTitle: string;
   hookQuestion: string;
+  // Participant tracking
+  villainVariable: string;
   // Study details fields
   whatYoullDiscover: string[];
   howItWorksTitle: string;
@@ -169,6 +172,7 @@ function StudyEditContent() {
     autoConfig: null,
     studyTitle: "",
     hookQuestion: "",
+    villainVariable: "",
     whatYoullDiscover: [],
     howItWorksTitle: "",
     howItWorksDescription: "",
@@ -198,6 +202,10 @@ function StudyEditContent() {
         28
       );
 
+      // Get default villain variable from category, use study's override if saved
+      const categoryDef = getCategory(study.category);
+      const defaultVillainVariable = categoryDef?.villainVariable || study.categoryLabel.toLowerCase();
+
       setFormData({
         brandId: study.brandId,
         productName: study.name,
@@ -209,6 +217,7 @@ function StudyEditContent() {
         autoConfig,
         studyTitle: study.studyTitle || `${study.name} Study`,
         hookQuestion: study.hookQuestion || `Can ${study.name} improve your ${study.categoryLabel.toLowerCase()}?`,
+        villainVariable: study.villainVariable || defaultVillainVariable,
         whatYoullDiscover: study.whatYoullDiscover,
         howItWorksTitle: `What is ${study.name}?`,
         howItWorksDescription: study.howItWorks,
@@ -225,11 +234,19 @@ function StudyEditContent() {
     setIsLoading(false);
   }, [study]);
 
-  // Update autoConfig when category changes
+  // Update autoConfig and villain variable when category changes
   useEffect(() => {
     if (formData.category) {
       const autoConfig = getStudyAutoConfig(formData.category);
-      setFormData((prev) => ({ ...prev, autoConfig }));
+      const categoryDef = getCategory(formData.category);
+      const defaultVillainVariable = categoryDef?.villainVariable || formData.category;
+
+      setFormData((prev) => ({
+        ...prev,
+        autoConfig,
+        // Only auto-update villain variable if it's empty or matches a previous category's default
+        villainVariable: prev.villainVariable || defaultVillainVariable,
+      }));
     }
   }, [formData.category]);
 
@@ -334,6 +351,7 @@ function StudyEditContent() {
       hasWearables: !formData.allowNonWearable,
       studyTitle: formData.studyTitle,
       hookQuestion: formData.hookQuestion,
+      villainVariable: formData.villainVariable,
       whatYoullDiscover: formData.whatYoullDiscover,
       dailyRoutine: formData.whatYoullDoSections.length > 0
         ? `Follow your personalized ${formData.whatYoullDoSections.length}-step routine.`
@@ -488,7 +506,14 @@ function StudyEditContent() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => updateFormData({ category: value })}
+                  onValueChange={(value) => {
+                    const categoryDef = getCategory(value);
+                    const defaultVillainVariable = categoryDef?.villainVariable || value;
+                    updateFormData({
+                      category: value,
+                      villainVariable: defaultVillainVariable,
+                    });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -533,6 +558,25 @@ function StudyEditContent() {
                     Tier {formData.autoConfig.tier}: {tierInfo?.label}
                   </p>
                 )}
+              </div>
+
+              {/* Participant Tracking (Villain Variable) */}
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-[#00D1C1]" />
+                  Participant Tracking
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  What are participants tracking throughout the study? This appears on interim cards and in check-in questions.
+                </p>
+                <Input
+                  value={formData.villainVariable}
+                  onChange={(e) => updateFormData({ villainVariable: e.target.value })}
+                  placeholder="e.g., energy levels, sleep quality"
+                />
+                <p className="text-[11px] text-muted-foreground italic">
+                  Shown as &ldquo;Tracking: <span className="font-medium capitalize">{formData.villainVariable || "your metric"}</span>&rdquo; on participant cards
+                </p>
               </div>
 
               {/* Rebate Amount */}

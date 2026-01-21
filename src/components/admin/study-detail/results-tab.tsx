@@ -42,6 +42,7 @@ import {
   SORTED_SENSATE_STORIES,
   SORTED_LYFEFUEL_STORIES,
 } from "./mock-data";
+import { InterimInsights } from "@/components/results/interim-insights";
 
 interface ResultsTabProps {
   study: StudyData;
@@ -52,6 +53,21 @@ export function ResultsTab({ study }: ResultsTabProps) {
   const isSensateRealStudy = study.id === "study-sensate-real";
   const isLyfefuelRealStudy = study.id === "study-lyfefuel-real";
   const isRealDataStudy = isSensateRealStudy || isLyfefuelRealStudy;
+
+  // Compute currentDay for interim insights
+  // For active demo studies without currentDay set, default to day 14 (mid-study)
+  const studyCurrentDay = (() => {
+    // Use explicit currentDay if set
+    const explicitDay = (study as { currentDay?: number }).currentDay;
+    if (explicitDay !== undefined && explicitDay > 0) {
+      return explicitDay;
+    }
+    // For active demo studies, default to day 14 to show interim insights
+    if (study.status === "active" && !isRealDataStudy) {
+      return 14;
+    }
+    return 0;
+  })();
 
   // Check if this is a LYFEfuel study with specific demo stories
   const lyfefuelStats = getLYFEfuelStudyStats(study.id);
@@ -70,7 +86,16 @@ export function ResultsTab({ study }: ResultsTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Aggregate Results Summary */}
+      {/* Interim Insights - Only shows for active demo studies, NEVER for real studies */}
+      <InterimInsights
+        studyId={study.id}
+        studyStatus={study.status}
+        category={study.category}
+        currentDay={studyCurrentDay}
+        totalParticipants={study.participants}
+      />
+
+      {/* Aggregate Results Summary - Context-aware based on study status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -78,87 +103,133 @@ export function ResultsTab({ study }: ResultsTabProps) {
             Aggregate Results
           </CardTitle>
           <CardDescription>
-            Summary of outcomes across all {lyfefuelStats?.participants || study.participants} participants
+            {study.status === "recruiting" || study.status === "filling-fast"
+              ? "Results will be available once the study is active"
+              : study.status === "active" && !isRealDataStudy
+              ? "Preliminary data from active study"
+              : `Summary of outcomes across all ${lyfefuelStats?.participants || study.participants} participants`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* LYFEfuel-specific headline if available */}
-          {lyfefuelStats && (
-            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
-              <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
-              <p className="text-lg font-semibold text-[#00D1C1]">{lyfefuelStats.topHeadline}</p>
-            </div>
-          )}
-          {/* Real study-specific key finding */}
-          {isSensateRealStudy && (
-            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
-              <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
-              <p className="text-lg font-semibold text-emerald-600">
-                {SENSATE_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
+          {/* Recruiting/Filling-fast: No results yet */}
+          {(study.status === "recruiting" || study.status === "filling-fast") && (
+            <div className="py-8 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Results Yet</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Results will be available once participants complete the study.
+                Currently {study.participants} participants enrolled.
               </p>
             </div>
           )}
-          {isLyfefuelRealStudy && (
-            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
-              <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
-              <p className="text-lg font-semibold text-emerald-600">
-                {LYFEFUEL_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
-              </p>
-            </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-              <p className="text-sm text-muted-foreground">Primary Outcome</p>
-              <p className="text-2xl font-bold text-green-600">
-                {isSensateRealStudy ? (
-                  <>{SENSATE_METRICS.avgHrvChange > 0 ? "+" : ""}{SENSATE_METRICS.avgHrvChange}%</>
-                ) : isLyfefuelRealStudy ? (
-                  <>{LYFEFUEL_METRICS.avgActivityChange > 0 ? "+" : ""}{LYFEFUEL_METRICS.avgActivityChange}%</>
-                ) : (
-                  <>+{lyfefuelStats?.averageImprovement || study.avgImprovement}%</>
+
+          {/* Active (demo) studies: Primary metric only with preliminary label */}
+          {study.status === "active" && !isRealDataStudy && (
+            <div>
+              <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-muted-foreground">Primary Outcome</p>
+                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                    Preliminary
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  +{lyfefuelStats?.averageImprovement || study.avgImprovement}%
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  average {study.categoryLabel.toLowerCase()} improvement
+                </p>
+                {/* Show selection method for Tier 1 studies */}
+                {study.tier === 1 && (
+                  <p className="text-xs text-muted-foreground/70 mt-1 italic">
+                    {study.primaryMetricConfig?.mode === "manual"
+                      ? "(selected metric)"
+                      : "(auto-selected as top performer)"}
+                  </p>
                 )}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isSensateRealStudy
-                  ? "average HRV improvement"
-                  : isLyfefuelRealStudy
-                  ? "average activity minutes change"
-                  : `average ${study.categoryLabel.toLowerCase()} improvement`}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Final verified results available when study completes
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm text-muted-foreground">Completion Rate</p>
-              <p className="text-2xl font-bold">
-                {isSensateRealStudy
-                  ? SENSATE_METRICS.completionRate
-                  : isLyfefuelRealStudy
-                  ? LYFEFUEL_METRICS.completionRate
-                  : (lyfefuelStats?.completionRate || study.completionRate)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isSensateRealStudy
-                  ? `${SENSATE_METRICS.completed} of ${SENSATE_METRICS.enrolled} enrolled`
-                  : isLyfefuelRealStudy
-                  ? `${LYFEFUEL_METRICS.completed} of ${LYFEFUEL_METRICS.enrolled} enrolled`
-                  : "finished the full study"}
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm text-muted-foreground">
-                {isRealDataStudy ? "Avg. NPS Score" : "Avg. Compliance"}
-              </p>
-              <p className="text-2xl font-bold">
-                {isSensateRealStudy
-                  ? `${SENSATE_METRICS.avgNps}/10`
-                  : isLyfefuelRealStudy
-                  ? `${LYFEFUEL_METRICS.avgNps}/10`
-                  : "91%"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isRealDataStudy ? "likelihood to recommend" : "daily check-in rate"}
-              </p>
-            </div>
-          </div>
+          )}
+
+          {/* Completed studies or real data studies: Full results */}
+          {(study.status === "completed" || isRealDataStudy) && (
+            <>
+              {/* LYFEfuel-specific headline if available */}
+              {lyfefuelStats && (
+                <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
+                  <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
+                  <p className="text-lg font-semibold text-[#00D1C1]">{lyfefuelStats.topHeadline}</p>
+                </div>
+              )}
+              {/* Real study-specific key finding */}
+              {isSensateRealStudy && (
+                <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+                  <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
+                  <p className="text-lg font-semibold text-emerald-600">
+                    {SENSATE_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
+                  </p>
+                </div>
+              )}
+              {isLyfefuelRealStudy && (
+                <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+                  <p className="text-sm text-muted-foreground mb-1">Key Finding</p>
+                  <p className="text-lg font-semibold text-emerald-600">
+                    {LYFEFUEL_METRICS.wouldRecommendPercent}% of participants would recommend the product (NPS ≥ 7)
+                  </p>
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                  <p className="text-sm text-muted-foreground">Primary Outcome</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {isSensateRealStudy ? (
+                      <>{SENSATE_METRICS.avgHrvChange > 0 ? "+" : ""}{SENSATE_METRICS.avgHrvChange}%</>
+                    ) : isLyfefuelRealStudy ? (
+                      <>{LYFEFUEL_METRICS.avgActivityChange > 0 ? "+" : ""}{LYFEFUEL_METRICS.avgActivityChange}%</>
+                    ) : (
+                      <>+{lyfefuelStats?.averageImprovement || study.avgImprovement}%</>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isSensateRealStudy
+                      ? "average HRV improvement"
+                      : isLyfefuelRealStudy
+                      ? "average activity minutes change"
+                      : `average ${study.categoryLabel.toLowerCase()} improvement`}
+                  </p>
+                  {/* Show selection method for Tier 1 studies */}
+                  {study.tier === 1 && !isRealDataStudy && (
+                    <p className="text-xs text-muted-foreground/70 mt-1 italic">
+                      {study.primaryMetricConfig?.mode === "manual"
+                        ? "(selected metric)"
+                        : "(auto-selected as top performer)"}
+                    </p>
+                  )}
+                </div>
+                {/* Only show NPS for real data studies */}
+                {isRealDataStudy && (
+                  <div className="p-4 rounded-lg bg-muted/50 border">
+                    <p className="text-sm text-muted-foreground">Avg. NPS Score</p>
+                    <p className="text-2xl font-bold">
+                      {isSensateRealStudy
+                        ? `${SENSATE_METRICS.avgNps}/10`
+                        : isLyfefuelRealStudy
+                        ? `${LYFEFUEL_METRICS.avgNps}/10`
+                        : "8.2/10"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      likelihood to recommend
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -926,8 +997,14 @@ function LyfefuelStoryCard({
           </div>
         </div>
 
-        {/* Demographics */}
+        {/* Demographics + Cohort */}
         <div className="flex flex-wrap gap-1.5 mb-3">
+          {story.cohortNumber && (
+            <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
+              <Users className="h-2.5 w-2.5" />
+              Cohort {story.cohortNumber}
+            </span>
+          )}
           <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.ageRange}</span>
           <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.gender}</span>
           {story.profile.educationLevel && (
@@ -1043,8 +1120,14 @@ function SensateStoryCard({
           </div>
         </div>
 
-        {/* Demographics */}
+        {/* Demographics + Cohort */}
         <div className="flex flex-wrap gap-1.5 mb-3">
+          {story.cohortNumber && (
+            <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
+              <Users className="h-2.5 w-2.5" />
+              Cohort {story.cohortNumber}
+            </span>
+          )}
           <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.ageRange}</span>
           <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.gender}</span>
           {story.profile.educationLevel && (

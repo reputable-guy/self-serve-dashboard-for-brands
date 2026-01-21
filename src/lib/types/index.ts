@@ -55,6 +55,8 @@ export interface CategoryDefinition {
   value: CategoryValue;
   label: string;
   tier: TierLevel;
+  /** Default villain variable (what participants track) - e.g., "energy levels" */
+  villainVariable: string;
   /** Assessment configuration */
   assessment: {
     metricLabel: string;
@@ -155,6 +157,18 @@ export interface StudyProtocol {
   compensationNote?: string;
 }
 
+/** Launch checklist tracks progress toward going live */
+export interface LaunchChecklist {
+  /** Always true after study creation */
+  settingsComplete: boolean;
+  /** User clicked "I've reviewed" in preview */
+  previewReviewed: boolean;
+  /** User confirmed inventory is ready */
+  inventoryConfirmed: boolean;
+  /** ISO timestamp when study went live (null if not yet live) */
+  goLiveAt?: string;
+}
+
 export interface Study {
   id: string;
   name: string;
@@ -194,6 +208,13 @@ export interface Study {
   // Shipping configuration
   fulfillmentModel?: "recruited" | "rebate";
   shippingProductDescription?: string;
+  // Launch checklist state
+  launchChecklist?: LaunchChecklist;
+  // Primary metric configuration (Tier 1 wearables studies only)
+  primaryMetricConfig?: {
+    mode: "auto" | "manual";
+    selectedMetric?: string; // e.g., "deep_sleep_duration"
+  };
   // Legacy fields
   productName?: string;
   durationDays?: number;
@@ -421,6 +442,8 @@ export interface ParticipantStory {
   tier: TierLevel;
   /** Data source - distinguishes real participant data from demo/generated */
   dataSource?: DataSource;
+  /** Cohort number (e.g., 1, 2, 3) - for studies with multiple cohorts */
+  cohortNumber?: number;
   profile: {
     // Core profile fields
     ageRange: string;
@@ -523,3 +546,21 @@ export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
 // ============================================
 
 export * from "./shipping";
+
+// ============================================
+// COMPLIANCE & PARTICIPANT MONITORING
+// ============================================
+
+export * from "./compliance";
+
+// ============================================
+// ADMIN ALERTS
+// ============================================
+
+export * from "./alerts";
+
+// ============================================
+// INTERIM INSIGHTS
+// ============================================
+
+export * from "./interim-insights";

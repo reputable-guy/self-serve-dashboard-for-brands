@@ -10,9 +10,14 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getAllBrands } from "@/lib/roles";
+import { AttentionAlerts } from "@/components/admin/attention-alerts";
+import { PlatformHealth } from "@/components/admin/platform-health";
+import { useActiveAlerts, usePlatformHealth } from "@/lib/alerts-store";
 
 // Mock study data for the dashboard
 const recentActivity = [
@@ -93,15 +98,35 @@ export default function AdminDashboard() {
   const totalStudies = brands.reduce((sum, b) => sum + b.studyCount, 0);
   const activeStudies = brands.reduce((sum, b) => sum + b.activeStudyCount, 0);
 
+  // Get alerts and health from store
+  const activeAlerts = useActiveAlerts();
+  const platformHealth = usePlatformHealth();
+
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage brands and studies across the Reputable platform
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage brands and studies across the Reputable platform
+          </p>
+        </div>
+        <Link href="/admin/studies/new">
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Study
+          </Button>
+        </Link>
       </div>
+
+      {/* Attention Alerts (only shown if there are alerts) */}
+      {activeAlerts.length > 0 && (
+        <AttentionAlerts alerts={activeAlerts} />
+      )}
+
+      {/* Platform Health */}
+      <PlatformHealth health={platformHealth} />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

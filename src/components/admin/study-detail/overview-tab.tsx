@@ -133,6 +133,14 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
               +{studyAvgImprovement}%
             </p>
             <p className="text-sm text-muted-foreground">{studyMetricName}</p>
+            {/* Show selection method for Tier 1 studies */}
+            {study.tier === 1 && !isRealDataStudy && (
+              <p className="text-xs text-muted-foreground/70 mt-0.5 italic">
+                {(study as StudyData & { primaryMetricConfig?: { mode: "auto" | "manual" } }).primaryMetricConfig?.mode === "manual"
+                  ? "(selected)"
+                  : "(auto)"}
+              </p>
+            )}
           </CardContent>
         </Card>
 

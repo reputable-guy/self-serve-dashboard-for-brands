@@ -374,15 +374,16 @@ export const MOCK_STUDIES: Record<string, StudyData> = {
     category: "sleep",
     categoryLabel: "Sleep",
     status: "active",
-    participants: 45,
-    targetParticipants: 50,
-    startDate: "2024-11-01",
-    endDate: "2024-11-29",
+    participants: 18,
+    targetParticipants: 25,
+    startDate: "2026-01-07",
+    endDate: "2026-02-04",
     avgImprovement: 23,
     completionRate: 90,
     tier: 1,
     rebateAmount: 50,
     hasWearables: true,
+    currentDay: 14, // Day 14 - shows interim insights
     productDescription:
       "Natural sleep supplement formulated to improve sleep quality and duration",
     productImage:

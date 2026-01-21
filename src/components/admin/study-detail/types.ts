@@ -36,6 +36,13 @@ export interface StudyData {
   whatYoullDiscover: string[];
   dailyRoutine: string;
   howItWorks: string;
+  // Primary metric configuration (Tier 1 wearables studies only)
+  primaryMetricConfig?: {
+    mode: "auto" | "manual";
+    selectedMetric?: string;
+  };
+  // Current day of the study (for active studies)
+  currentDay?: number;
 }
 
 export interface DemographicItem {
@@ -60,4 +67,4 @@ export interface Demographics {
   wearableDevices: DemographicItem[];
 }
 
-export type TabId = "overview" | "results" | "fulfillment" | "config";
+export type TabId = "overview" | "fulfillment" | "compliance" | "results" | "config";

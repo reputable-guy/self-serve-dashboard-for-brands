@@ -13,6 +13,7 @@ import {
   Settings,
   Star,
   Package,
+  Activity,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
 import { useStudiesStore } from "@/lib/studies-store";
@@ -24,6 +25,8 @@ import {
   ResultsTab,
   ConfigTab,
   FulfillmentTab,
+  ComplianceTab,
+  TabIndicator,
   MOCK_STUDIES,
   getStatusColor,
   getTierColor,
@@ -189,18 +192,24 @@ export default function AdminStudyDetailPage() {
     );
   }
 
+  // Tab order follows workflow: Overview → Fulfillment → Compliance → Results → Config
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     {
       id: "overview",
       label: "Overview",
       icon: <BarChart3 className="h-4 w-4" />,
     },
-    { id: "results", label: "Results", icon: <Star className="h-4 w-4" /> },
     {
       id: "fulfillment",
       label: "Fulfillment",
       icon: <Package className="h-4 w-4" />,
     },
+    {
+      id: "compliance",
+      label: "Compliance",
+      icon: <Activity className="h-4 w-4" />,
+    },
+    { id: "results", label: "Results", icon: <Star className="h-4 w-4" /> },
     {
       id: "config",
       label: "Configuration",
@@ -257,6 +266,12 @@ export default function AdminStudyDetailPage() {
             >
               {tab.icon}
               {tab.label}
+              <TabIndicator
+                tab={tab.id}
+                studyId={study.id}
+                studyStatus={study.status}
+                currentDay={(study as { currentDay?: number }).currentDay}
+              />
             </button>
           ))}
         </div>
@@ -270,7 +285,6 @@ export default function AdminStudyDetailPage() {
           onOpenPreview={() => setShowPreview(true)}
         />
       )}
-      {activeTab === "results" && <ResultsTab study={study} />}
       {activeTab === "fulfillment" && (
         <FulfillmentTab
           studyId={study.id}
@@ -278,6 +292,8 @@ export default function AdminStudyDetailPage() {
           targetParticipants={study.targetParticipants}
         />
       )}
+      {activeTab === "compliance" && <ComplianceTab study={study} />}
+      {activeTab === "results" && <ResultsTab study={study} />}
       {activeTab === "config" && (
         <ConfigTab study={study} categoryConfig={categoryConfig} />
       )}
