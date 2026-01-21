@@ -144,7 +144,8 @@ export const useAlertsStore = create<AlertsStoreState>()(
 
       clearAcknowledgement: (alertId) => {
         set((state) => {
-          const { [alertId]: _removed, ...rest } = state.acknowledgedAlerts;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [alertId]: removed, ...rest } = state.acknowledgedAlerts;
           return { acknowledgedAlerts: rest };
         });
       },

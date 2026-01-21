@@ -13,10 +13,12 @@ import React from "react";
 
 // Slide 1: The Hook - Question that creates curiosity
 export function InstagramSlide1Hook({
-  productName: _productName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  productName,
   studyDuration,
   totalParticipants,
-  productImageUrl: _productImageUrl,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  productImageUrl,
 }: {
   productName: string;
   studyDuration: number;
@@ -268,7 +270,8 @@ export function InstagramSlide2Result({
 // Slide 3: Star Performer - Personal story with compelling stats
 export function InstagramSlide3Star({
   starParticipant,
-  productImageUrl: _productImageUrl,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  productImageUrl,
 }: {
   starParticipant: ParticipantStory;
   productImageUrl: string;
@@ -455,9 +458,12 @@ export function InstagramSlide3Star({
 
 // Slide 4: Transparency - CTA to see full results with methodology
 export function InstagramSlide4Proof({
-  totalParticipants: _totalParticipants,
-  brandName: _brandName,
-  brandLogoUrl: _brandLogoUrl,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  totalParticipants,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  brandName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  brandLogoUrl,
 }: {
   totalParticipants: number;
   brandName: string;
@@ -613,7 +619,8 @@ export function InstagramSlide4Proof({
 }
 
 // Legacy exports for backwards compatibility
-export function InstagramStoryCardSimple(_props: {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function InstagramStoryCardSimple(props: {
   story: ParticipantStory;
   productName: string;
   brandName: string;
@@ -622,7 +629,8 @@ export function InstagramStoryCardSimple(_props: {
   return <div>Deprecated - use carousel slides</div>;
 }
 
-export function InstagramCarouselPreview(_props: {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function InstagramCarouselPreview(props: {
   productName: string;
   brandName: string;
   studyDuration: number;

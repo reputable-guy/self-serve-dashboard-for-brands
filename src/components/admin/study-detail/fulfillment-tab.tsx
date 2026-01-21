@@ -37,7 +37,8 @@ interface FulfillmentTabProps {
  */
 export function FulfillmentTab({
   studyId,
-  studyName: _studyName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  studyName,
   targetParticipants,
 }: FulfillmentTabProps) {
   const [showTrackingModal, setShowTrackingModal] = useState(false);

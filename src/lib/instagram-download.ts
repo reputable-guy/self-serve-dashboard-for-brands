@@ -169,15 +169,18 @@ export async function downloadInstagramCarousel(
 }
 
 // Keep legacy export for backwards compatibility
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function downloadInstagramCards(
-  _options: {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  options: {
     stories: ParticipantStory[];
     productName: string;
     brandName: string;
     studyDuration: number;
     studyTitle: string;
   },
-  _cardElements: HTMLElement[]
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  cardElements: HTMLElement[]
 ): Promise<void> {
   // Deprecated - use downloadInstagramCarousel instead
   console.warn("downloadInstagramCards is deprecated. Use downloadInstagramCarousel instead.");
