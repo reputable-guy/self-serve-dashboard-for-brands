@@ -478,6 +478,8 @@ export interface ParticipantStory {
     beforePhoto?: string;
     afterPhoto?: string;
   };
+  /** Generated narrative (LLM output) */
+  generatedNarrative?: string;
 }
 
 // ============================================

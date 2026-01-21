@@ -6,7 +6,7 @@
 // - "Supports Metabolism: helps reach weight goals"
 // - "Without the bloat, bad taste, or supplement clutter"
 
-import { ParticipantStory } from "./mock-data";
+import { ParticipantStory } from "./types";
 import { TierLevel } from "./assessments";
 import {
   createAssessmentResult,

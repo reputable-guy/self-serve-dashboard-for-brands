@@ -81,7 +81,7 @@ export default function VerifyPage() {
         age: parseInt(sampleStory.story.profile.ageRange.split("-")[0]) + 2,
         location: "Sample City, ST",
         completedDay: sampleStory.story.journey.durationDays,
-        overallRating: sampleStory.story.overallRating,
+        overallRating: sampleStory.story.overallRating ?? 4.5,
         story: sampleStory.story.testimonialResponses?.[1]?.response ||
                `This ${sampleStory.categoryLabel.toLowerCase()} product made a real difference for my ${sampleStory.villainVariable}.`,
         metrics: sampleStory.story.tier === 1 && sampleStory.story.wearableMetrics
@@ -94,7 +94,7 @@ export default function VerifyPage() {
             ],
         benefits: ["Improved " + sampleStory.villainVariable, "Better overall wellbeing"],
         verified: true,
-        verificationId: sampleStory.story.verificationId,
+        verificationId: sampleStory.story.verificationId ?? "REP-2025-001",
         device: sampleStory.story.wearableMetrics?.device || "Assessment Only",
       };
 
@@ -357,7 +357,7 @@ export default function VerifyPage() {
         age: parseInt(lyfefuelStory.profile.ageRange.split("-")[0]) + 2,
         location: "Sample City, ST",
         completedDay: lyfefuelStory.journey.durationDays,
-        overallRating: lyfefuelStory.overallRating,
+        overallRating: lyfefuelStory.overallRating ?? 4.5,
         story: lyfefuelStory.journey.keyQuotes[lyfefuelStory.journey.keyQuotes.length - 1]?.quote ||
                `This product made a real difference for my ${lyfefuelStory.journey.villainVariable}.`,
         metrics: lyfefuelStory.assessmentResult
@@ -365,7 +365,7 @@ export default function VerifyPage() {
           : [],
         benefits: ["Improved " + lyfefuelStory.journey.villainVariable, "Better overall wellbeing"],
         verified: true,
-        verificationId: lyfefuelStory.verificationId,
+        verificationId: lyfefuelStory.verificationId ?? "REP-2025-001",
         // Tier 4 studies don't have wearables, so set device to "None" to indicate assessment-only
         device: lyfefuelStory.tier === 4 ? "None" : (lyfefuelStory.wearableMetrics?.device || "Assessment Only"),
       };
@@ -584,7 +584,7 @@ export default function VerifyPage() {
         age: parseInt(sensateStory.profile.ageRange.split("-")[0]) + 2,
         location: "Sample City, ST",
         completedDay: sensateStory.journey.durationDays,
-        overallRating: sensateStory.overallRating,
+        overallRating: sensateStory.overallRating ?? 4.5,
         story: sensateStory.journey.keyQuotes[sensateStory.journey.keyQuotes.length - 1]?.quote ||
                `This product made a real difference for my ${sensateStory.journey.villainVariable}.`,
         metrics: sensateStory.assessmentResult
@@ -592,7 +592,7 @@ export default function VerifyPage() {
           : [],
         benefits: ["Improved " + sensateStory.journey.villainVariable, "Better overall wellbeing"],
         verified: true,
-        verificationId: sensateStory.verificationId,
+        verificationId: sensateStory.verificationId ?? "REP-2025-001",
         device: sensateStory.wearableMetrics?.device || "N/A",
       };
 

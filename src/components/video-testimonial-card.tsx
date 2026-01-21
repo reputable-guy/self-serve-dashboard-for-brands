@@ -441,7 +441,7 @@ export function VideoTestimonialCard({ testimonial, studyId, isFeatured = false,
                   {/* Study Duration Footer */}
                   <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
                     <span>Study duration: {story.journey.durationDays} days</span>
-                    <span>Completed: {new Date(story.completedAt).toLocaleDateString()}</span>
+                    <span>Completed: {story.completedAt ? new Date(story.completedAt).toLocaleDateString() : "N/A"}</span>
                   </div>
                 </div>
               </CollapsibleContent>

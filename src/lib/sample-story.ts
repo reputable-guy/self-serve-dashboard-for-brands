@@ -2,7 +2,7 @@
 // Generates realistic preview stories based on study configuration
 
 import { TierLevel, getCategoryConfig, getAssessmentById, AssessmentResult } from "./assessments";
-import { ParticipantStory } from "./mock-data";
+import { ParticipantStory } from "./types";
 
 // Sample participant profiles for different categories
 interface SampleProfile {

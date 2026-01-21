@@ -7,7 +7,7 @@
 // - "Relieve anxieties and improve focus"
 // - "10-minute vagus nerve device"
 
-import { ParticipantStory } from "./mock-data";
+import { ParticipantStory } from "./types";
 import { TierLevel } from "./assessments";
 import {
   createAssessmentResult,

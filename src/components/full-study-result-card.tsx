@@ -162,12 +162,16 @@ export function FullStudyResultCard({ story }: FullStudyResultCardProps) {
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{story.profile.lifeStage}</p>
             <div className="flex flex-wrap gap-2 text-xs">
-              <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                Dealing with {story.journey.villainVariable} for {story.baseline.villainDuration.toLowerCase()}
-              </span>
-              <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                {story.baseline.triedOther}
-              </span>
+              {story.baseline.villainDuration && (
+                <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                  Dealing with {story.journey.villainVariable} for {story.baseline.villainDuration.toLowerCase()}
+                </span>
+              )}
+              {story.baseline.triedOther && (
+                <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                  {story.baseline.triedOther}
+                </span>
+              )}
             </div>
           </div>
 

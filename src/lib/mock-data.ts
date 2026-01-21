@@ -4,6 +4,11 @@
 import { CustomQuestion } from "./study-context";
 import { TierLevel, AssessmentResult, getCategoryConfig, getAssessmentById } from "./assessments";
 
+// Import ParticipantStory from centralized types (single source of truth)
+// Re-export for backwards compatibility with existing imports
+import type { ParticipantStory } from "./types";
+export type { ParticipantStory } from "./types";
+
 export interface MockParticipant {
   id: number;
   name: string;
@@ -97,86 +102,6 @@ export interface MockTestimonial {
   videoUrl?: string;
   videoThumbnail?: string;
   videoDuration?: string; // e.g., "0:34"
-}
-
-// Enhanced participant story with profile, baseline, and journey data
-export interface ParticipantStory {
-  id: string;
-  // Basic identity
-  name: string;
-  initials: string;
-  avatarUrl?: string;
-
-  // Tier information (determines what data is primary)
-  tier: TierLevel;
-
-  // Profile data (collected progressively from profile questions)
-  profile: {
-    ageRange: string;
-    lifeStage: string;
-    primaryWellnessGoal?: string;
-    baselineStressLevel?: number; // 1-10
-  };
-
-  // Baseline data (collected at study enrollment)
-  baseline: {
-    motivation: string; // Voice/text: "What motivated you to try [product]?"
-    hopedResults: string; // Voice/text: "What results are you hoping to see?"
-    villainDuration: string; // How long dealing with issue
-    triedOther: string; // Previous products tried
-  };
-
-  // Journey data (collected during study)
-  journey: {
-    startDate: string;
-    endDate: string;
-    durationDays: number;
-    villainVariable: string;
-    // Ratings: 1-5 scale (1=much worse, 5=much better)
-    villainRatings: { day: number; rating: number; note?: string }[];
-    keyQuotes: { day: number; quote: string; context: string }[];
-  };
-
-  // Wearable metrics (before/after comparisons) - optional for assessment-only studies (Tier 3-4)
-  // All metric fields are optional because different categories track different metrics
-  // (e.g., anxiety only tracks HRV, not sleep)
-  wearableMetrics?: {
-    device: string;
-    sleepChange?: { before: number; after: number; unit: string; changePercent: number };
-    deepSleepChange?: { before: number; after: number; unit: string; changePercent: number };
-    hrvChange?: { before: number; after: number; unit: string; changePercent: number };
-    restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
-    // Activity metrics for energy studies (tier 3)
-    stepsChange?: { before: number; after: number; unit: string; changePercent: number };
-    activeMinutesChange?: { before: number; after: number; unit: string; changePercent: number };
-  };
-
-  // Assessment result (Tiers 2-4 only)
-  assessmentResult?: AssessmentResult;
-
-  // Testimonial responses (Tier 1 only - for story content)
-  testimonialResponses?: {
-    day: number;
-    question: string;
-    response: string;
-  }[];
-
-  // Photo documentation (Tier 4 categories with requiresPhotos)
-  photoDocumentation?: {
-    beforePhoto?: string;
-    afterPhoto?: string;
-  };
-
-  // Generated story (LLM output)
-  generatedNarrative?: string;
-
-  // Verification
-  verified: boolean;
-  verificationId: string;
-  completedAt: string;
-
-  // Overall rating
-  overallRating: number;
 }
 
 export interface MockDemographicItem {

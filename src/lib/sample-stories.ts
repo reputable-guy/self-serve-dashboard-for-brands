@@ -2,7 +2,7 @@
 // Each category has predefined stories with appropriate villain variables and progress tracking
 // These serve as end-to-end examples of what verification pages look like for each category
 
-import { ParticipantStory } from "./mock-data";
+import { ParticipantStory } from "./types";
 import { TierLevel } from "./assessments";
 import { createAssessmentResult } from "./generators/story-utils";
 
