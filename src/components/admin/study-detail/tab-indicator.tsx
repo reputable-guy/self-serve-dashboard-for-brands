@@ -86,15 +86,15 @@ export function TabIndicator({
         return <span className="ml-1.5" title="Results ready">🎉</span>;
       }
       // Blue dot: Interim insights available (Day 7+ for active studies)
-      // Only for studies in active status, not completed real studies
+      // Only for studies in active status, not real data studies
       if (
         studyStatus === "active" &&
         currentDay !== undefined &&
         currentDay >= 7 &&
         currentDay < 28 &&
-        // Don't show for real completed studies (Sensate, LYFEfuel)
-        studyId !== "study-sensate-sleep" &&
-        studyId !== "study-lyfefuel-energy"
+        // Don't show for real data studies (verified participant data)
+        studyId !== "study-sensate-real" &&
+        studyId !== "study-lyfefuel-real"
       ) {
         return (
           <span

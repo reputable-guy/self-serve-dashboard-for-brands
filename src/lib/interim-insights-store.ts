@@ -26,10 +26,9 @@ import { getCategory } from "./categories";
 import { getAssessmentForCategory, getCategoryConfig } from "./assessments";
 
 // Real study IDs that should NEVER have mock interim data
+// These are verified studies with actual participant data - not demos
 const REAL_STUDY_IDS = [
-  "study-sensate-sleep",
   "study-sensate-real",
-  "study-lyfefuel-energy",
   "study-lyfefuel-real",
 ];
 
