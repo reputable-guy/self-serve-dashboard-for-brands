@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
+  CheckCircle2,
   Building2,
   Package,
   Target,
@@ -27,6 +29,7 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
+  Rocket,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +151,7 @@ function IconSelect({
 function StudyEditContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const studyId = params.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -155,6 +159,18 @@ function StudyEditContent() {
   const [brands] = useState<Brand[]>(getAllBrands());
   const [hasChanges, setHasChanges] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+  const [showCreatedBanner, setShowCreatedBanner] = useState(false);
+
+  // Check if this is a newly created study
+  useEffect(() => {
+    if (searchParams.get("created") === "true") {
+      setShowCreatedBanner(true);
+      // Remove the query param from URL without refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete("created");
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Use Zustand store for study data
   const getStudyById = useStudiesStore((state) => state.getStudyById);
@@ -397,35 +413,92 @@ function StudyEditContent() {
 
   return (
     <div className="p-8">
+      {/* Success Banner for newly created studies */}
+      {showCreatedBanner && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-green-800">Your study draft is ready!</h3>
+              <p className="text-sm text-green-700 mt-1">
+                We&apos;ve generated content based on your product. Customize the details below, then click <strong>&ldquo;Save & Continue to Publish&rdquo;</strong> to make your study visible in the catalogue.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreatedBanner(false)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href={`/admin/studies/${studyId}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Study Details
-        </Link>
+        {/* Navigation - context-aware */}
+        {study.status === 'draft' ? (
+          <Link
+            href={`/admin/studies/${studyId}`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+          >
+            Go to Study Dashboard
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Link>
+        ) : (
+          <Link
+            href={`/admin/studies/${studyId}`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Study Dashboard
+          </Link>
+        )}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Edit Study</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {study.status === 'draft' ? 'Customize Your Study' : 'Edit Study'}
+            </h1>
             <p className="text-muted-foreground mt-1">{formData.productName}</p>
           </div>
           <div className="flex items-center gap-3">
             {hasChanges && (
               <span className="text-sm text-amber-600">Unsaved changes</span>
             )}
-            <Button variant="outline" onClick={() => router.push(`/admin/studies/${studyId}`)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
+            {study.status === 'draft' ? (
+              <>
+                <Button variant="outline" onClick={handleSave} disabled={isSaving || !hasChanges}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Draft
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Rocket className="h-4 w-4 mr-2" />
+                  )}
+                  Save & Continue to Publish
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => router.push(`/admin/studies/${studyId}`)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Changes
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

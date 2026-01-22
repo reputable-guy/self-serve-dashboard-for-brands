@@ -107,6 +107,11 @@ export function FulfillmentTab({
   );
   const remainingSlots = targetParticipants - (recruitmentState?.totalEnrolled || 0);
   const minRecommendedCohort = 10; // Recommend at least 10 per cohort for efficiency
+  const minWaitlistToRecruit = 10; // Minimum waitlist to enable recruiting
+
+  // Demo mode state - for non-demo studies, user can enable simulation
+  const [demoModeEnabled, setDemoModeEnabled] = useState(false);
+  const showSimulation = isDemo || demoModeEnabled;
 
   const handleStartRecruiting = () => {
     startRecruiting(studyId);
@@ -202,84 +207,129 @@ export function FulfillmentTab({
         </Card>
       )}
 
-      {/* Coming Soon Study - Start Recruiting */}
+      {/* Coming Soon Study - Waitlist Status & Start Recruiting */}
       {isComingSoonStudy && isWaitlistOnly && (
-        <Card className="border-[#00D1C1]/30 bg-gradient-to-br from-[#00D1C1]/5 to-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-[#00D1C1]" />
-              Start Recruiting Participants
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Your study is live in the catalogue. Open your first 24-hour recruitment
-              window to start enrolling participants from your waitlist.
-            </p>
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-              <div className="text-center">
-                <p className="text-2xl font-bold">
-                  {recruitmentState.waitlistCount}
-                </p>
-                <p className="text-xs text-muted-foreground">On Waitlist</p>
+        <>
+          {/* Prominent Waitlist Status Card */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border-2">
+            <CardContent className="py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-[#00D1C1]/10 flex items-center justify-center">
+                    <Users className="h-8 w-8 text-[#00D1C1]" />
+                  </div>
+                  <div>
+                    <p className="text-4xl font-bold">{recruitmentState.waitlistCount}</p>
+                    <p className="text-sm text-muted-foreground">People on Waitlist</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Target</p>
+                  <p className="text-2xl font-semibold">{targetParticipants}</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{targetParticipants}</p>
-                <p className="text-xs text-muted-foreground">Target</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{recruitmentState.totalEnrolled}</p>
-                <p className="text-xs text-muted-foreground">Enrolled</p>
-              </div>
-            </div>
-            {recruitmentState.waitlistCount === 0 && (
-              <Alert variant="default" className="bg-amber-50 border-amber-200">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
-                  Your waitlist is empty. Consider promoting your study to build interest
-                  before starting recruitment.
-                </AlertDescription>
-              </Alert>
-            )}
-            <Button
-              onClick={handleStartRecruiting}
-              className="w-full bg-[#00D1C1] hover:bg-[#00bfb0]"
-              size="lg"
-            >
-              <Rocket className="h-4 w-4 mr-2" />
-              Start Recruiting
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              Opens a 24-hour window. Waitlist members will be notified.
-            </p>
-
-            {/* Simulation Controls - Demo Only */}
-            {isDemo && (
-              <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Simulation Controls (Demo Only)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-blue-600 mb-3">
-                    In production, waitlist grows organically as users discover the study.
-                    Use this to simulate waitlist growth.
+              {recruitmentState.waitlistCount < minWaitlistToRecruit && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    <AlertTriangle className="h-4 w-4 inline mr-1 -mt-0.5" />
+                    We recommend at least <strong>{minWaitlistToRecruit} people</strong> on your waitlist before starting recruitment for efficient cohort batching.
                   </p>
+                </div>
+              )}
+              {recruitmentState.waitlistCount >= minWaitlistToRecruit && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    <CheckCircle2 className="h-4 w-4 inline mr-1 -mt-0.5" />
+                    Your waitlist has enough people to start recruiting efficiently.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Start Recruiting Card */}
+          <Card className="border-[#00D1C1]/30 bg-gradient-to-br from-[#00D1C1]/5 to-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Rocket className="h-5 w-5 text-[#00D1C1]" />
+                Start Recruiting Participants
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Your study is live in the catalogue. Open your first 24-hour recruitment
+                window to start enrolling participants from your waitlist.
+              </p>
+              <Button
+                onClick={handleStartRecruiting}
+                className="w-full bg-[#00D1C1] hover:bg-[#00bfb0] disabled:opacity-50"
+                size="lg"
+                disabled={recruitmentState.waitlistCount < minWaitlistToRecruit}
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                Start Recruiting
+              </Button>
+              {recruitmentState.waitlistCount < minWaitlistToRecruit ? (
+                <p className="text-xs text-center text-amber-600">
+                  Build your waitlist to at least {minWaitlistToRecruit} people to enable recruiting.
+                </p>
+              ) : (
+                <p className="text-xs text-center text-muted-foreground">
+                  Opens a 24-hour window. Waitlist members will be notified.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Simulation Controls */}
+          {showSimulation && (
+            <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Simulation Controls {isDemo ? "(Demo)" : "(Test Mode)"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-blue-600 mb-3">
+                  In production, waitlist grows organically as users discover the study.
+                  Use this to simulate waitlist growth for testing.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSimulateWaitlistGrowth}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  +20 to Waitlist
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demo Mode Toggle - Only for non-demo studies */}
+          {!isDemo && (
+            <Card className="border-dashed">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Enable Test Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Simulate waitlist growth and enrollment for testing
+                    </p>
+                  </div>
                   <Button
-                    variant="outline"
+                    variant={demoModeEnabled ? "default" : "outline"}
                     size="sm"
-                    onClick={handleSimulateWaitlistGrowth}
+                    onClick={() => setDemoModeEnabled(!demoModeEnabled)}
                   >
-                    <Users className="h-4 w-4 mr-2" />
-                    +20 to Waitlist
+                    {demoModeEnabled ? "Disable" : "Enable"}
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Waitlist Only State (Recruiting status) - Show Open Window Button */}
@@ -321,13 +371,13 @@ export function FulfillmentTab({
         <>
           <RecruitmentStatusCard recruitmentState={recruitmentState} />
 
-          {/* Simulation Controls - Demo Only */}
-          {isDemo && (
+          {/* Simulation Controls */}
+          {showSimulation && (
             <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Simulation Controls (Demo Only)
+                  Simulation Controls {isDemo ? "(Demo)" : "(Test Mode)"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -498,13 +548,13 @@ export function FulfillmentTab({
                 Open Next Window
               </Button>
 
-              {/* Simulation Controls - Demo Only */}
-              {isDemo && (
+              {/* Simulation Controls */}
+              {showSimulation && (
                 <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
                       <Info className="h-4 w-4" />
-                      Simulation Controls (Demo Only)
+                      Simulation Controls {isDemo ? "(Demo)" : "(Test Mode)"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
