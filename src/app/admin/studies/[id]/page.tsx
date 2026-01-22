@@ -283,6 +283,7 @@ export default function AdminStudyDetailPage() {
           study={study}
           brand={brand}
           onOpenPreview={() => setShowPreview(true)}
+          onNavigateToTab={setActiveTab}
         />
       )}
       {activeTab === "fulfillment" && (

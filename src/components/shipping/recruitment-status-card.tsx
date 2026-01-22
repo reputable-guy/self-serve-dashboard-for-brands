@@ -25,10 +25,14 @@ export function RecruitmentStatusCard({
     currentWindowEnrolled,
   } = recruitmentState;
 
-  const progressPercent = Math.round(
-    (totalEnrolled / targetParticipants) * 100
-  );
   const isWindowOpen = status === "window_open";
+
+  // Include current window enrollments in the total display
+  // (they get added to totalEnrolled when window closes)
+  const displayEnrolled = totalEnrolled + (isWindowOpen ? currentWindowEnrolled : 0);
+  const progressPercent = Math.round(
+    (displayEnrolled / targetParticipants) * 100
+  );
 
   // Calculate time remaining if window is open
   const timeRemaining = currentWindowEndsAt
@@ -52,7 +56,7 @@ export function RecruitmentStatusCard({
             </span>
           </div>
           <p className="text-2xl font-bold">
-            {totalEnrolled}{" "}
+            {displayEnrolled}{" "}
             <span className="text-base font-normal text-muted-foreground">
               / {targetParticipants} participants
             </span>

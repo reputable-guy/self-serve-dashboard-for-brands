@@ -116,6 +116,12 @@ export type RecruitmentStatus =
   | 'ready_to_open'  // All tracking entered, brand decides when to open next window
   | 'complete';      // Study is full
 
+/** Snapshot of waitlist count at a point in time for trend tracking */
+export interface WaitlistSnapshot {
+  timestamp: string; // ISO timestamp
+  count: number;
+}
+
 export interface StudyRecruitmentState {
   studyId: string;
   status: RecruitmentStatus;
@@ -140,6 +146,12 @@ export interface StudyRecruitmentState {
     waitlistAtOpen: number;
     enrolled: number;
   }>;
+  /** Historical waitlist snapshots for trend tracking */
+  waitlistHistory?: WaitlistSnapshot[];
+  /** Count of users on waitlist who have existing profiles (returning users) */
+  returningUsersCount?: number;
+  /** Count of new users on waitlist (no existing profile) */
+  newUsersCount?: number;
 }
 
 // ============================================
