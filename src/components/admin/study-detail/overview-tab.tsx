@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -28,6 +29,8 @@ import {
   Info,
   AlertTriangle,
   EyeOff,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 import type { StudyData } from "./types";
 import {
@@ -41,15 +44,16 @@ import {
 } from "./mock-data";
 import { LaunchChecklist } from "./launch-checklist";
 import { useStudiesStore } from "@/lib/studies-store";
-import { useCohortStore } from "@/lib/cohort-store";
+import { useCohortStore, getWaitlistStats } from "@/lib/cohort-store";
 
 interface OverviewTabProps {
   study: StudyData;
   brand: { id: string; name: string } | undefined;
   onOpenPreview: () => void;
+  onNavigateToTab?: (tab: "overview" | "fulfillment" | "compliance" | "results" | "config") => void;
 }
 
-export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
+export function OverviewTab({ study, brand, onOpenPreview, onNavigateToTab }: OverviewTabProps) {
   // Check study data type
   const isSensateRealStudy = study.id === "study-sensate-real";
   const isLyfefuelRealStudy = study.id === "study-lyfefuel-real";
@@ -67,8 +71,17 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   const { updateLaunchChecklist, publishToCatalogue, unpublishFromCatalogue, startRecruiting } = useStudiesStore();
 
   // Get cohort data for waitlist count
-  const { getRecruitmentState, initializeStudy } = useCohortStore();
+  const { getRecruitmentState, initializeStudy, goLive } = useCohortStore();
   const recruitmentState = getRecruitmentState(study.id);
+
+  // Auto-initialize recruitment state for coming_soon studies
+  // Starts at 0 - waitlist grows as participants join
+  useEffect(() => {
+    if (study.status === "coming_soon" && !getRecruitmentState(study.id)) {
+      // Initialize with 0 waitlist - will grow as participants join
+      initializeStudy(study.id, study.targetParticipants, 0, 0);
+    }
+  }, [study.id, study.status, study.targetParticipants, getRecruitmentState, initializeStudy]);
 
   // Get or initialize launch checklist
   const checklist = study.launchChecklist ?? {
@@ -135,9 +148,13 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   const handleStartRecruiting = () => {
     // Initialize recruitment state if not exists
     if (!recruitmentState) {
-      initializeStudy(study.id, study.targetParticipants, 50);
+      initializeStudy(study.id, study.targetParticipants, 0, 0);
     }
+    // Update study status AND open the recruitment window in cohort store
     startRecruiting(study.id);
+    goLive(study.id);
+    // Navigate to fulfillment tab to manage the recruitment window
+    onNavigateToTab?.("fulfillment");
   };
 
   // Handler for unpublishing
@@ -145,8 +162,8 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
     unpublishFromCatalogue(study.id);
   };
 
-  // Get waitlist count (default to simulated value for demo)
-  const waitlistCount = recruitmentState?.waitlistCount ?? 50;
+  // Get waitlist stats for display
+  const waitlistStats = getWaitlistStats(recruitmentState);
 
   // ================================================
   // COMING SOON STUDIES - Waitlist-focused dashboard
@@ -172,19 +189,58 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
           </CardContent>
         </Card>
 
-        {/* Primary Metric: Waitlist Count */}
+        {/* Waitlist Insights Card */}
         <Card className="border-2">
-          <CardContent className="py-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Users className="h-8 w-8 text-[#00D1C1]" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4 text-[#00D1C1]" />
+              Waitlist
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Main count + trend */}
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-5xl font-bold text-[#00D1C1]">{waitlistStats.count}</p>
+                <p className="text-sm text-muted-foreground">people on waitlist</p>
               </div>
-              <p className="text-6xl font-bold text-[#00D1C1]">{waitlistCount}</p>
-              <p className="text-lg text-muted-foreground mt-2">people on waitlist</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Target: {study.targetParticipants} participants
+              {waitlistStats.weeklyChange !== 0 && (
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+                  waitlistStats.weeklyChange > 0
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}>
+                  <TrendingUp className={`h-3.5 w-3.5 ${waitlistStats.weeklyChange < 0 ? "rotate-180" : ""}`} />
+                  {waitlistStats.weeklyChange > 0 ? "+" : ""}{waitlistStats.weeklyChange} this week
+                </div>
+              )}
+            </div>
+
+            {/* Projection */}
+            <div className="p-3 rounded-lg bg-muted/50 border border-dashed">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">~{waitlistStats.projectedEnrollments}</span> expected enrollments per window
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Based on {Math.round(waitlistStats.conversionRate * 100)}% conversion rate
               </p>
             </div>
+
+            {/* Returning vs New users */}
+            {(waitlistStats.returningUsers > 0 || waitlistStats.newUsers > 0) && (
+              <div className="flex gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <UserCheck className="h-4 w-4 text-purple-500" />
+                  <span className="font-medium">{waitlistStats.returningUsers}</span>
+                  <span className="text-muted-foreground">returning</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <UserPlus className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">{waitlistStats.newUsers}</span>
+                  <span className="text-muted-foreground">new</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -71,11 +71,10 @@ export function FulfillmentTab({
   const isComingSoonStudy = studyStatus === "coming_soon";
 
   // Initialize study on mount
-  // For demo studies, start with 142 mock waitlist participants
-  // For real studies, start with 0 (waitlist grows organically)
+  // Start with 0 - waitlist grows organically (or via simulation controls)
   useEffect(() => {
-    initializeStudy(studyId, targetParticipants, isDemo ? 142 : 0);
-  }, [studyId, targetParticipants, isDemo, initializeStudy]);
+    initializeStudy(studyId, targetParticipants, 0, 0);
+  }, [studyId, targetParticipants, initializeStudy]);
 
   const recruitmentState = getRecruitmentState(studyId);
   const currentCohort = recruitmentState?.currentCohort;
@@ -307,28 +306,6 @@ export function FulfillmentTab({
             </Card>
           )}
 
-          {/* Demo Mode Toggle - Only for non-demo studies */}
-          {!isDemo && (
-            <Card className="border-dashed">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Enable Test Mode</p>
-                    <p className="text-xs text-muted-foreground">
-                      Simulate waitlist growth and enrollment for testing
-                    </p>
-                  </div>
-                  <Button
-                    variant={demoModeEnabled ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDemoModeEnabled(!demoModeEnabled)}
-                  >
-                    {demoModeEnabled ? "Disable" : "Enable"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </>
       )}
 
@@ -412,6 +389,7 @@ export function FulfillmentTab({
               </CardContent>
             </Card>
           )}
+
         </>
       )}
 
@@ -613,6 +591,29 @@ export function FulfillmentTab({
             </Card>
           </div>
         </>
+      )}
+
+      {/* Global Test Mode Toggle - Always available for non-demo studies */}
+      {!isDemo && !isDraftStudy && (
+        <Card className="border-dashed">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Test Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  {demoModeEnabled ? "Simulation controls are enabled" : "Enable to simulate enrollment and shipping"}
+                </p>
+              </div>
+              <Button
+                variant={demoModeEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDemoModeEnabled(!demoModeEnabled)}
+              >
+                {demoModeEnabled ? "Disable" : "Enable"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Cohort History */}

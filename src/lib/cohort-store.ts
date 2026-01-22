@@ -19,6 +19,7 @@ import type {
   ParticipantShipping,
   StudyRecruitmentState,
   RecruitmentStatus,
+  WaitlistSnapshot,
 } from "@/lib/types";
 
 interface CohortStoreState {
@@ -31,7 +32,8 @@ interface CohortStoreState {
   initializeStudy: (
     studyId: string,
     targetParticipants: number,
-    waitlistCount?: number
+    waitlistCount?: number,
+    returningUsersCount?: number
   ) => void;
   goLive: (studyId: string) => void;
   openWindow: (studyId: string) => void; // Manual window open from ready_to_open state
@@ -138,11 +140,26 @@ export const useCohortStore = create<CohortStoreState>()(
       recruitmentStates: {},
       participantShipping: {},
 
-      initializeStudy: (studyId, targetParticipants, waitlistCount = 50) => {
+      initializeStudy: (studyId, targetParticipants, waitlistCount = 0, returningUsersCount = 0) => {
         set((state) => {
           // Don't reinitialize if already exists
           if (state.recruitmentStates[studyId]) {
             return state;
+          }
+
+          const now = new Date();
+          const newUsersCount = Math.max(0, waitlistCount - returningUsersCount);
+
+          // Create demo history showing growth over the past 7 days
+          // This gives a realistic "+X this week" display
+          const waitlistHistory: WaitlistSnapshot[] = [];
+          if (waitlistCount > 0) {
+            // Simulate growth: started at ~70% of current, grew steadily
+            const weekAgoCount = Math.floor(waitlistCount * 0.7);
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            waitlistHistory.push({ timestamp: weekAgo.toISOString(), count: weekAgoCount });
+            waitlistHistory.push({ timestamp: now.toISOString(), count: waitlistCount });
           }
 
           const newState: StudyRecruitmentState = {
@@ -153,6 +170,9 @@ export const useCohortStore = create<CohortStoreState>()(
             waitlistCount,
             currentWindowEnrolled: 0,
             cohorts: [],
+            waitlistHistory,
+            returningUsersCount,
+            newUsersCount,
           };
 
           return {
@@ -410,19 +430,33 @@ export const useCohortStore = create<CohortStoreState>()(
         });
       },
 
-      simulateWaitlistGrowth: (studyId, count) => {
+      simulateWaitlistGrowth: (studyId, count, returningCount = 0) => {
         set((state) => {
           const current = state.recruitmentStates[studyId];
           if (!current) {
             return state;
           }
 
+          const now = new Date().toISOString();
+          const newWaitlistCount = current.waitlistCount + count;
+          const newReturningCount = (current.returningUsersCount || 0) + returningCount;
+          const newNewUsersCount = newWaitlistCount - newReturningCount;
+
+          // Add snapshot to history
+          const newHistory = [
+            ...(current.waitlistHistory || []),
+            { timestamp: now, count: newWaitlistCount },
+          ];
+
           return {
             recruitmentStates: {
               ...state.recruitmentStates,
               [studyId]: {
                 ...current,
-                waitlistCount: current.waitlistCount + count,
+                waitlistCount: newWaitlistCount,
+                waitlistHistory: newHistory,
+                returningUsersCount: newReturningCount,
+                newUsersCount: newNewUsersCount,
               },
             },
           };
@@ -466,4 +500,99 @@ function calculateConversionRate(
 
   if (totalWaitlist === 0) return 0.35;
   return totalEnrolled / totalWaitlist;
+}
+
+// ============================================
+// WAITLIST ANALYTICS HELPERS
+// ============================================
+
+/**
+ * Calculate week-over-week waitlist growth
+ * Returns the change in waitlist count over the past 7 days
+ */
+export function calculateWaitlistWeeklyChange(
+  waitlistHistory: WaitlistSnapshot[] | undefined,
+  currentCount: number
+): number {
+  if (!waitlistHistory || waitlistHistory.length === 0) {
+    return 0;
+  }
+
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Find the closest snapshot to one week ago
+  let closestSnapshot: WaitlistSnapshot | null = null;
+  let closestDiff = Infinity;
+
+  for (const snapshot of waitlistHistory) {
+    const snapshotDate = new Date(snapshot.timestamp);
+    if (snapshotDate <= oneWeekAgo) {
+      const diff = oneWeekAgo.getTime() - snapshotDate.getTime();
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestSnapshot = snapshot;
+      }
+    }
+  }
+
+  // If no snapshot from a week ago, use the oldest one we have
+  if (!closestSnapshot && waitlistHistory.length > 0) {
+    closestSnapshot = waitlistHistory[0];
+  }
+
+  if (!closestSnapshot) {
+    return 0;
+  }
+
+  return currentCount - closestSnapshot.count;
+}
+
+/**
+ * Calculate projected enrollments per recruitment window
+ * Uses 35% default conversion rate, or historical rate if available
+ */
+export function calculateProjectedEnrollments(
+  waitlistCount: number,
+  conversionRate: number = 0.35
+): number {
+  return Math.round(waitlistCount * conversionRate);
+}
+
+/**
+ * Get waitlist stats for display in the overview
+ */
+export function getWaitlistStats(state: StudyRecruitmentState | undefined): {
+  count: number;
+  weeklyChange: number;
+  projectedEnrollments: number;
+  conversionRate: number;
+  returningUsers: number;
+  newUsers: number;
+} {
+  if (!state) {
+    return {
+      count: 0,
+      weeklyChange: 0,
+      projectedEnrollments: 0,
+      conversionRate: 0.35,
+      returningUsers: 0,
+      newUsers: 0,
+    };
+  }
+
+  const conversionRate = state.conversionRate || 0.35;
+  const weeklyChange = calculateWaitlistWeeklyChange(
+    state.waitlistHistory,
+    state.waitlistCount
+  );
+
+  return {
+    count: state.waitlistCount,
+    weeklyChange,
+    projectedEnrollments: calculateProjectedEnrollments(state.waitlistCount, conversionRate),
+    conversionRate,
+    returningUsers: state.returningUsersCount || 0,
+    newUsers: state.newUsersCount || state.waitlistCount,
+  };
 }
