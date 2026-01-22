@@ -290,9 +290,10 @@ export default function AdminStudyDetailPage() {
           studyId={study.id}
           studyName={study.name}
           targetParticipants={study.targetParticipants}
+          isDemo={study.isDemo !== false}
         />
       )}
-      {activeTab === "compliance" && <ComplianceTab study={study} />}
+      {activeTab === "compliance" && <ComplianceTab study={study} isDemo={study.isDemo !== false} />}
       {activeTab === "results" && <ResultsTab study={study} />}
       {activeTab === "config" && (
         <ConfigTab study={study} categoryConfig={categoryConfig} />

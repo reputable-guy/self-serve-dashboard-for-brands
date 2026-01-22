@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { StoreHydrationProvider } from "@/components/store-hydration-provider";
 
 export default function AdminLayout({
   children,
@@ -9,7 +10,9 @@ export default function AdminLayout({
     <div className="flex min-h-screen">
       <AdminSidebar />
       <main className="flex-1 overflow-auto bg-background">
-        {children}
+        <StoreHydrationProvider>
+          {children}
+        </StoreHydrationProvider>
       </main>
     </div>
   );

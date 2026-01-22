@@ -16,6 +16,7 @@ export const SEED_STUDIES: Study[] = [
   // Sensate Real Data Study (Verified Participant Data)
   {
     id: "study-sensate-real",
+    isDemo: false, // Real imported data - NOT demo
     name: "Sensate Sleep & Stress Study (Real Data)",
     brandId: "brand-sensate",
     brandName: "Sensate",
@@ -62,6 +63,7 @@ export const SEED_STUDIES: Study[] = [
   // LYFEfuel Real Data Study (Verified Participant Data)
   {
     id: "study-lyfefuel-real",
+    isDemo: false, // Real imported data - NOT demo
     name: "LYFEfuel Daily Essentials Energy Study (Real Data)",
     brandId: "brand-lyfefuel",
     brandName: "LYFEfuel",
@@ -108,6 +110,7 @@ export const SEED_STUDIES: Study[] = [
   // Sensate Vagus Nerve Device Studies (Demo)
   {
     id: "study-sensate-stress",
+    isDemo: true, // Demo study with sample data
     name: "Sensate Stress Relief Study",
     brandId: "brand-sensate",
     brandName: "Sensate",
@@ -140,6 +143,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-sensate-sleep",
+    isDemo: true, // Demo study with sample data
     name: "Sensate Sleep Quality Study",
     brandId: "brand-sensate",
     brandName: "Sensate",
@@ -172,6 +176,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-sensate-anxiety",
+    isDemo: true, // Demo study with sample data
     name: "Sensate Anxiety & Focus Study",
     brandId: "brand-sensate",
     brandName: "Sensate",
@@ -205,6 +210,7 @@ export const SEED_STUDIES: Study[] = [
   // LYFEfuel Daily Essentials Studies
   {
     id: "study-lyfefuel-energy",
+    isDemo: true, // Demo study with sample data
     name: "Daily Essentials Energy Study",
     brandId: "brand-lyfefuel",
     brandName: "LYFEfuel",
@@ -237,6 +243,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-lyfefuel-satiety",
+    isDemo: true, // Demo study with sample data
     name: "Daily Essentials Satiety Study",
     brandId: "brand-lyfefuel",
     brandName: "LYFEfuel",
@@ -269,6 +276,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-lyfefuel-gut",
+    isDemo: true, // Demo study with sample data
     name: "Daily Essentials Digestive Comfort Study",
     brandId: "brand-lyfefuel",
     brandName: "LYFEfuel",
@@ -301,6 +309,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-1",
+    isDemo: true, // Demo study with sample data
     name: "SleepWell Premium",
     brandId: "brand-acme",
     brandName: "Acme Supplements",
@@ -333,6 +342,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-2",
+    isDemo: true, // Demo study with sample data
     name: "Recovery Plus",
     brandId: "brand-acme",
     brandName: "Acme Supplements",
@@ -365,6 +375,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-3",
+    isDemo: true, // Demo study with sample data
     name: "Calm Focus Formula",
     brandId: "brand-zenwell",
     brandName: "ZenWell",
@@ -397,6 +408,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-4",
+    isDemo: true, // Demo study with sample data
     name: "Energy Boost Complex",
     brandId: "brand-vitality",
     brandName: "Vitality Labs",
@@ -429,6 +441,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-5",
+    isDemo: true, // Demo study with sample data
     name: "Gut Health Pro",
     brandId: "brand-acme",
     brandName: "Acme Supplements",
@@ -461,6 +474,7 @@ export const SEED_STUDIES: Study[] = [
   },
   {
     id: "study-6",
+    isDemo: true, // Demo study with sample data
     name: "Focus Flow",
     brandId: "brand-zenwell",
     brandName: "ZenWell",

@@ -24,6 +24,8 @@ export { SEED_STUDIES } from './data/seed-studies';
 
 interface StudiesStore {
   studies: Study[];
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   addStudy: (study: Omit<Study, 'id' | 'createdAt' | 'updatedAt' | 'participants'>) => Study;
   updateStudy: (id: string, updates: Partial<Study>) => void;
   deleteStudy: (id: string) => void;
@@ -44,12 +46,15 @@ export const useStudiesStore = create<StudiesStore>()(
   persist(
     (set, get) => ({
       studies: SEED_STUDIES,
+      _hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
 
       addStudy: (studyData) => {
         const now = new Date().toISOString();
         const newStudy: Study = {
           ...studyData,
           id: generateId(),
+          isDemo: false, // User-created studies are NOT demos - show real data (or empty state)
           participants: 0,
           createdAt: now,
           updatedAt: now,
@@ -160,6 +165,10 @@ export const useStudiesStore = create<StudiesStore>()(
     }),
     {
       name: 'reputable-studies',
+      // Don't persist the hydration state
+      partialize: (state) => ({
+        studies: state.studies,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Merge in any new studies from SEED_STUDIES that don't exist in persisted state
@@ -168,6 +177,8 @@ export const useStudiesStore = create<StudiesStore>()(
           if (newStudies.length > 0) {
             state.studies = [...newStudies, ...state.studies];
           }
+          // Mark hydration as complete
+          state.setHasHydrated(true);
         }
       },
     }
@@ -176,3 +187,10 @@ export const useStudiesStore = create<StudiesStore>()(
 
 // Alias for backward compatibility with legacy pages
 export const useStudies = useStudiesStore;
+
+/**
+ * Hook to check if the store has been hydrated from localStorage.
+ * Use this to prevent hydration mismatches when rendering data that may differ
+ * between server (seed data) and client (persisted data).
+ */
+export const useStudiesHydrated = () => useStudiesStore((state) => state._hasHydrated);

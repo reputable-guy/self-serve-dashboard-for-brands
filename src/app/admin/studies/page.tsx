@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -210,7 +211,14 @@ export default function AdminStudiesPage() {
                           <FlaskConical className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{study.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{study.name}</p>
+                            {study.isDemo && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                Sample
+                              </Badge>
+                            )}
+                          </div>
                           <span
                             className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
                               study.status

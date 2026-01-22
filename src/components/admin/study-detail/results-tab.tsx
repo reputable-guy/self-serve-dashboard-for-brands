@@ -54,6 +54,9 @@ export function ResultsTab({ study }: ResultsTabProps) {
   const isLyfefuelRealStudy = study.id === "study-lyfefuel-real";
   const isRealDataStudy = isSensateRealStudy || isLyfefuelRealStudy;
 
+  // Check if this is a demo study (show mock data) or a real user study (hide mock data)
+  const isDemo = (study as { isDemo?: boolean }).isDemo !== false;
+
   // Compute currentDay for interim insights
   // For active demo studies without currentDay set, default to day 14 (mid-study)
   const studyCurrentDay = (() => {
@@ -233,8 +236,8 @@ export function ResultsTab({ study }: ResultsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Participant Insights Highlights - Hide for real data studies (no real data for these) */}
-      {!isRealDataStudy && (
+      {/* Participant Insights Highlights - Only show for demo studies (hide for real data and user-created studies) */}
+      {isDemo && !isRealDataStudy && (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="p-4 rounded-xl bg-gradient-to-br from-[#00D1C1]/10 to-[#00D1C1]/5 border border-[#00D1C1]/20">
             <p className="text-xs text-muted-foreground mb-1">Top Motivation</p>
@@ -376,8 +379,8 @@ export function ResultsTab({ study }: ResultsTabProps) {
           <SensateRealStories stories={SORTED_SENSATE_STORIES} />
         )}
 
-        {/* Generic Mock Participants (non-LYFEfuel, non-Sensate studies) */}
-        {!isLYFEfuelDemoStudy && !isRealDataStudy && (
+        {/* Generic Mock Participants (demo studies only, non-LYFEfuel, non-Sensate) */}
+        {isDemo && !isLYFEfuelDemoStudy && !isRealDataStudy && (
           <div className="grid gap-4 sm:grid-cols-2">
             {participants.map((participant) => (
               <Card
@@ -447,6 +450,19 @@ export function ResultsTab({ study }: ResultsTabProps) {
             ))}
           </div>
         )}
+
+        {/* Empty state for non-demo studies with no data */}
+        {!isDemo && !isRealDataStudy && !isLYFEfuelDemoStudy && (
+          <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+            <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">
+              Participant stories will appear here as they complete the study.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Each verified story includes biometric data, testimonials, and ratings.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Comprehensive Participant Insights */}
@@ -461,6 +477,26 @@ export function ResultsTab({ study }: ResultsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Empty state for non-demo studies with no data */}
+          {!isDemo && !isRealDataStudy && (
+            <div className="text-center py-8">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                Participant insights will appear here once participants complete onboarding.
+              </p>
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg text-left max-w-md mx-auto">
+                <p className="text-sm font-medium mb-2">What you&apos;ll see:</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Purchase motivations and expectations</li>
+                  <li>• Exercise and lifestyle habits</li>
+                  <li>• Demographics and device preferences</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Show insights data for demo and real data studies */}
+          {(isDemo || isRealDataStudy) && (
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Purchase Motivation */}
             <div>
@@ -779,6 +815,7 @@ export function ResultsTab({ study }: ResultsTabProps) {
               </div>
             )}
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -24,6 +24,7 @@ interface FulfillmentTabProps {
   studyId: string;
   studyName: string;
   targetParticipants: number;
+  isDemo?: boolean;
 }
 
 /**
@@ -40,6 +41,7 @@ export function FulfillmentTab({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   studyName,
   targetParticipants,
+  isDemo = true,
 }: FulfillmentTabProps) {
   const [showTrackingModal, setShowTrackingModal] = useState(false);
 
@@ -58,9 +60,11 @@ export function FulfillmentTab({
   } = useCohortStore();
 
   // Initialize study on mount
+  // For demo studies, start with 142 mock waitlist participants
+  // For real studies, start with 0 (waitlist grows organically)
   useEffect(() => {
-    initializeStudy(studyId, targetParticipants, 142);
-  }, [studyId, targetParticipants, initializeStudy]);
+    initializeStudy(studyId, targetParticipants, isDemo ? 142 : 0);
+  }, [studyId, targetParticipants, isDemo, initializeStudy]);
 
   const recruitmentState = getRecruitmentState(studyId);
   const currentCohort = recruitmentState?.currentCohort;
@@ -203,45 +207,47 @@ export function FulfillmentTab({
         <>
           <RecruitmentStatusCard recruitmentState={recruitmentState} />
 
-          {/* Simulation Controls */}
-          <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                Simulation Controls (Demo Only)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-blue-600">
-                In production, participants would enroll via the mobile app during the 24h window.
-                Use these buttons to simulate the flow.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSimulateEnrollment}
-                  disabled={recruitmentState.totalEnrolled + recruitmentState.currentWindowEnrolled >= recruitmentState.targetParticipants}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  +5 Enrollments
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCloseWindow}
-                  disabled={recruitmentState.currentWindowEnrolled === 0}
-                >
-                  <Timer className="h-4 w-4 mr-2" />
-                  Close Window (Form Cohort)
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Current window: {recruitmentState.currentWindowEnrolled} enrolled
-                {recruitmentState.currentWindowEnrolled === 0 && " (need at least 1 to form cohort)"}
-              </p>
-            </CardContent>
-          </Card>
+          {/* Simulation Controls - Demo Only */}
+          {isDemo && (
+            <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Simulation Controls (Demo Only)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-blue-600">
+                  In production, participants would enroll via the mobile app during the 24h window.
+                  Use these buttons to simulate the flow.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSimulateEnrollment}
+                    disabled={recruitmentState.totalEnrolled + recruitmentState.currentWindowEnrolled >= recruitmentState.targetParticipants}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    +5 Enrollments
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCloseWindow}
+                    disabled={recruitmentState.currentWindowEnrolled === 0}
+                  >
+                    <Timer className="h-4 w-4 mr-2" />
+                    Close Window (Form Cohort)
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Current window: {recruitmentState.currentWindowEnrolled} enrolled
+                  {recruitmentState.currentWindowEnrolled === 0 && " (need at least 1 to form cohort)"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
@@ -378,29 +384,31 @@ export function FulfillmentTab({
                 Open 24-Hour Recruitment Window
               </Button>
 
-              {/* Simulation Controls */}
-              <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Simulation Controls (Demo Only)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-blue-600 mb-3">
-                    In production, waitlist grows organically as users discover the study.
-                    Use this to simulate waitlist growth.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSimulateWaitlistGrowth}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    +20 to Waitlist
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Simulation Controls - Demo Only */}
+              {isDemo && (
+                <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Simulation Controls (Demo Only)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-blue-600 mb-3">
+                      In production, waitlist grows organically as users discover the study.
+                      Use this to simulate waitlist growth.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSimulateWaitlistGrowth}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      +20 to Waitlist
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
 
@@ -510,13 +518,15 @@ export function FulfillmentTab({
         </div>
       )}
 
-      {/* Reset Button (for testing) */}
-      <div className="pt-4 border-t">
-        <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground">
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Reset Demo Data
-        </Button>
-      </div>
+      {/* Reset Button (for demo testing only) */}
+      {isDemo && (
+        <div className="pt-4 border-t">
+          <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground">
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Reset Demo Data
+          </Button>
+        </div>
+      )}
 
       {/* Tracking Entry Modal */}
       {hasCurrentCohort && currentCohort && (

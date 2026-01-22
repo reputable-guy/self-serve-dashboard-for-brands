@@ -171,6 +171,8 @@ export interface LaunchChecklist {
 
 export interface Study {
   id: string;
+  // Demo studies show sample/mock data; real studies show actual data (or empty state if new)
+  isDemo?: boolean;
   name: string;
   brandId: string;
   brandName: string; // TODO: Consider removing - should lookup from brands store

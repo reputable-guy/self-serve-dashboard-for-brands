@@ -4,6 +4,8 @@ import { MOCK_BRANDS, Brand } from './roles';
 
 interface BrandsStore {
   brands: Brand[];
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   addBrand: (brand: Omit<Brand, 'id' | 'slug' | 'createdAt' | 'studyCount' | 'activeStudyCount'>) => Brand;
   updateBrand: (id: string, updates: Partial<Brand>) => void;
   deleteBrand: (id: string) => void;
@@ -28,6 +30,8 @@ export const useBrandsStore = create<BrandsStore>()(
     (set, get) => ({
       // Initialize with mock brands
       brands: MOCK_BRANDS,
+      _hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
 
       addBrand: (brandData) => {
         const newBrand: Brand = {
@@ -69,7 +73,7 @@ export const useBrandsStore = create<BrandsStore>()(
     }),
     {
       name: 'reputable-brands',
-      // Custom serialization to handle Date objects
+      // Custom serialization to handle Date objects (don't persist hydration state)
       partialize: (state) => ({
         brands: state.brands.map((brand) => ({
           ...brand,
@@ -92,8 +96,16 @@ export const useBrandsStore = create<BrandsStore>()(
           if (newBrands.length > 0) {
             state.brands = [...newBrands, ...state.brands];
           }
+
+          // Mark hydration as complete
+          state.setHasHydrated(true);
         }
       },
     }
   )
 );
+
+/**
+ * Hook to check if the store has been hydrated from localStorage.
+ */
+export const useBrandsHydrated = () => useBrandsStore((state) => state._hasHydrated);

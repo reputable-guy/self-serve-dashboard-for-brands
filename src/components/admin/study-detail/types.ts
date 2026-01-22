@@ -17,6 +17,8 @@ export interface MockParticipant {
 
 export interface StudyData {
   id: string;
+  // Demo studies show sample/mock data; real studies show actual data (or empty state if new)
+  isDemo?: boolean;
   name: string;
   brandId: string;
   category: string;
