@@ -26,6 +26,8 @@ import {
   Rocket,
   ArrowRight,
   Info,
+  AlertTriangle,
+  EyeOff,
 } from "lucide-react";
 import type { StudyData } from "./types";
 import {
@@ -39,6 +41,7 @@ import {
 } from "./mock-data";
 import { LaunchChecklist } from "./launch-checklist";
 import { useStudiesStore } from "@/lib/studies-store";
+import { useCohortStore } from "@/lib/cohort-store";
 
 interface OverviewTabProps {
   study: StudyData;
@@ -61,7 +64,11 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   const isPreLaunchStudy = study.status === "draft" || study.status === "coming_soon";
 
   // Get store actions for launch checklist
-  const { updateLaunchChecklist, publishToCatalogue } = useStudiesStore();
+  const { updateLaunchChecklist, publishToCatalogue, unpublishFromCatalogue, startRecruiting } = useStudiesStore();
+
+  // Get cohort data for waitlist count
+  const { getRecruitmentState, initializeStudy } = useCohortStore();
+  const recruitmentState = getRecruitmentState(study.id);
 
   // Get or initialize launch checklist
   const checklist = study.launchChecklist ?? {
@@ -124,8 +131,158 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   // Only generate mock participants for demo studies
   const participants = study.isDemo !== false ? generateMockParticipants(study.category) : [];
 
-  // Pre-launch dashboard for draft/coming_soon studies
-  if (isPreLaunchStudy) {
+  // Handler for starting recruitment
+  const handleStartRecruiting = () => {
+    // Initialize recruitment state if not exists
+    if (!recruitmentState) {
+      initializeStudy(study.id, study.targetParticipants, 50);
+    }
+    startRecruiting(study.id);
+  };
+
+  // Handler for unpublishing
+  const handleUnpublish = () => {
+    unpublishFromCatalogue(study.id);
+  };
+
+  // Get waitlist count (default to simulated value for demo)
+  const waitlistCount = recruitmentState?.waitlistCount ?? 50;
+
+  // ================================================
+  // COMING SOON STUDIES - Waitlist-focused dashboard
+  // ================================================
+  if (study.status === "coming_soon") {
+    return (
+      <div className="space-y-6">
+        {/* Live Status Banner */}
+        <Card className="border-[#00D1C1]/30 bg-gradient-to-r from-[#00D1C1]/5 to-transparent">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#00D1C1]/20 flex items-center justify-center">
+                <Rocket className="h-5 w-5 text-[#00D1C1]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">Your study is live in the catalogue</p>
+                  <Badge className="bg-[#00D1C1]/20 text-[#00D1C1] hover:bg-[#00D1C1]/20">Coming Soon</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">Participants can join your waitlist. Start recruiting when you&apos;re ready to ship.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Primary Metric: Waitlist Count */}
+        <Card className="border-2">
+          <CardContent className="py-8">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <Users className="h-8 w-8 text-[#00D1C1]" />
+              </div>
+              <p className="text-6xl font-bold text-[#00D1C1]">{waitlistCount}</p>
+              <p className="text-lg text-muted-foreground mt-2">people on waitlist</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Target: {study.targetParticipants} participants
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Primary CTA: Start Recruiting */}
+        <Card className="bg-gradient-to-r from-purple-50 to-white border-purple-200">
+          <CardContent className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-lg">Ready to start?</p>
+                <p className="text-sm text-muted-foreground">
+                  Open a 24-hour recruitment window. Waitlist members will be notified.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={handleStartRecruiting}
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                Start Recruiting
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3">
+          <Link href={`/admin/studies/${study.id}/edit`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Study
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={onOpenPreview}>
+            <Eye className="h-4 w-4 mr-2" />
+            Preview in App
+          </Button>
+        </div>
+
+        {/* Study Configuration Summary */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Study Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Category</p>
+                <p className="font-medium">{study.categoryLabel}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tier</p>
+                <p className="font-medium">Tier {study.tier}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Target</p>
+                <p className="font-medium">{study.targetParticipants} participants</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Rebate</p>
+                <p className="font-medium">${study.rebateAmount}</p>
+              </div>
+            </div>
+            {brand && (
+              <div className="mt-4 pt-4 border-t flex items-center gap-3">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Brand:</span>
+                <span className="font-medium">{brand.name}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Unpublish Option */}
+        <Card className="border-dashed">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <EyeOff className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Changed your mind?</p>
+                  <p className="text-xs text-muted-foreground">Remove from catalogue and return to draft</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleUnpublish}>
+                Unpublish
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ================================================
+  // DRAFT STUDIES - Launch preparation dashboard
+  // ================================================
+  if (study.status === "draft") {
     return (
       <div className="space-y-6">
         {/* Launch Checklist - Prominent at top */}
@@ -254,31 +411,6 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
             </div>
           </CardContent>
         </Card>
-
-        {/* Current Status Indicator */}
-        {study.status === "coming_soon" && (
-          <Card className="border-purple-200 bg-purple-50/50">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Rocket className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-purple-900">Your study is live in the catalogue</p>
-                    <p className="text-sm text-purple-700">Participants can join the waitlist. Start recruiting when you&apos;re ready.</p>
-                  </div>
-                </div>
-                <Link href={`/admin/studies/${study.id}?tab=fulfillment`}>
-                  <Button className="bg-purple-600 hover:bg-purple-700">
-                    Start Recruiting
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     );
   }

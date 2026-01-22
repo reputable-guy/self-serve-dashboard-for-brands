@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Eye, Package, LayoutDashboard } from "lucide-react";
+import { CheckCircle2, Eye, Package, LayoutDashboard, X } from "lucide-react";
 
 interface StudyCreatedSuccessProps {
   studyName: string;
@@ -16,7 +16,7 @@ interface StudyCreatedSuccessProps {
 /**
  * Success screen shown after study creation.
  * Displays checkmark animation and next steps.
- * Auto-dismisses after 15 seconds or on user interaction.
+ * User must explicitly dismiss or choose an action.
  */
 export function StudyCreatedSuccess({
   studyName,
@@ -25,27 +25,17 @@ export function StudyCreatedSuccess({
   onGoToFulfillment,
   onDismiss,
 }: StudyCreatedSuccessProps) {
-  const [countdown, setCountdown] = useState(15);
-
-  // Auto-dismiss countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onDismiss();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [onDismiss]);
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg animate-in fade-in zoom-in duration-300">
+      <Card className="w-full max-w-lg animate-in fade-in zoom-in duration-300 relative">
+        {/* Close button */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5 text-muted-foreground" />
+        </button>
         <CardContent className="pt-8 pb-6 px-8">
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
@@ -101,18 +91,6 @@ export function StudyCreatedSuccess({
             </div>
           </div>
 
-          {/* Auto-dismiss indicator */}
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              This will close automatically in {countdown}s
-            </p>
-            <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all duration-1000"
-                style={{ width: `${(countdown / 15) * 100}%` }}
-              />
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

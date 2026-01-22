@@ -16,7 +16,6 @@ import {
   FileText,
   Users,
   Heart,
-  Shield,
   ChevronDown,
   ChevronRight,
   Save,
@@ -72,9 +71,7 @@ export default function AdminSettingsPage() {
   // Platform settings from Zustand store
   const {
     distributionFormula,
-    trustStackPillars,
     setDistributionFormula,
-    updateTrustPillar,
     resetToDefaults,
   } = usePlatformSettingsStore();
 
@@ -668,61 +665,6 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Trust Stack - Now Editable */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-[#00D1C1]" />
-              Trust Stack Configuration
-            </CardTitle>
-            <CardDescription>
-              Configure trust verification pillars shown on verification pages
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {trustStackPillars.map((pillar, index) => (
-                <div key={pillar.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                      pillar.enabled ? 'bg-green-100' : 'bg-gray-100'
-                    }`}>
-                      <span className={`text-sm ${pillar.enabled ? 'text-green-600' : 'text-gray-400'}`}>
-                        {index + 1}
-                      </span>
-                    </div>
-                    <div>
-                      <Input
-                        value={pillar.title}
-                        onChange={(e) => updateTrustPillar(pillar.id, { title: e.target.value })}
-                        className="font-medium h-7 w-48 mb-1"
-                      />
-                      <Input
-                        value={pillar.description}
-                        onChange={(e) => updateTrustPillar(pillar.id, { description: e.target.value })}
-                        className="text-sm text-muted-foreground h-6 w-64"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor={`pillar-${pillar.id}`} className="text-xs text-muted-foreground">
-                      {pillar.enabled ? 'Enabled' : 'Disabled'}
-                    </Label>
-                    <Switch
-                      id={`pillar-${pillar.id}`}
-                      checked={pillar.enabled}
-                      onCheckedChange={(checked) => updateTrustPillar(pillar.id, { enabled: checked })}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              These pillars appear on all verification pages to establish credibility with viewers.
-              Toggle to disable specific pillars for studies that don&apos;t use wearables.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

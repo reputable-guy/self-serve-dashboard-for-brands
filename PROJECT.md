@@ -390,6 +390,23 @@ npm run lint     # Run linting
 
 ## Recent Updates
 
+### Study Creation Wizard UX Improvements (January 2026)
+- Removed unnecessary "What's being shipped?" field from wizard
+- Added scroll to top on all step transitions for smoother UX
+- Changed Product Image URL input to file upload with preview
+- Improved step navigation flow
+
+### Coming Soon Studies Overview Redesign (January 2026)
+- Split Overview tab handling for "draft" vs "coming_soon" studies
+- **Coming Soon studies** now show waitlist-focused dashboard:
+  - Prominent waitlist count as primary metric (large centered display)
+  - "Start Recruiting" CTA to open first recruitment window
+  - Quick actions: Edit Study, Preview in App
+  - Study configuration summary
+  - "Unpublish" option to revert back to draft
+- **Draft studies** retain launch checklist and educational content
+- Added `unpublishFromCatalogue` action to studies store
+
 ### Cohort-Aware Progress (January 2026)
 - Fixed compliance store to calculate participant days based on cohort
 - Removed misleading global "Day X of 28" displays

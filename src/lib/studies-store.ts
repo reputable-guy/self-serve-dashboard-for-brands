@@ -34,6 +34,8 @@ interface StudiesStore {
   getStudiesByBrandId: (brandId: string) => Study[];
   /** Publish study to catalogue as "Coming Soon" - visible but not yet recruiting */
   publishToCatalogue: (id: string) => void;
+  /** Unpublish study from catalogue - reverts from "Coming Soon" back to draft */
+  unpublishFromCatalogue: (id: string) => void;
   /** Start recruiting - opens first recruitment window */
   startRecruiting: (id: string) => void;
   launchStudy: (id: string) => void;
@@ -107,6 +109,20 @@ export const useStudiesStore = create<StudiesStore>()(
               ? {
                   ...study,
                   status: 'coming_soon' as const,
+                  updatedAt: new Date().toISOString(),
+                }
+              : study
+          ),
+        }));
+      },
+
+      unpublishFromCatalogue: (id) => {
+        set((state) => ({
+          studies: state.studies.map((study) =>
+            study.id === id && study.status === 'coming_soon'
+              ? {
+                  ...study,
+                  status: 'draft' as const,
                   updatedAt: new Date().toISOString(),
                 }
               : study
