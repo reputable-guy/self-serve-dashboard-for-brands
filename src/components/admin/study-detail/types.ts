@@ -23,7 +23,7 @@ export interface StudyData {
   brandId: string;
   category: string;
   categoryLabel: string;
-  status: "draft" | "recruiting" | "filling-fast" | "full" | "active" | "completed" | "archived";
+  status: "draft" | "coming_soon" | "recruiting" | "filling-fast" | "full" | "active" | "completed" | "archived";
   participants: number;
   targetParticipants: number;
   startDate: string;
@@ -45,6 +45,13 @@ export interface StudyData {
   };
   // Current day of the study (for active studies)
   currentDay?: number;
+  // Launch checklist state (for draft/coming_soon studies)
+  launchChecklist?: {
+    settingsComplete: boolean;
+    previewReviewed: boolean;
+    inventoryConfirmed: boolean;
+    goLiveAt?: string;
+  };
 }
 
 export interface DemographicItem {

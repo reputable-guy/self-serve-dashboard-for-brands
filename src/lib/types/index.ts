@@ -98,6 +98,7 @@ export interface DeviceDefinition {
 
 export const STUDY_STATUS_VALUES = [
   "draft",
+  "coming_soon",
   "recruiting",
   "filling-fast",
   "full",

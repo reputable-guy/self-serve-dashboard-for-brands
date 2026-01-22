@@ -32,6 +32,10 @@ interface StudiesStore {
   getStudyById: (id: string) => Study | undefined;
   getStudy: (id: string) => Study | undefined; // Alias for legacy pages
   getStudiesByBrandId: (brandId: string) => Study[];
+  /** Publish study to catalogue as "Coming Soon" - visible but not yet recruiting */
+  publishToCatalogue: (id: string) => void;
+  /** Start recruiting - opens first recruitment window */
+  startRecruiting: (id: string) => void;
   launchStudy: (id: string) => void;
   updateLaunchChecklist: (id: string, updates: Partial<LaunchChecklist>) => void;
   initializeLaunchChecklist: (id: string) => void;
@@ -94,6 +98,34 @@ export const useStudiesStore = create<StudiesStore>()(
 
       getStudiesByBrandId: (brandId) => {
         return get().studies.filter((study) => study.brandId === brandId);
+      },
+
+      publishToCatalogue: (id) => {
+        set((state) => ({
+          studies: state.studies.map((study) =>
+            study.id === id && study.status === 'draft'
+              ? {
+                  ...study,
+                  status: 'coming_soon' as const,
+                  updatedAt: new Date().toISOString(),
+                }
+              : study
+          ),
+        }));
+      },
+
+      startRecruiting: (id) => {
+        set((state) => ({
+          studies: state.studies.map((study) =>
+            study.id === id && (study.status === 'coming_soon' || study.status === 'draft')
+              ? {
+                  ...study,
+                  status: 'recruiting' as const,
+                  updatedAt: new Date().toISOString(),
+                }
+              : study
+          ),
+        }));
       },
 
       launchStudy: (id) => {

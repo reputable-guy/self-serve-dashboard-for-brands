@@ -22,6 +22,10 @@ import {
   Eye,
   BarChart3,
   Sparkles,
+  Package,
+  Rocket,
+  ArrowRight,
+  Info,
 } from "lucide-react";
 import type { StudyData } from "./types";
 import {
@@ -33,6 +37,8 @@ import {
   SORTED_SENSATE_STORIES,
   SORTED_LYFEFUEL_STORIES,
 } from "./mock-data";
+import { LaunchChecklist } from "./launch-checklist";
+import { useStudiesStore } from "@/lib/studies-store";
 
 interface OverviewTabProps {
   study: StudyData;
@@ -50,6 +56,37 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   // isDemo: true = demo/sample study, show mock data
   // isDemo: false = real study, show real data (or empty state if no participants)
   const isNewUserStudy = study.isDemo === false && study.participants === 0 && !isRealDataStudy;
+
+  // Check if study is in pre-launch phase (draft or coming_soon)
+  const isPreLaunchStudy = study.status === "draft" || study.status === "coming_soon";
+
+  // Get store actions for launch checklist
+  const { updateLaunchChecklist, publishToCatalogue } = useStudiesStore();
+
+  // Get or initialize launch checklist
+  const checklist = study.launchChecklist ?? {
+    settingsComplete: true, // Always true after creation
+    previewReviewed: false,
+    inventoryConfirmed: false,
+  };
+
+  // Handlers for launch checklist
+  const handlePreviewReview = () => {
+    onOpenPreview();
+    // Mark as reviewed when they click
+    updateLaunchChecklist(study.id, { previewReviewed: true });
+  };
+
+  const handleInventoryConfirm = () => {
+    updateLaunchChecklist(study.id, { inventoryConfirmed: true });
+  };
+
+  const handleGoLive = () => {
+    // This publishes to catalogue as coming_soon
+    publishToCatalogue(study.id);
+    // Mark the publish step as complete in the checklist
+    updateLaunchChecklist(study.id, { goLiveAt: new Date().toISOString() });
+  };
 
   // Use real data for Sensate/LYFEfuel study, mock data for demos, zeros for new user studies
   const studyParticipants = isSensateRealStudy
@@ -87,6 +124,166 @@ export function OverviewTab({ study, brand, onOpenPreview }: OverviewTabProps) {
   // Only generate mock participants for demo studies
   const participants = study.isDemo !== false ? generateMockParticipants(study.category) : [];
 
+  // Pre-launch dashboard for draft/coming_soon studies
+  if (isPreLaunchStudy) {
+    return (
+      <div className="space-y-6">
+        {/* Launch Checklist - Prominent at top */}
+        <LaunchChecklist
+          checklist={checklist}
+          targetParticipants={study.targetParticipants}
+          onPreviewReview={handlePreviewReview}
+          onInventoryConfirm={handleInventoryConfirm}
+          onGoLive={handleGoLive}
+        />
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3">
+          <Link href={`/admin/studies/${study.id}/edit`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Study
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={handlePreviewReview}>
+            <Eye className="h-4 w-4 mr-2" />
+            Preview in App
+          </Button>
+          <Link href={`/admin/studies/${study.id}?tab=fulfillment`}>
+            <Button variant="outline" size="sm">
+              <Package className="h-4 w-4 mr-2" />
+              Configure Fulfillment
+            </Button>
+          </Link>
+        </div>
+
+        {/* Study Configuration Summary */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Study Configuration</CardTitle>
+            <CardDescription>Your study settings at a glance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Category</p>
+                <p className="font-medium">{study.categoryLabel}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tier</p>
+                <p className="font-medium">Tier {study.tier}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Target Participants</p>
+                <p className="font-medium">{study.targetParticipants}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Rebate Amount</p>
+                <p className="font-medium">${study.rebateAmount}</p>
+              </div>
+            </div>
+            {brand && (
+              <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Brand:</span>
+                  <span className="font-medium">{brand.name}</span>
+                </div>
+                <Link href={`/admin/brands/${brand.id}`}>
+                  <Button variant="ghost" size="sm">View</Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* What Happens Next - Educational section */}
+        <Card className="border-dashed border-2 border-muted-foreground/20 bg-muted/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              What Happens Next
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#00D1C1]/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-[#00D1C1]">1</span>
+                </div>
+                <div>
+                  <p className="font-medium">Complete the publish checklist above</p>
+                  <p className="text-sm text-muted-foreground">
+                    Review your preview and confirm your inventory is ready to ship.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#00D1C1]/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-[#00D1C1]">2</span>
+                </div>
+                <div>
+                  <p className="font-medium">Publish as &quot;Coming Soon&quot;</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your study appears in the mobile app catalogue. Participants can join your waitlist.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#00D1C1]/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-[#00D1C1]">3</span>
+                </div>
+                <div>
+                  <p className="font-medium">Start recruiting when ready</p>
+                  <p className="text-sm text-muted-foreground">
+                    Open 24-hour recruitment windows to enroll participants from your waitlist.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#00D1C1]/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-[#00D1C1]">4</span>
+                </div>
+                <div>
+                  <p className="font-medium">Ship products and track results</p>
+                  <p className="text-sm text-muted-foreground">
+                    Fulfill orders for each cohort and watch verified results come in.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Current Status Indicator */}
+        {study.status === "coming_soon" && (
+          <Card className="border-purple-200 bg-purple-50/50">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Rocket className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-purple-900">Your study is live in the catalogue</p>
+                    <p className="text-sm text-purple-700">Participants can join the waitlist. Start recruiting when you're ready.</p>
+                  </div>
+                </div>
+                <Link href={`/admin/studies/${study.id}?tab=fulfillment`}>
+                  <Button className="bg-purple-600 hover:bg-purple-700">
+                    Start Recruiting
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // Regular overview for active/completed studies
   return (
     <div className="space-y-6">
       {/* Quick Actions */}

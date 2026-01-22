@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -462,7 +463,7 @@ function AdminStudyCreationContent() {
                 <p className="font-medium mb-1">How cohort recruitment works:</p>
                 <ol className="list-decimal list-inside space-y-0.5">
                   <li>Your study starts with a waitlist (participants join via app)</li>
-                  <li>When you click &quot;Go Live&quot;, a 24-hour enrollment window opens</li>
+                  <li>When you start recruiting, a 24-hour enrollment window opens</li>
                   <li>Everyone who enrolls becomes a cohort</li>
                   <li>You ship to that cohort and enter tracking codes</li>
                   <li>Once all tracking entered, you can open the next window</li>
@@ -724,12 +725,16 @@ function AdminStudyCreationContent() {
       </Card>
 
       {/* Sample Verification Preview */}
-      <Card>
+      <Card className="border-dashed">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Sample Verification Page
+            <Eye className="h-5 w-5 text-muted-foreground" />
+            Example Verification Page
+            <Badge variant="outline" className="ml-2 text-xs font-normal">Preview</Badge>
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            This shows how a participant&apos;s verified results page will look
+          </p>
         </CardHeader>
         <CardContent>
           {(() => {
@@ -761,9 +766,9 @@ function AdminStudyCreationContent() {
 
                   <div>
                     <p className="font-medium">
-                      {sampleStory?.name || "Sarah M."} • {sampleStory?.profile?.ageRange || "25-34"} • Denver, CO
+                      {sampleStory?.name || "Sample Participant"} • Age {sampleStory?.profile?.ageRange || "25-34"}
                     </p>
-                    <p className="text-sm text-muted-foreground">Verified participant</p>
+                    <p className="text-sm text-muted-foreground">Example verified participant</p>
                   </div>
 
                   <p className="text-sm italic text-muted-foreground">
@@ -887,7 +892,7 @@ function AdminStudyCreationContent() {
             >
               {s === 1 && "Basics"}
               {s === 2 && "Experience"}
-              {s === 3 && "Launch"}
+              {s === 3 && "Review"}
             </span>
             {s < 3 && <div className="w-12 h-px bg-muted mx-2" />}
           </div>
@@ -900,7 +905,7 @@ function AdminStudyCreationContent() {
           <CardTitle>
             {step === 1 && "Study Basics"}
             {step === 2 && "Participant Experience"}
-            {step === 3 && "Preview & Launch"}
+            {step === 3 && "Review & Create"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -984,8 +989,8 @@ function AdminStudyCreationContent() {
                     : undefined,
               });
 
-              // Redirect to the new study
-              router.push(`/admin/studies/${study.id}`);
+              // Redirect to the new study with success flag
+              router.push(`/admin/studies/${study.id}?created=true`);
             }}
           >
             <Rocket className="h-4 w-4 mr-2" />

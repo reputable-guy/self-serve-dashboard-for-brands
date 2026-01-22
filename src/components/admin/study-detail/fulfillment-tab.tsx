@@ -13,17 +13,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Play, Clock, CheckCircle2, Info, Users, RefreshCw, Timer, AlertTriangle, TrendingUp } from "lucide-react";
+import { Play, Clock, CheckCircle2, Info, Users, RefreshCw, Timer, AlertTriangle, TrendingUp, Rocket } from "lucide-react";
 import { RecruitmentStatusCard } from "@/components/shipping/recruitment-status-card";
 import { CohortStatusCard } from "@/components/shipping/cohort-status-card";
 import { TrackingEntryModal } from "@/components/shipping/tracking-entry-modal";
 import { useCohortStore } from "@/lib/cohort-store";
-import type { Cohort, ParticipantShipping, FulfillmentMetrics } from "@/lib/types";
+import { useStudiesStore } from "@/lib/studies-store";
+import { CohortExplainer } from "./cohort-explainer";
+import type { Cohort, ParticipantShipping, FulfillmentMetrics, StudyStatus } from "@/lib/types";
 
 interface FulfillmentTabProps {
   studyId: string;
   studyName: string;
   targetParticipants: number;
+  studyStatus: StudyStatus;
   isDemo?: boolean;
 }
 
@@ -41,11 +44,15 @@ export function FulfillmentTab({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   studyName,
   targetParticipants,
+  studyStatus,
   isDemo = true,
 }: FulfillmentTabProps) {
   const [showTrackingModal, setShowTrackingModal] = useState(false);
 
-  // Get store data
+  // Get studies store for status updates
+  const { startRecruiting } = useStudiesStore();
+
+  // Get cohort store data
   const {
     initializeStudy,
     goLive,
@@ -58,6 +65,10 @@ export function FulfillmentTab({
     getCohortParticipants,
     resetStore,
   } = useCohortStore();
+
+  // Study status checks
+  const isDraftStudy = studyStatus === "draft";
+  const isComingSoonStudy = studyStatus === "coming_soon";
 
   // Initialize study on mount
   // For demo studies, start with 142 mock waitlist participants
@@ -96,6 +107,11 @@ export function FulfillmentTab({
   );
   const remainingSlots = targetParticipants - (recruitmentState?.totalEnrolled || 0);
   const minRecommendedCohort = 10; // Recommend at least 10 per cohort for efficiency
+
+  const handleStartRecruiting = () => {
+    startRecruiting(studyId);
+    goLive(studyId);
+  };
 
   const handleGoLive = () => {
     goLive(studyId);
@@ -156,6 +172,9 @@ export function FulfillmentTab({
 
   return (
     <div className="space-y-6">
+      {/* Cohort Explainer - shown for all users, collapsible */}
+      <CohortExplainer />
+
       {/* Study Complete */}
       {isComplete && (
         <Alert className="bg-green-50 border-green-200">
@@ -166,17 +185,112 @@ export function FulfillmentTab({
         </Alert>
       )}
 
-      {/* Waitlist Only State - Show Go Live Button */}
-      {isWaitlistOnly && (
-        <Card>
+      {/* Draft Study - Direct to Overview for publishing */}
+      {isDraftStudy && (
+        <Card className="border-dashed border-2 border-muted-foreground/20">
+          <CardContent className="py-8 text-center">
+            <Info className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+            <h3 className="font-medium mb-2">Complete Your Launch Checklist First</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+              Before managing fulfillment, complete the launch checklist on the Overview tab
+              to publish your study and start building your waitlist.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Once published, you&apos;ll manage recruitment windows and shipping here.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Coming Soon Study - Start Recruiting */}
+      {isComingSoonStudy && isWaitlistOnly && (
+        <Card className="border-[#00D1C1]/30 bg-gradient-to-br from-[#00D1C1]/5 to-white">
           <CardHeader>
-            <CardTitle>Ready to Launch</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket className="h-5 w-5 text-[#00D1C1]" />
+              Start Recruiting Participants
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Your study is ready to accept participants. Click &quot;Go Live&quot; to
-              open the first 24-hour recruitment window. Participants on the
-              waitlist will be notified via the mobile app.
+              Your study is live in the catalogue. Open your first 24-hour recruitment
+              window to start enrolling participants from your waitlist.
+            </p>
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="text-center">
+                <p className="text-2xl font-bold">
+                  {recruitmentState.waitlistCount}
+                </p>
+                <p className="text-xs text-muted-foreground">On Waitlist</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{targetParticipants}</p>
+                <p className="text-xs text-muted-foreground">Target</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{recruitmentState.totalEnrolled}</p>
+                <p className="text-xs text-muted-foreground">Enrolled</p>
+              </div>
+            </div>
+            {recruitmentState.waitlistCount === 0 && (
+              <Alert variant="default" className="bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  Your waitlist is empty. Consider promoting your study to build interest
+                  before starting recruitment.
+                </AlertDescription>
+              </Alert>
+            )}
+            <Button
+              onClick={handleStartRecruiting}
+              className="w-full bg-[#00D1C1] hover:bg-[#00bfb0]"
+              size="lg"
+            >
+              <Rocket className="h-4 w-4 mr-2" />
+              Start Recruiting
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              Opens a 24-hour window. Waitlist members will be notified.
+            </p>
+
+            {/* Simulation Controls - Demo Only */}
+            {isDemo && (
+              <Card className="border-dashed border-2 border-blue-200 bg-blue-50/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-blue-700 flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Simulation Controls (Demo Only)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-blue-600 mb-3">
+                    In production, waitlist grows organically as users discover the study.
+                    Use this to simulate waitlist growth.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSimulateWaitlistGrowth}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    +20 to Waitlist
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Waitlist Only State (Recruiting status) - Show Open Window Button */}
+      {!isDraftStudy && !isComingSoonStudy && isWaitlistOnly && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ready to Open Window</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Open a 24-hour recruitment window to enroll participants from your waitlist.
             </p>
             <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="text-center">
@@ -196,7 +310,7 @@ export function FulfillmentTab({
             </div>
             <Button onClick={handleGoLive} className="w-full" size="lg">
               <Play className="h-4 w-4 mr-2" />
-              Go Live - Open First Recruitment Window
+              Open Next Window
             </Button>
           </CardContent>
         </Card>
@@ -238,7 +352,7 @@ export function FulfillmentTab({
                     disabled={recruitmentState.currentWindowEnrolled === 0}
                   >
                     <Timer className="h-4 w-4 mr-2" />
-                    Close Window (Form Cohort)
+                    Close &amp; Ship Orders
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -381,7 +495,7 @@ export function FulfillmentTab({
                 size="lg"
               >
                 <Play className="h-4 w-4 mr-2" />
-                Open 24-Hour Recruitment Window
+                Open Next Window
               </Button>
 
               {/* Simulation Controls - Demo Only */}

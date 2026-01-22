@@ -61,6 +61,7 @@ export const DEFAULT_VILLAIN_DAYS = [7, 14, 21, 28] as const;
 // Study status definitions
 export const STUDY_STATUSES = {
   draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
+  coming_soon: { bg: "bg-purple-500/20", text: "text-purple-400", label: "Coming Soon" },
   recruiting: { bg: "bg-[#00D1C1]/20", text: "text-[#00D1C1]", label: "Recruiting" },
   "filling-fast": { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Filling Fast" },
   full: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Full" },

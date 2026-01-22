@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
   getStatusColor,
   getTierColor,
 } from "@/components/admin/study-detail";
+import { StudyCreatedSuccess, useStudyCreatedState } from "@/components/admin/study-detail/study-created-success";
 import type { TabId } from "@/components/admin/study-detail";
 
 // ============================================
@@ -146,6 +147,7 @@ export default function AdminStudyDetailPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [showPreview, setShowPreview] = useState(false);
+  const { showSuccess, dismissSuccess } = useStudyCreatedState();
 
   // First try the store, then fall back to legacy MOCK_STUDIES
   const storeStudy = useStudiesStore((state) => state.getStudyById(id));
@@ -290,6 +292,7 @@ export default function AdminStudyDetailPage() {
           studyId={study.id}
           studyName={study.name}
           targetParticipants={study.targetParticipants}
+          studyStatus={study.status}
           isDemo={study.isDemo !== false}
         />
       )}
@@ -302,6 +305,17 @@ export default function AdminStudyDetailPage() {
       {/* Preview Modal */}
       {showPreview && (
         <PreviewModal study={study} onClose={() => setShowPreview(false)} />
+      )}
+
+      {/* Study Created Success Screen */}
+      {showSuccess && (
+        <StudyCreatedSuccess
+          studyName={study.name}
+          categoryLabel={study.categoryLabel}
+          onOpenPreview={() => setShowPreview(true)}
+          onGoToFulfillment={() => setActiveTab("fulfillment")}
+          onDismiss={dismissSuccess}
+        />
       )}
     </div>
   );
