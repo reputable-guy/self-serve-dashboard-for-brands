@@ -11,6 +11,7 @@ export { LaunchChecklist } from "./launch-checklist";
 export { StudyStatusBanner } from "./study-status-banner";
 export { LifecycleBar } from "./lifecycle-bar";
 export { TabIndicator } from "./tab-indicator";
+export { WidgetSection } from "./widget-section";
 
 export * from "./types";
 export * from "./mock-data";

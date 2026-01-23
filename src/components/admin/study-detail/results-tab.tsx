@@ -43,6 +43,7 @@ import {
   SORTED_LYFEFUEL_STORIES,
 } from "./mock-data";
 import { InterimInsights } from "@/components/results/interim-insights";
+import { WidgetSection } from "./widget-section";
 
 interface ResultsTabProps {
   study: StudyData;
@@ -258,6 +259,11 @@ export function ResultsTab({ study }: ResultsTabProps) {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Embeddable Widget Section - Only show for real data studies */}
+      {isRealDataStudy && (
+        <WidgetSection studyId={study.id} studyName={study.name} />
       )}
 
       {/* Sample Participant Stories */}
