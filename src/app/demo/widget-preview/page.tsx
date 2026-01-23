@@ -102,7 +102,7 @@ export default function WidgetPreviewPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Compact Badge Widget</CardTitle>
                 <p className="text-sm text-gray-500">
-                  Place near "Add to Cart" button for instant trust signal
+                  Place near &quot;Add to Cart&quot; button for instant trust signal
                 </p>
               </CardHeader>
               <CardContent>
@@ -204,15 +204,15 @@ export default function WidgetPreviewPage() {
                       before showing results
                     </li>
                     <li>
-                      ✓ <strong>Compensation transparency</strong> - "Were
-                      participants compensated?" FAQ
+                      ✓ <strong>Compensation transparency</strong> - &quot;Were
+                      participants compensated?&quot; FAQ
                     </li>
                     <li>
                       ✓ <strong>Individual stories</strong> - Real participants
                       with their personal metrics
                     </li>
                     <li>
-                      ✓ <strong>Verifiable</strong> - "View Story" links to full
+                      ✓ <strong>Verifiable</strong> - &quot;View Story&quot; links to full
                       verification page
                     </li>
                     <li>

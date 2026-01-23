@@ -18,6 +18,7 @@ interface CompactBadgeWidgetProps {
  */
 export function CompactBadgeWidget({
   participantCount,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   studyTitle,
   onOpenModal,
 }: CompactBadgeWidgetProps) {

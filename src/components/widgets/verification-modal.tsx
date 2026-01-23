@@ -119,7 +119,7 @@ function ParticipantCard({ participant }: { participant: ParticipantPreview }) {
 
         {/* Quote */}
         <p className="text-xs text-gray-500 italic line-clamp-2">
-          "{participant.quote}"
+          &quot;{participant.quote}&quot;
         </p>
       </div>
 

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Star, ShoppingCart, Check, Truck, Shield, RotateCcw } from "lucide-react";
+import { Star, ShoppingCart, Check, Truck, Shield, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   CompactBadgeWidget,
@@ -231,7 +230,7 @@ export default function DemoProductPage() {
 
             {/* What's Included */}
             <div className="pt-4 border-t">
-              <h3 className="font-semibold mb-2">What's Included</h3>
+              <h3 className="font-semibold mb-2">What&apos;s Included</h3>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-500" />

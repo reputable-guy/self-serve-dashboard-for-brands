@@ -24,7 +24,6 @@ import {
   type WidgetModeConfig,
   type WidgetDisplayMode,
 } from "@/lib/widget-data";
-import { CompactBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 
 interface WidgetSectionProps {
@@ -79,7 +78,7 @@ function WidgetPreviewBadge({
   );
 }
 
-export function WidgetSection({ studyId, studyName }: WidgetSectionProps) {
+export function WidgetSection({ studyId }: WidgetSectionProps) {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState<WidgetDisplayMode | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
