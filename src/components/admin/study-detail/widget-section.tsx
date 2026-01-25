@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Code2,
   ExternalLink,
@@ -13,8 +14,8 @@ import {
   ChevronUp,
   Copy,
   Check,
-  ChevronRight,
   Sparkles,
+  Palette,
 } from "lucide-react";
 import {
   getBestWidgetMode,
@@ -24,6 +25,7 @@ import {
   type WidgetModeConfig,
   type WidgetDisplayMode,
 } from "@/lib/widget-data";
+import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 
 interface WidgetSectionProps {
@@ -31,51 +33,23 @@ interface WidgetSectionProps {
   studyName: string;
 }
 
-/**
- * Widget preview badge - headline varies by mode, subtitle stays constant
- *
- * Design:
- * - Aggregate: "23% more daily activity" + "Verified by Reputable"
- * - NPS: "83% would recommend" + "Verified by Reputable"
- * - Simple: "18 participants verified" + "Verified by Reputable"
- */
-function WidgetPreviewBadge({
-  mode,
-  onClick,
-}: {
-  mode: WidgetModeConfig;
-  participantCount: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
-    >
-      {/* Reputable logo icon */}
-      <Image
-        src="/logos/reputable-icon-dark.png"
-        alt="Reputable"
-        width={24}
-        height={24}
-        className="h-6 w-6"
-        unoptimized
-      />
+// Preset brand colors
+const COLOR_PRESETS = [
+  { name: "Reputable Teal", value: "#00D1C1" },
+  { name: "Purple", value: "#7C3AED" },
+  { name: "Blue", value: "#2563EB" },
+  { name: "Green", value: "#059669" },
+  { name: "Orange", value: "#EA580C" },
+  { name: "Pink", value: "#DB2777" },
+];
 
-      {/* Content - Headline varies by mode, subtitle stays constant */}
-      <div className="text-left">
-        <span className="text-sm font-medium text-gray-900">
-          {mode.badgeHeadline}
-        </span>
-        <p className="text-[10px] text-gray-400">
-          Verified by Reputable
-        </p>
-      </div>
+// Helper to get localStorage key for widget config
+const getWidgetConfigKey = (studyId: string) => `reputable-widget-config-${studyId}`;
 
-      {/* Chevron */}
-      <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-[#00D1C1] transition-colors" />
-    </button>
-  );
+export interface WidgetConfig {
+  brandColor: string;
+  position: "bottom-left" | "bottom-right";
+  mode: WidgetDisplayMode | null;
 }
 
 export function WidgetSection({ studyId }: WidgetSectionProps) {
@@ -83,10 +57,33 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
   const [selectedMode, setSelectedMode] = useState<WidgetDisplayMode | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [brandColor, setBrandColor] = useState("#00D1C1");
+  const [position, setPosition] = useState<"bottom-left" | "bottom-right">("bottom-left");
+
+  // Load saved config from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(getWidgetConfigKey(studyId));
+    if (saved) {
+      try {
+        const config: WidgetConfig = JSON.parse(saved);
+        if (config.brandColor) setBrandColor(config.brandColor);
+        if (config.position) setPosition(config.position);
+        if (config.mode) setSelectedMode(config.mode);
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+  }, [studyId]);
+
+  // Save config to localStorage whenever it changes
+  useEffect(() => {
+    const config: WidgetConfig = { brandColor, position, mode: selectedMode };
+    localStorage.setItem(getWidgetConfigKey(studyId), JSON.stringify(config));
+  }, [brandColor, position, selectedMode, studyId]);
 
   // Check if widget data is available
   if (!hasWidgetData(studyId)) {
-    return null; // Don't show widget section for studies without data
+    return null;
   }
 
   const bestMode = getBestWidgetMode(studyId);
@@ -102,12 +99,21 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
     ? allModes.find((m) => m.mode === selectedMode) || bestMode
     : bestMode;
 
+  // Transform participants for avatar display
+  const participantAvatars = widgetData.participants.map((p) => ({
+    id: p.id,
+    initials: p.initials,
+    imageUrl: undefined,
+  }));
+
   const embedCode = `<!-- Reputable Verification Widget -->
 <script src="https://embed.reputable.health/widget.js"></script>
 <div
   data-reputable-widget="badge"
   data-study-id="${studyId}"
   data-mode="${currentMode.mode}"
+  data-color="${brandColor}"
+  data-position="${position}"
   data-theme="light"
 ></div>`;
 
@@ -120,22 +126,22 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
   const getModeLabel = (mode: WidgetDisplayMode): string => {
     switch (mode) {
       case "aggregate":
-        return "Aggregate Metric";
+        return "Outcome Highlight";
       case "nps":
         return "Satisfaction Score";
       case "individual":
-        return "Individual Story";
+        return "People Tested";
     }
   };
 
   const getModeDescription = (modeConfig: WidgetModeConfig): string => {
     switch (modeConfig.mode) {
       case "aggregate":
-        return `Shows "${modeConfig.friendlyDescription}"`;
+        return `Shows "${modeConfig.badgeHeadline}"`;
       case "nps":
-        return `Shows "${modeConfig.friendlyDescription}"`;
+        return `Shows "${modeConfig.badgeHeadline}"`;
       case "individual":
-        return `Shows featured participant story`;
+        return `Shows "X people tested this product..."`;
     }
   };
 
@@ -167,12 +173,17 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
             <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
               Preview
             </p>
-            <div className="p-4 bg-gray-50 rounded-lg flex justify-center">
-              <WidgetPreviewBadge
-                mode={currentMode}
-                participantCount={widgetData.participantCount}
-                onClick={() => setIsModalOpen(true)}
-              />
+            <div className="p-6 bg-gray-100 rounded-lg flex justify-center">
+              <div className="max-w-sm">
+                <FloatingBadgeWidget
+                  participantCount={widgetData.participantCount}
+                  studyTitle={widgetData.studyTitle}
+                  badgeHeadline={currentMode.badgeHeadline}
+                  participants={participantAvatars}
+                  brandColor={brandColor}
+                  onOpenModal={() => setIsModalOpen(true)}
+                />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
               Click to preview the modal that opens when users click the widget
@@ -205,7 +216,7 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
 
           {/* Expanded Configuration */}
           {isConfigOpen && (
-            <div className="pt-4 border-t space-y-4">
+            <div className="pt-4 border-t space-y-6">
               {/* Mode Selection */}
               <div>
                 <p className="text-sm font-medium mb-2">Display Mode</p>
@@ -259,6 +270,71 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
                 </div>
               </div>
 
+              {/* Brand Color */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Brand Color</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    {COLOR_PRESETS.map((preset) => (
+                      <button
+                        key={preset.value}
+                        onClick={() => setBrandColor(preset.value)}
+                        className={`h-8 w-8 rounded-full border-2 transition-all ${
+                          brandColor === preset.value
+                            ? "border-gray-900 scale-110"
+                            : "border-transparent hover:scale-105"
+                        }`}
+                        style={{ backgroundColor: preset.value }}
+                        title={preset.name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="customColor" className="text-xs text-muted-foreground">
+                      Custom:
+                    </Label>
+                    <Input
+                      id="customColor"
+                      type="text"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="w-24 h-8 text-xs font-mono"
+                      placeholder="#00D1C1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Position */}
+              <div>
+                <p className="text-sm font-medium mb-2">Widget Position</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPosition("bottom-left")}
+                    className={`flex-1 p-3 rounded-lg border text-sm transition-colors ${
+                      position === "bottom-left"
+                        ? "border-[#00D1C1] bg-[#00D1C1]/5 text-[#00D1C1]"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    Bottom Left
+                  </button>
+                  <button
+                    onClick={() => setPosition("bottom-right")}
+                    className={`flex-1 p-3 rounded-lg border text-sm transition-colors ${
+                      position === "bottom-right"
+                        ? "border-[#00D1C1] bg-[#00D1C1]/5 text-[#00D1C1]"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    Bottom Right
+                  </button>
+                </div>
+              </div>
+
               {/* Embed Code */}
               <div>
                 <p className="text-sm font-medium mb-2">Embed Code</p>
@@ -303,7 +379,7 @@ export function WidgetSection({ studyId }: WidgetSectionProps) {
           compensationNote: widgetData.compensationNote,
         }}
         participants={widgetData.participants}
-        verifyPageUrl={`/verify/${studyId}-results`}
+        verifyPageUrl={widgetData.verifyPageUrl}
       />
     </>
   );

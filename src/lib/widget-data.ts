@@ -39,6 +39,10 @@ export interface WidgetStudyData {
   wearableType: string;
   compensationNote: string;
   participants: ParticipantPreview[];
+  /** URL to the full verification/results page */
+  verifyPageUrl: string;
+  /** Product name for clearer messaging */
+  productName: string;
 }
 
 export type WidgetDisplayMode = "aggregate" | "nps" | "individual";
@@ -76,24 +80,37 @@ export interface StudyMetrics {
 
 /**
  * Convert metric labels to consumer-friendly descriptions
+ * @param withContext - If true, adds "Participants averaged" prefix for clarity
  */
-function getFriendlyMetricDescription(metricLabel: string, changePercent: number): string {
+function getFriendlyMetricDescription(
+  metricLabel: string,
+  changePercent: number,
+  withContext: boolean = false
+): string {
   const value = Math.round(changePercent);
+  const prefix = withContext ? "Participants averaged " : "";
 
   switch (metricLabel) {
     case "Activity Minutes":
-      return `${value}% more daily activity`;
+      return `${prefix}${value}% more daily activity`;
     case "Steps":
-      return `${value}% more daily steps`;
+      return `${prefix}${value}% more daily steps`;
     case "HRV":
-      return `${value}% improvement in heart rate variability`;
+      return `${prefix}${value}% better heart rate variability`;
     case "Deep Sleep":
-      return `${value}% more deep sleep`;
+      return `${prefix}${value}% more deep sleep`;
     case "Sleep":
-      return `${value}% better sleep quality`;
+      return `${prefix}${value}% better sleep quality`;
     default:
-      return `${value}% improvement in ${metricLabel.toLowerCase()}`;
+      return `${prefix}${value}% improvement in ${metricLabel.toLowerCase()}`;
   }
+}
+
+/**
+ * Generate the default "people tested" headline
+ */
+function getPeopleTestedHeadline(participantCount: number, wearableType: string): string {
+  return `${participantCount} people tested this product and tracked results with ${wearableType}`;
 }
 
 function transformParticipantToPreview(
@@ -228,51 +245,51 @@ export function getStudyMetrics(studyId: string): StudyMetrics | null {
  * Logic:
  * 1. If aggregate metric >= 15%, use aggregate mode (like LYFEfuel +23%)
  * 2. Else if NPS >= 70% would recommend, use NPS mode
- * 3. Else use individual story mode with top performer
+ * 3. Else use "people tested" mode (FrontRowMD style)
  */
 export function getBestWidgetMode(studyId: string): WidgetModeConfig | null {
   const metrics = getStudyMetrics(studyId);
-  if (!metrics) return null;
+  const widgetData = getWidgetDataForStudy(studyId);
+  if (!metrics || !widgetData) return null;
 
-  // 1. Strong aggregate? Lead with it
+  // 1. Strong aggregate? Lead with it (clear, contextualized)
   if (metrics.bestAggregateChange >= 15) {
     return {
       mode: "aggregate",
       headline: `+${Math.round(metrics.bestAggregateChange)}% ${metrics.bestAggregateLabel}`,
       subheadline: `${metrics.participantCount} verified participants`,
-      friendlyDescription: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange),
-      badgeHeadline: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange),
+      friendlyDescription: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange, true),
+      // Clear badge headline: "Participants averaged 23% more daily activity"
+      badgeHeadline: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange, true),
       metricLabel: metrics.bestAggregateLabel,
       metricValue: `+${Math.round(metrics.bestAggregateChange)}%`,
     };
   }
 
-  // 2. High NPS? Lead with satisfaction
+  // 2. High NPS? Lead with satisfaction (with clear context)
   if (metrics.wouldRecommendPercent >= 70) {
     return {
       mode: "nps",
       headline: `${metrics.wouldRecommendPercent}% Would Recommend`,
       subheadline: `${metrics.participantCount} verified participants`,
-      friendlyDescription: `${metrics.wouldRecommendPercent}% of participants would recommend`,
-      badgeHeadline: `${metrics.wouldRecommendPercent}% would recommend`,
+      friendlyDescription: `${metrics.wouldRecommendPercent}% of verified participants would recommend this product`,
+      // Clear badge headline: "83% of verified participants would recommend this product"
+      badgeHeadline: `${metrics.wouldRecommendPercent}% of verified participants would recommend this product`,
       npsValue: metrics.avgNps,
       wouldRecommendPercent: metrics.wouldRecommendPercent,
     };
   }
 
-  // 3. Default: Individual story with top performer (fallback to participant count)
-  if (metrics.topPerformer) {
-    return {
-      mode: "individual",
-      headline: `"${metrics.topPerformer.quote.slice(0, 50)}${metrics.topPerformer.quote.length > 50 ? "..." : ""}"`,
-      subheadline: `${metrics.topPerformer.name} · ${metrics.topPerformer.primaryMetric.value} ${metrics.topPerformer.primaryMetric.label}`,
-      friendlyDescription: `${metrics.participantCount} verified participants`,
-      badgeHeadline: `${metrics.participantCount} participants verified`,
-      featuredParticipant: metrics.topPerformer,
-    };
-  }
-
-  return null;
+  // 3. Default: "X people tested" mode (FrontRowMD style - always safe and clear)
+  return {
+    mode: "individual",
+    headline: getPeopleTestedHeadline(metrics.participantCount, widgetData.wearableType),
+    subheadline: "Verified by Reputable",
+    friendlyDescription: `${metrics.participantCount} people tested this product`,
+    // Clear badge headline: "18 people tested this product and tracked results with Oura Ring"
+    badgeHeadline: getPeopleTestedHeadline(metrics.participantCount, widgetData.wearableType),
+    featuredParticipant: metrics.topPerformer || undefined,
+  };
 }
 
 /**
@@ -280,7 +297,8 @@ export function getBestWidgetMode(studyId: string): WidgetModeConfig | null {
  */
 export function getAllWidgetModes(studyId: string): WidgetModeConfig[] {
   const metrics = getStudyMetrics(studyId);
-  if (!metrics) return [];
+  const widgetData = getWidgetDataForStudy(studyId);
+  if (!metrics || !widgetData) return [];
 
   const modes: WidgetModeConfig[] = [];
 
@@ -289,30 +307,30 @@ export function getAllWidgetModes(studyId: string): WidgetModeConfig[] {
     mode: "aggregate",
     headline: `+${Math.round(metrics.bestAggregateChange)}% ${metrics.bestAggregateLabel}`,
     subheadline: `${metrics.participantCount} verified participants`,
-    friendlyDescription: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange),
-    badgeHeadline: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange),
+    friendlyDescription: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange, true),
+    badgeHeadline: getFriendlyMetricDescription(metrics.bestAggregateLabel, metrics.bestAggregateChange, true),
     metricLabel: metrics.bestAggregateLabel,
     metricValue: `+${Math.round(metrics.bestAggregateChange)}%`,
   });
 
-  // NPS mode
+  // NPS mode (with clear context)
   modes.push({
     mode: "nps",
     headline: `${metrics.wouldRecommendPercent}% Would Recommend`,
     subheadline: `${metrics.participantCount} verified participants`,
-    friendlyDescription: `${metrics.wouldRecommendPercent}% of participants would recommend`,
-    badgeHeadline: `${metrics.wouldRecommendPercent}% would recommend`,
+    friendlyDescription: `${metrics.wouldRecommendPercent}% of verified participants would recommend this product`,
+    badgeHeadline: `${metrics.wouldRecommendPercent}% of verified participants would recommend this product`,
     npsValue: metrics.avgNps,
     wouldRecommendPercent: metrics.wouldRecommendPercent,
   });
 
-  // Simple mode (participant count - safe fallback)
+  // "People tested" mode (FrontRowMD style - safe fallback)
   modes.push({
     mode: "individual",
-    headline: `${metrics.participantCount} verified participants`,
+    headline: getPeopleTestedHeadline(metrics.participantCount, widgetData.wearableType),
     subheadline: "Verified by Reputable",
-    friendlyDescription: `${metrics.participantCount} verified participants`,
-    badgeHeadline: `${metrics.participantCount} participants verified`,
+    friendlyDescription: `${metrics.participantCount} people tested this product`,
+    badgeHeadline: getPeopleTestedHeadline(metrics.participantCount, widgetData.wearableType),
     featuredParticipant: metrics.topPerformer || undefined,
   });
 
@@ -337,6 +355,8 @@ export function getWidgetDataForStudy(studyId: string): WidgetStudyData | null {
       compensationNote:
         "Yes, participants received a rebate for completing the study. Compensation was the same regardless of their feedback or results.",
       participants,
+      verifyPageUrl: "/verify/sensate-results",
+      productName: "Sensate",
     };
   }
 
@@ -354,6 +374,8 @@ export function getWidgetDataForStudy(studyId: string): WidgetStudyData | null {
       compensationNote:
         "Yes, participants received a rebate for completing the study. Compensation was the same regardless of their feedback or results.",
       participants,
+      verifyPageUrl: "/verify/lyfefuel-results",
+      productName: "LYFEfuel Daily Essentials",
     };
   }
 

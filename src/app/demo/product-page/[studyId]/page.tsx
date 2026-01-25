@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import {
   ArrowLeft,
   Star,
@@ -12,19 +11,17 @@ import {
   Truck,
   Shield,
   RotateCcw,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
+import { FloatingBadgeWidget, InlineBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import {
   getWidgetDataForStudy,
   getBestWidgetMode,
   hasWidgetData,
-  type WidgetModeConfig,
 } from "@/lib/widget-data";
 
-// Product info mapped by study ID
+// Product info mapped by study ID with hex brand colors
 const PRODUCT_INFO: Record<
   string,
   {
@@ -35,7 +32,11 @@ const PRODUCT_INFO: Record<
     rating: number;
     reviewCount: number;
     description: string;
-    brandColor: string;
+    brandColorHex: string;
+    brandColorClass: string;
+    brandColorHover: string;
+    brandColorLight: string;
+    brandColorText: string;
     brandName: string;
     features: string[];
   }
@@ -50,7 +51,11 @@ const PRODUCT_INFO: Record<
     reviewCount: 2341,
     description:
       "Sensate uses gentle sound vibrations to quickly calm your nervous system. Just 10 minutes a day can help reduce stress, improve sleep quality, and increase heart rate variability. Backed by clinical research and used by over 100,000 customers worldwide.",
-    brandColor: "purple",
+    brandColorHex: "#7C3AED",
+    brandColorClass: "bg-purple-600",
+    brandColorHover: "hover:bg-purple-700",
+    brandColorLight: "bg-purple-50",
+    brandColorText: "text-purple-600",
     brandName: "Sensate",
     features: [
       "Sensate 2 Device",
@@ -69,7 +74,11 @@ const PRODUCT_INFO: Record<
     reviewCount: 1523,
     description:
       "LYFEfuel Daily Essentials is a plant-based nutrition shake packed with essential vitamins, minerals, and adaptogens. Designed to support energy levels, mental clarity, and overall wellness throughout your day.",
-    brandColor: "green",
+    brandColorHex: "#00A89D",
+    brandColorClass: "bg-emerald-600",
+    brandColorHover: "hover:bg-emerald-700",
+    brandColorLight: "bg-emerald-50",
+    brandColorText: "text-emerald-600",
     brandName: "LYFEfuel",
     features: [
       "30-Day Supply",
@@ -80,51 +89,13 @@ const PRODUCT_INFO: Record<
   },
 };
 
-/**
- * Widget badge - headline varies by mode, subtitle stays constant
- *
- * Design:
- * - Aggregate: "23% more daily activity" + "Verified by Reputable"
- * - NPS: "83% would recommend" + "Verified by Reputable"
- * - Simple: "18 participants verified" + "Verified by Reputable"
- */
-function WidgetBadge({
-  mode,
-  onClick,
-}: {
-  mode: WidgetModeConfig;
-  participantCount: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer w-full"
-    >
-      {/* Reputable logo icon */}
-      <Image
-        src="/logos/reputable-icon-dark.png"
-        alt="Reputable"
-        width={24}
-        height={24}
-        className="h-6 w-6"
-        unoptimized
-      />
+// Helper to get localStorage key for widget config
+const getWidgetConfigKey = (studyId: string) => `reputable-widget-config-${studyId}`;
 
-      {/* Content - Headline varies by mode, subtitle stays constant */}
-      <div className="flex-1 text-left">
-        <span className="text-sm font-medium text-gray-900">
-          {mode.badgeHeadline}
-        </span>
-        <p className="text-[10px] text-gray-400">
-          Verified by Reputable
-        </p>
-      </div>
-
-      {/* Chevron */}
-      <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-[#00D1C1] transition-colors" />
-    </button>
-  );
+interface WidgetConfig {
+  brandColor: string;
+  position: "bottom-left" | "bottom-right";
+  mode: string | null;
 }
 
 export default function DynamicProductPage() {
@@ -133,7 +104,25 @@ export default function DynamicProductPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFloatingBadge, setShowFloatingBadge] = useState(true);
-  const [showInlineBadge, setShowInlineBadge] = useState(false); // Off by default - floating is recommended
+  const [showInlineBadge, setShowInlineBadge] = useState(false);
+
+  // Custom widget config from localStorage
+  const [customBrandColor, setCustomBrandColor] = useState<string | null>(null);
+  const [customPosition, setCustomPosition] = useState<"bottom-left" | "bottom-right">("bottom-left");
+
+  // Load custom config from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(getWidgetConfigKey(studyId));
+    if (saved) {
+      try {
+        const config: WidgetConfig = JSON.parse(saved);
+        if (config.brandColor) setCustomBrandColor(config.brandColor);
+        if (config.position) setCustomPosition(config.position);
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+  }, [studyId]);
 
   // Get widget data
   const widgetData = getWidgetDataForStudy(studyId);
@@ -164,16 +153,12 @@ export default function DynamicProductPage() {
     );
   }
 
-  const brandColorClass =
-    productInfo.brandColor === "purple" ? "bg-purple-600" : "bg-green-600";
-  const brandColorHover =
-    productInfo.brandColor === "purple"
-      ? "hover:bg-purple-700"
-      : "hover:bg-green-700";
-  const brandColorLight =
-    productInfo.brandColor === "purple" ? "bg-purple-50" : "bg-green-50";
-  const brandColorText =
-    productInfo.brandColor === "purple" ? "text-purple-600" : "text-green-600";
+  // Transform participants for avatar display
+  const participantAvatars = widgetData.participants.map((p) => ({
+    id: p.id,
+    initials: p.initials,
+    imageUrl: undefined, // Can add real images later
+  }));
 
   return (
     <div className="min-h-screen bg-white">
@@ -197,7 +182,7 @@ export default function DynamicProductPage() {
                 onChange={(e) => setShowFloatingBadge(e.target.checked)}
                 className="rounded"
               />
-              Floating badge (recommended)
+              Floating badge
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
@@ -224,13 +209,13 @@ export default function DynamicProductPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div
-                className={`h-8 w-8 ${brandColorClass} rounded-lg flex items-center justify-center`}
+                className={`h-8 w-8 ${productInfo.brandColorClass} rounded-lg flex items-center justify-center`}
               >
                 <span className="text-white font-bold text-sm">
                   {productInfo.brandName[0]}
                 </span>
               </div>
-              <span className={`text-xl font-bold ${brandColorText}`}>
+              <span className={`text-xl font-bold ${productInfo.brandColorText}`}>
                 {productInfo.brandName}
               </span>
             </div>
@@ -270,11 +255,11 @@ export default function DynamicProductPage() {
           {/* Product Image */}
           <div className="space-y-4">
             <div
-              className={`aspect-square ${brandColorLight} rounded-2xl flex items-center justify-center`}
+              className={`aspect-square ${productInfo.brandColorLight} rounded-2xl flex items-center justify-center`}
             >
               <div className="text-center">
                 <div
-                  className={`h-48 w-48 ${brandColorClass} rounded-full mx-auto mb-4 shadow-lg`}
+                  className={`h-48 w-48 ${productInfo.brandColorClass} rounded-full mx-auto mb-4 shadow-lg`}
                 />
                 <p className="text-sm text-gray-400">[Product Image]</p>
               </div>
@@ -283,7 +268,7 @@ export default function DynamicProductPage() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className={`aspect-square bg-gray-100 rounded-lg cursor-pointer hover:ring-2 ring-${productInfo.brandColor}-400`}
+                  className="aspect-square bg-gray-100 rounded-lg cursor-pointer hover:ring-2 ring-gray-400"
                 />
               ))}
             </div>
@@ -338,10 +323,13 @@ export default function DynamicProductPage() {
             {/* Reputable Widget - INLINE PLACEMENT (optional) */}
             {showInlineBadge && (
               <div className="py-2">
-                <WidgetBadge
-                  mode={bestMode}
+                <InlineBadgeWidget
                   participantCount={widgetData.participantCount}
-                  onClick={() => setIsModalOpen(true)}
+                  studyTitle={widgetData.studyTitle}
+                  badgeHeadline={bestMode.badgeHeadline}
+                  participants={participantAvatars}
+                  brandColor={customBrandColor || productInfo.brandColorHex}
+                  onOpenModal={() => setIsModalOpen(true)}
                 />
               </div>
             )}
@@ -349,7 +337,7 @@ export default function DynamicProductPage() {
             {/* Add to Cart */}
             <div className="space-y-3">
               <Button
-                className={`w-full h-14 text-lg ${brandColorClass} ${brandColorHover} gap-2`}
+                className={`w-full h-14 text-lg ${productInfo.brandColorClass} ${productInfo.brandColorHover} gap-2`}
               >
                 <ShoppingCart className="h-5 w-5" />
                 Add to Cart
@@ -362,15 +350,15 @@ export default function DynamicProductPage() {
             {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Truck className={`h-5 w-5 ${brandColorText}`} />
+                <Truck className={`h-5 w-5 ${productInfo.brandColorText}`} />
                 <span>Free Shipping</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Shield className={`h-5 w-5 ${brandColorText}`} />
+                <Shield className={`h-5 w-5 ${productInfo.brandColorText}`} />
                 <span>2 Year Warranty</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <RotateCcw className={`h-5 w-5 ${brandColorText}`} />
+                <RotateCcw className={`h-5 w-5 ${productInfo.brandColorText}`} />
                 <span>30 Day Returns</span>
               </div>
             </div>
@@ -401,11 +389,14 @@ export default function DynamicProductPage() {
 
       {/* Floating Badge (optional) */}
       {showFloatingBadge && (
-        <div className="fixed bottom-6 left-6 z-40">
+        <div className={`fixed bottom-6 ${customPosition === "bottom-right" ? "right-6" : "left-6"} z-40 max-w-sm`}>
           <FloatingBadgeWidget
             participantCount={widgetData.participantCount}
             studyTitle={widgetData.studyTitle}
             badgeHeadline={bestMode.badgeHeadline}
+            participants={participantAvatars}
+            brandColor={customBrandColor || productInfo.brandColorHex}
+            storageKey={studyId}
             onOpenModal={() => setIsModalOpen(true)}
           />
         </div>
@@ -423,7 +414,7 @@ export default function DynamicProductPage() {
           compensationNote: widgetData.compensationNote,
         }}
         participants={widgetData.participants}
-        verifyPageUrl={`/verify/${studyId}-results`}
+        verifyPageUrl={widgetData.verifyPageUrl}
       />
     </div>
   );
