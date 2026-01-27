@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -33,6 +33,9 @@ import {
   EyeOff,
   UserPlus,
   UserCheck,
+  Link as LinkIcon,
+  Copy,
+  Check,
 } from "lucide-react";
 import type { StudyData } from "./types";
 import {
@@ -45,14 +48,16 @@ import {
   SORTED_LYFEFUEL_STORIES,
 } from "./mock-data";
 import { LaunchChecklist } from "./launch-checklist";
+import { EarlyInsightsCard } from "./early-insights-card";
 import { useStudiesStore } from "@/lib/studies-store";
 import { useCohortStore, getWaitlistStats } from "@/lib/cohort-store";
+import { useEnrollmentStore } from "@/lib/enrollment-store";
 
 interface OverviewTabProps {
   study: StudyData;
   brand: { id: string; name: string } | undefined;
   onOpenPreview: () => void;
-  onNavigateToTab?: (tab: "overview" | "fulfillment" | "compliance" | "results" | "config") => void;
+  onNavigateToTab?: (tab: "overview" | "enrollment" | "fulfillment" | "compliance" | "results" | "config") => void;
 }
 
 export function OverviewTab({ study, brand, onOpenPreview, onNavigateToTab }: OverviewTabProps) {
@@ -167,6 +172,211 @@ export function OverviewTab({ study, brand, onOpenPreview, onNavigateToTab }: Ov
 
   // Get waitlist stats for display
   const waitlistStats = getWaitlistStats(recruitmentState);
+
+  // Check if this is a brand-recruited study
+  const isBrandRecruits = study.fulfillmentModel === "rebate" && study.enrollmentConfig;
+
+  // Get enrollment stats for brand-recruited studies
+  const { getEnrollmentStats } = useEnrollmentStore();
+  const enrollmentStats = isBrandRecruits ? getEnrollmentStats(study.id) : null;
+
+  // State for copy link functionality
+  const [copied, setCopied] = useState(false);
+
+  // Build enrollment URL for brand-recruited studies
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const enrollmentUrl = isBrandRecruits ? `${baseUrl}/join/${study.enrollmentConfig?.enrollmentSlug}` : "";
+
+  // Copy link handler
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(enrollmentUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // ================================================
+  // BRAND-RECRUITED ACTIVE STUDIES - Enrollment-focused dashboard
+  // ================================================
+  if (isBrandRecruits && (study.status === "active" || study.status === "recruiting")) {
+    const enrollmentConfig = study.enrollmentConfig!;
+    return (
+      <div className="space-y-6">
+        {/* Enrollment Status Banner */}
+        <Card className="border-[#00D1C1]/30 bg-gradient-to-r from-[#00D1C1]/5 to-transparent">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#00D1C1]/20 flex items-center justify-center">
+                <Users className="h-5 w-5 text-[#00D1C1]" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">Enrollment is open</p>
+                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Share your enrollment link with customers who purchased your product
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Early Insights - Week 1 baseline data */}
+        <EarlyInsightsCard
+          studyId={study.id}
+          studyCategory={study.category}
+          enrollmentSlug={enrollmentConfig.enrollmentSlug}
+          isDemo={study.isDemo !== false}
+        />
+
+        {/* Enrollment Link Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <LinkIcon className="h-4 w-4 text-[#00D1C1]" />
+              Your Enrollment Link
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm truncate">
+                {enrollmentUrl}
+              </div>
+              <Button
+                onClick={handleCopyLink}
+                variant={copied ? "default" : "outline"}
+                className={copied ? "bg-green-600 hover:bg-green-600" : ""}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Add this link to your post-purchase email or order confirmation page
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Enrollment Stats */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Enrolled
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{enrollmentConfig.enrolledCount || 0}</p>
+              <p className="text-sm text-muted-foreground">of {enrollmentConfig.enrollmentCap} cap</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Signed Up
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {enrollmentStats ? (enrollmentStats.signedUp + enrollmentStats.waiting + enrollmentStats.active + enrollmentStats.completed) : 0}
+              </p>
+              <p className="text-sm text-muted-foreground">completed signup</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Active
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-600">{enrollmentStats?.active || 0}</p>
+              <p className="text-sm text-muted-foreground">in study</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Completed
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-emerald-600">{enrollmentStats?.completed || 0}</p>
+              <p className="text-sm text-muted-foreground">finished</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" size="sm" onClick={() => onNavigateToTab?.("enrollment")}>
+            <Users className="h-4 w-4 mr-2" />
+            View All Enrollments
+          </Button>
+          <Link href={`/admin/studies/${study.id}/edit`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Study
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={onOpenPreview}>
+            <Eye className="h-4 w-4 mr-2" />
+            Preview in App
+          </Button>
+        </div>
+
+        {/* Study Configuration Summary */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Study Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Category</p>
+                <p className="font-medium">{study.categoryLabel}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tier</p>
+                <p className="font-medium">Tier {study.tier}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Target</p>
+                <p className="font-medium">{study.targetParticipants} participants</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Testing Reward</p>
+                <p className="font-medium">${study.rebateAmount}</p>
+              </div>
+            </div>
+            {brand && (
+              <div className="mt-4 pt-4 border-t flex items-center gap-3">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Brand:</span>
+                <span className="font-medium">{brand.name}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // ================================================
   // COMING SOON STUDIES - Waitlist-focused dashboard

@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,8 +12,23 @@ import { ALL_SENSATE_STORIES } from "@/lib/sensate-demo-stories";
 import { SENSATE_REAL_STORIES, getSensateStudyStats } from "@/lib/sensate-real-data";
 import { LYFEFUEL_REAL_STORIES, getLyfefuelStudyStats } from "@/lib/lyfefuel-real-data";
 import { SAMPLE_STORIES_BY_CATEGORY } from "@/lib/sample-stories";
-import type { StudyProtocol } from "@/lib/types";
-import { ArrowLeft, CheckCircle2, Users, TrendingUp, ExternalLink } from "lucide-react";
+import type { StudyProtocol, ParticipantStory } from "@/lib/types";
+import { ArrowLeft, CheckCircle2, Users, TrendingUp, ExternalLink, FlaskConical } from "lucide-react";
+
+// Retrieve simulated story from sessionStorage
+const SIMULATED_STORIES_KEY = 'reputable-simulated-stories';
+
+function getSimulatedStory(verificationId: string): ParticipantStory | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = sessionStorage.getItem(SIMULATED_STORIES_KEY);
+    if (!stored) return null;
+    const stories = JSON.parse(stored);
+    return stories[verificationId] || null;
+  } catch {
+    return null;
+  }
+}
 
 // Study ID to verification ID mapping for demo purposes
 const STUDY_VERIFICATION_MAP: Record<string, { verificationIds: string[], studyTitle: string, productName: string }> = {
@@ -608,6 +624,73 @@ export default function VerifyPage() {
         />
       );
     }
+  }
+
+  // Check if this is a simulated verification ID (XXXXX-SIM-XXX format)
+  const simulatedMatch = id.match(/^([A-Z0-9]+)-SIM-(\d+)$/);
+  if (simulatedMatch) {
+    // Try to retrieve from sessionStorage
+    const simulatedStory = getSimulatedStory(id);
+
+    if (simulatedStory) {
+      // Create a mock testimonial from the simulated story
+      const mockTestimonial: MockTestimonial = {
+        id: parseInt(simulatedMatch[2]),
+        participant: simulatedStory.name,
+        initials: simulatedStory.initials,
+        age: parseInt(simulatedStory.profile.ageRange.split("-")[0]) + 2,
+        location: simulatedStory.profile.location || "Sample City, ST",
+        completedDay: simulatedStory.journey.durationDays,
+        overallRating: simulatedStory.overallRating ?? 4,
+        story: simulatedStory.journey.keyQuotes[simulatedStory.journey.keyQuotes.length - 1]?.quote ||
+               `This product made a real difference for my ${simulatedStory.journey.villainVariable}.`,
+        metrics: simulatedStory.assessmentResult
+          ? [{ label: simulatedStory.assessmentResult.categoryLabel, value: `+${simulatedStory.assessmentResult.change.compositePercent}%`, positive: true }]
+          : [],
+        benefits: ["Improved " + simulatedStory.journey.villainVariable, "Better overall wellbeing"],
+        verified: true,
+        verificationId: simulatedStory.verificationId ?? id,
+        device: simulatedStory.wearableMetrics?.device || "Assessment Only",
+      };
+
+      return (
+        <VerificationPage
+          testimonial={mockTestimonial}
+          studyTitle="Brand-Recruited Study"
+          productName="Study Product"
+          studyDuration={simulatedStory.journey.durationDays}
+          studyId={`sim-${simulatedMatch[1].toLowerCase()}`}
+          story={simulatedStory}
+          hasWearable={simulatedStory.tier <= 2}
+        />
+      );
+    }
+
+    // Simulated story not found in storage - show a helpful message
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <FlaskConical className="h-8 w-8 text-amber-600" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2">Simulated Story Session Expired</h1>
+          <p className="text-muted-foreground mb-6">
+            This is a simulated verification ID ({id}). The story data is only available during the same browser session where it was generated.
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            To view this story, go back to the study&apos;s Results tab and click &quot;View Verified Story&quot; again.
+          </p>
+          <div className="space-y-2">
+            <Button asChild>
+              <Link href="/admin">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Original behavior: look up by verification ID

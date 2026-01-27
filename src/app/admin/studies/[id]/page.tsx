@@ -14,6 +14,8 @@ import {
   Star,
   Package,
   Activity,
+  Users,
+  UserCheck,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
 import { useStudiesStore } from "@/lib/studies-store";
@@ -22,6 +24,8 @@ import { StudyDetailsFullPreview } from "@/components/study-details-full-preview
 import { StudyPreview } from "@/components/study-preview";
 import {
   OverviewTab,
+  EnrollmentTab,
+  ParticipantsTab,
   ResultsTab,
   ConfigTab,
   FulfillmentTab,
@@ -192,26 +196,51 @@ export default function AdminStudyDetailPage() {
     );
   }
 
-  // Tab order follows workflow: Overview → Fulfillment → Compliance → Results → Config
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  // Check if this is a brand-recruited study
+  const isBrandRecruits = study.fulfillmentModel === "rebate" && study.enrollmentConfig;
+
+  // Tab order follows workflow: Overview → [Enrollment for brand-recruits] → Fulfillment → Compliance → Results → Config
+  const baseTabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     {
       id: "overview",
       label: "Overview",
       icon: <BarChart3 className="h-4 w-4" />,
     },
+  ];
+
+  // Add enrollment and participants tabs for brand-recruited studies
+  if (isBrandRecruits) {
+    baseTabs.push({
+      id: "enrollment",
+      label: "Enrollments",
+      icon: <Users className="h-4 w-4" />,
+    });
+    baseTabs.push({
+      id: "participants",
+      label: "Participants",
+      icon: <UserCheck className="h-4 w-4" />,
+    });
+  }
+
+  // Add remaining tabs (exclude Fulfillment/Compliance for brand-recruited studies)
+  const tabs = [
+    ...baseTabs,
+    // Only show Fulfillment/Compliance for Reputable-recruited studies
+    ...(!isBrandRecruits ? [
+      {
+        id: "fulfillment" as TabId,
+        label: "Fulfillment",
+        icon: <Package className="h-4 w-4" />,
+      },
+      {
+        id: "compliance" as TabId,
+        label: "Compliance",
+        icon: <Activity className="h-4 w-4" />,
+      },
+    ] : []),
+    { id: "results" as TabId, label: "Results", icon: <Star className="h-4 w-4" /> },
     {
-      id: "fulfillment",
-      label: "Fulfillment",
-      icon: <Package className="h-4 w-4" />,
-    },
-    {
-      id: "compliance",
-      label: "Compliance",
-      icon: <Activity className="h-4 w-4" />,
-    },
-    { id: "results", label: "Results", icon: <Star className="h-4 w-4" /> },
-    {
-      id: "config",
+      id: "config" as TabId,
       label: "Configuration",
       icon: <Settings className="h-4 w-4" />,
     },
@@ -284,6 +313,28 @@ export default function AdminStudyDetailPage() {
           brand={brand}
           onOpenPreview={() => setShowPreview(true)}
           onNavigateToTab={setActiveTab}
+        />
+      )}
+      {activeTab === "enrollment" && isBrandRecruits && study.enrollmentConfig && (
+        <EnrollmentTab
+          studyId={study.id}
+          studyName={study.name}
+          studyCategory={study.category}
+          enrollmentSlug={study.enrollmentConfig.enrollmentSlug}
+          enrollmentCap={study.enrollmentConfig.enrollmentCap}
+          enrollmentStatus={study.enrollmentConfig.enrollmentStatus}
+          enrolledCount={study.enrollmentConfig.enrolledCount || 0}
+          rebateAmount={study.rebateAmount}
+          isDemo={study.isDemo !== false}
+        />
+      )}
+      {activeTab === "participants" && isBrandRecruits && study.enrollmentConfig && (
+        <ParticipantsTab
+          studyId={study.id}
+          studyName={study.name}
+          enrollmentSlug={study.enrollmentConfig.enrollmentSlug}
+          studyCategory={study.category}
+          isDemo={study.isDemo !== false}
         />
       )}
       {activeTab === "fulfillment" && (

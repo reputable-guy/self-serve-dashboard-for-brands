@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -44,6 +45,28 @@ import {
 } from "./mock-data";
 import { InterimInsights } from "@/components/results/interim-insights";
 import { WidgetSection } from "./widget-section";
+import { useEnrollmentStore } from "@/lib/enrollment-store";
+import { getCompletedStoriesFromEnrollments, categorizeStory } from "@/lib/simulation";
+import type { ParticipantStory } from "@/lib/types";
+
+// Store simulated stories in sessionStorage for verify page access
+const SIMULATED_STORIES_KEY = 'reputable-simulated-stories';
+
+function storeSimulatedStories(stories: ParticipantStory[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = JSON.parse(sessionStorage.getItem(SIMULATED_STORIES_KEY) || '{}');
+    const updated = { ...existing };
+    stories.forEach(story => {
+      if (story.verificationId) {
+        updated[story.verificationId] = story;
+      }
+    });
+    sessionStorage.setItem(SIMULATED_STORIES_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 interface ResultsTabProps {
   study: StudyData;
@@ -57,6 +80,32 @@ export function ResultsTab({ study }: ResultsTabProps) {
 
   // Check if this is a demo study (show mock data) or a real user study (hide mock data)
   const isDemo = (study as { isDemo?: boolean }).isDemo !== false;
+
+  // Check if this is a brand-recruited study
+  const isBrandRecruited = study.fulfillmentModel === "rebate" && study.enrollmentConfig;
+
+  // Get enrollment data for brand-recruited studies
+  const { getEnrollmentsByStudy } = useEnrollmentStore();
+  const enrollments = isBrandRecruited ? getEnrollmentsByStudy(study.id) : [];
+  const completedEnrollments = enrollments.filter(e => e.stage === 'completed');
+
+  // Generate completed stories from enrollments (memoized to keep stable)
+  const completedStories = useMemo(() => {
+    if (!isBrandRecruited) return [];
+    return getCompletedStoriesFromEnrollments(enrollments, study.category);
+  }, [isBrandRecruited, enrollments, study.category]);
+
+  // Store stories in sessionStorage for verify page access
+  useEffect(() => {
+    if (completedStories.length > 0) {
+      storeSimulatedStories(completedStories);
+    }
+  }, [completedStories]);
+
+  // Categorize stories for display
+  const positiveStories = completedStories.filter(s => categorizeStory(s) === 'positive');
+  const neutralStories = completedStories.filter(s => categorizeStory(s) === 'neutral');
+  const negativeStories = completedStories.filter(s => categorizeStory(s) === 'negative');
 
   // Compute currentDay for interim insights
   // For active demo studies without currentDay set, default to day 14 (mid-study)
@@ -261,8 +310,8 @@ export function ResultsTab({ study }: ResultsTabProps) {
         </div>
       )}
 
-      {/* Embeddable Widget Section - Only show for real data studies */}
-      {isRealDataStudy && (
+      {/* Embeddable Widget Section - Show for real data studies and brand-recruited with completed participants */}
+      {(isRealDataStudy || (isBrandRecruited && completedStories.length > 0)) && (
         <WidgetSection studyId={study.id} studyName={study.name} />
       )}
 
@@ -271,11 +320,15 @@ export function ResultsTab({ study }: ResultsTabProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Star className={`h-5 w-5 ${isRealDataStudy ? "text-emerald-500" : "text-yellow-500"}`} />
-              {isRealDataStudy ? "Real Verified Participant Stories" : isLYFEfuelDemoStudy ? "Verified Participant Stories" : "Sample Participant Stories"}
+              <Star className={`h-5 w-5 ${isRealDataStudy ? "text-emerald-500" : (isBrandRecruited && completedStories.length > 0) ? "text-emerald-500" : "text-yellow-500"}`} />
+              {isRealDataStudy ? "Real Verified Participant Stories" :
+               (isBrandRecruited && completedStories.length > 0) ? "Verified Participant Stories" :
+               isLYFEfuelDemoStudy ? "Verified Participant Stories" : "Sample Participant Stories"}
             </h3>
-            <Badge variant="outline" className={`text-xs ${isRealDataStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
-              {isRealDataStudy ? "Real Data" : isLYFEfuelDemoStudy ? "LYFEfuel Demo" : "Demo Data"}
+            <Badge variant="outline" className={`text-xs ${isRealDataStudy ? "bg-emerald-100 text-emerald-700 border-emerald-200" : (isBrandRecruited && completedStories.length > 0) ? "bg-emerald-100 text-emerald-700 border-emerald-200" : ""}`}>
+              {isRealDataStudy ? "Real Data" :
+               (isBrandRecruited && completedStories.length > 0) ? `${completedStories.length} Completed` :
+               isLYFEfuelDemoStudy ? "LYFEfuel Demo" : "Demo Data"}
             </Badge>
           </div>
         </div>
@@ -284,6 +337,8 @@ export function ResultsTab({ study }: ResultsTabProps) {
             ? `These are REAL participant stories from the Sensate study. Includes ${SENSATE_STATS.positive} positive, ${SENSATE_STATS.neutral} neutral, and ${SENSATE_STATS.negative} negative results for credibility.`
             : isLyfefuelRealStudy
             ? `These are REAL participant stories from the LYFEfuel study. Includes ${LYFEFUEL_STATS.positive} positive, ${LYFEFUEL_STATS.neutral} neutral, and ${LYFEFUEL_STATS.negative} negative results for credibility.`
+            : (isBrandRecruited && completedStories.length > 0)
+            ? `Verified participant stories from ${completedStories.length} completed participants. Includes ${positiveStories.length} improved, ${neutralStories.length} mixed, and ${negativeStories.length} no improvement for credibility.`
             : isLYFEfuelDemoStudy
             ? "These stories show the type of verified evidence LYFEfuel can expect from their Daily Essentials studies."
             : "Preview how verified participant stories will appear. Click any card to see the full verification page."}
@@ -385,8 +440,33 @@ export function ResultsTab({ study }: ResultsTabProps) {
           <SensateRealStories stories={SORTED_SENSATE_STORIES} />
         )}
 
-        {/* Generic Mock Participants (demo studies only, non-LYFEfuel, non-Sensate) */}
-        {isDemo && !isLYFEfuelDemoStudy && !isRealDataStudy && (
+        {/* Brand-Recruited Completed Stories */}
+        {isBrandRecruited && completedStories.length > 0 && (
+          <BrandRecruitedStories
+            positiveStories={positiveStories}
+            neutralStories={neutralStories}
+            negativeStories={negativeStories}
+            totalCount={completedStories.length}
+          />
+        )}
+
+        {/* Empty state for brand-recruited with no completed participants */}
+        {isBrandRecruited && completedStories.length === 0 && (
+          <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+            <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">
+              Participant stories will appear here as they complete the study.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {completedEnrollments.length === 0
+                ? "No participants have completed the 28-day study yet."
+                : `${completedEnrollments.length} participant(s) completed - generating stories...`}
+            </p>
+          </div>
+        )}
+
+        {/* Generic Mock Participants (demo studies only, non-LYFEfuel, non-Sensate, non-brand-recruited) */}
+        {isDemo && !isLYFEfuelDemoStudy && !isRealDataStudy && !isBrandRecruited && (
           <div className="grid gap-4 sm:grid-cols-2">
             {participants.map((participant) => (
               <Card
@@ -458,7 +538,7 @@ export function ResultsTab({ study }: ResultsTabProps) {
         )}
 
         {/* Empty state for non-demo studies with no data */}
-        {!isDemo && !isRealDataStudy && !isLYFEfuelDemoStudy && (
+        {!isDemo && !isRealDataStudy && !isLYFEfuelDemoStudy && !isBrandRecruited && (
           <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
             <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
@@ -825,6 +905,161 @@ export function ResultsTab({ study }: ResultsTabProps) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Brand-Recruited Completed Stories Component
+function BrandRecruitedStories({
+  positiveStories,
+  neutralStories,
+  negativeStories,
+  totalCount,
+}: {
+  positiveStories: ParticipantStory[];
+  neutralStories: ParticipantStory[];
+  negativeStories: ParticipantStory[];
+  totalCount: number;
+}) {
+  return (
+    <div className="space-y-8">
+      {/* Improved Section */}
+      {positiveStories.length > 0 && (
+        <StorySection
+          title="Improved"
+          stories={positiveStories}
+          totalCount={totalCount}
+          category="positive"
+          description="Participants with significant improvement in their primary metrics and high satisfaction"
+          renderCard={(story: ParticipantStory) => <CompletedStoryCard key={story.id} story={story} category="positive" />}
+        />
+      )}
+
+      {/* Mixed Results Section */}
+      {neutralStories.length > 0 && (
+        <StorySection
+          title="Mixed Results"
+          stories={neutralStories}
+          totalCount={totalCount}
+          category="neutral"
+          description="Participants with moderate improvements or inconsistent results"
+          renderCard={(story: ParticipantStory) => <CompletedStoryCard key={story.id} story={story} category="neutral" />}
+        />
+      )}
+
+      {/* No Improvement Section */}
+      {negativeStories.length > 0 && (
+        <StorySection
+          title="No Improvement"
+          stories={negativeStories}
+          totalCount={totalCount}
+          category="negative"
+          description="Participants who did not experience significant improvement"
+          renderCard={(story: ParticipantStory) => <CompletedStoryCard key={story.id} story={story} category="negative" />}
+        />
+      )}
+    </div>
+  );
+}
+
+// Completed Story Card for brand-recruited studies
+function CompletedStoryCard({ story, category }: { story: ParticipantStory; category: "positive" | "neutral" | "negative" }) {
+  const borderColor = category === "positive" ? "border-emerald-200" : category === "negative" ? "border-rose-200" : "border-amber-200";
+  const bgColor = category === "positive" ? "bg-emerald-50/30" : category === "negative" ? "bg-rose-50/30" : "bg-amber-50/30";
+
+  const finalRating = story.journey.villainRatings[story.journey.villainRatings.length - 1]?.rating || 3;
+  const initialRating = story.journey.villainRatings[0]?.rating || 2;
+
+  return (
+    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${borderColor} ${bgColor}`}>
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-[#00D1C1]/10 flex items-center justify-center text-sm font-semibold text-[#00D1C1]">
+              {story.initials}
+            </div>
+            <div>
+              <p className="font-medium">{story.name}</p>
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-3 w-3 ${
+                      i < Math.floor(story.overallRating ?? 0)
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="text-right text-xs text-muted-foreground">
+            <p>{story.journey.durationDays} days</p>
+            <p className="text-[#00D1C1]">{story.verificationId}</p>
+          </div>
+        </div>
+
+        {/* Villain Variable & Improvement */}
+        <div className="mb-3 space-y-2">
+          <div className="text-xs text-muted-foreground">
+            Tracking: <span className="font-medium">{story.journey.villainVariable}</span>
+          </div>
+          {story.assessmentResult && (
+            <Badge
+              className={`${
+                category === "positive"
+                  ? "bg-green-100 text-green-700 hover:bg-green-100"
+                  : category === "negative"
+                  ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
+                  : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+              } text-sm px-3 py-1`}
+            >
+              {category === "positive" ? "+" : category === "negative" ? "" : "~"}
+              {Math.abs(story.assessmentResult.change.compositePercent)}% {story.assessmentResult.categoryLabel}
+            </Badge>
+          )}
+        </div>
+
+        {/* Journey Progress */}
+        <div className="mb-3 text-xs">
+          <p className="text-muted-foreground mb-1">Progress: {initialRating}/5 → {finalRating}/5</p>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                category === "positive"
+                  ? "bg-gradient-to-r from-amber-500 to-green-500"
+                  : category === "negative"
+                  ? "bg-gradient-to-r from-rose-400 to-rose-300"
+                  : "bg-gradient-to-r from-amber-400 to-amber-300"
+              }`}
+              style={{ width: `${(finalRating / 5) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Key Quote */}
+        {story.journey.keyQuotes[story.journey.keyQuotes.length - 1] && (
+          <p className="text-sm text-muted-foreground italic mb-4">
+            &quot;{story.journey.keyQuotes[story.journey.keyQuotes.length - 1].quote}&quot;
+          </p>
+        )}
+
+        {/* Profile Tags */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.ageRange}</span>
+          <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{story.profile.lifeStage}</span>
+        </div>
+
+        {/* View Story Button */}
+        <Link href={`/verify/${story.verificationId}`}>
+          <Button variant="outline" size="sm" className="w-full">
+            <ExternalLink className="h-3 w-3 mr-1" />
+            View Verified Story
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 

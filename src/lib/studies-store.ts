@@ -38,6 +38,8 @@ interface StudiesStore {
   getStudyById: (id: string) => Study | undefined;
   getStudy: (id: string) => Study | undefined; // Alias for legacy pages
   getStudiesByBrandId: (brandId: string) => Study[];
+  /** Find a study by its enrollment slug (for brand-recruited studies) */
+  getStudyByEnrollmentSlug: (slug: string) => Study | undefined;
   /** Publish study to catalogue as "Coming Soon" - visible but not yet recruiting */
   publishToCatalogue: (id: string) => void;
   /** Unpublish study from catalogue - reverts from "Coming Soon" back to draft */
@@ -47,6 +49,8 @@ interface StudiesStore {
   launchStudy: (id: string) => void;
   updateLaunchChecklist: (id: string, updates: Partial<LaunchChecklist>) => void;
   initializeLaunchChecklist: (id: string) => void;
+  /** Increment enrolled count for a brand-recruited study */
+  incrementEnrolledCount: (id: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -128,6 +132,12 @@ export const useStudiesStore = create<StudiesStore>()(
 
       getStudiesByBrandId: (brandId) => {
         return get().studies.filter((study) => study.brandId === brandId);
+      },
+
+      getStudyByEnrollmentSlug: (slug) => {
+        return get().studies.find(
+          (study) => study.enrollmentConfig?.enrollmentSlug === slug
+        );
       },
 
       publishToCatalogue: (id) => {
@@ -232,6 +242,22 @@ export const useStudiesStore = create<StudiesStore>()(
                 }
               : study
           ),
+        }));
+      },
+
+      incrementEnrolledCount: (id) => {
+        set((state) => ({
+          studies: state.studies.map((study) => {
+            if (study.id !== id || !study.enrollmentConfig) return study;
+            return {
+              ...study,
+              enrollmentConfig: {
+                ...study.enrollmentConfig,
+                enrolledCount: (study.enrollmentConfig.enrolledCount || 0) + 1,
+              },
+              updatedAt: new Date().toISOString(),
+            };
+          }),
         }));
       },
 

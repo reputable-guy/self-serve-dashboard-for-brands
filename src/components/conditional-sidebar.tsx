@@ -11,11 +11,13 @@ export function ConditionalSidebar() {
   // - Admin routes
   // - Verification pages
   // - Study public pages
+  // - Enrollment pages (public-facing)
   if (
     pathname === "/" ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/verify") ||
-    pathname.startsWith("/study/")
+    pathname.startsWith("/study/") ||
+    pathname.startsWith("/join/")
   ) {
     return null;
   }

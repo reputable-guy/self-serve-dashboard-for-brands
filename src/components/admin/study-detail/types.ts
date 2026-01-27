@@ -52,6 +52,16 @@ export interface StudyData {
     inventoryConfirmed: boolean;
     goLiveAt?: string;
   };
+  // Fulfillment model: "recruited" = Reputable recruits, "rebate" = brand recruits
+  fulfillmentModel?: "recruited" | "rebate";
+  // Enrollment config for brand-recruited studies
+  enrollmentConfig?: {
+    enrollmentCap: number;
+    enrollmentDeadline?: string;
+    enrollmentSlug: string;
+    enrollmentStatus: "draft" | "open" | "paused" | "closed";
+    enrolledCount?: number;
+  };
 }
 
 export interface DemographicItem {
@@ -76,4 +86,4 @@ export interface Demographics {
   wearableDevices: DemographicItem[];
 }
 
-export type TabId = "overview" | "fulfillment" | "compliance" | "results" | "config";
+export type TabId = "overview" | "enrollment" | "participants" | "fulfillment" | "compliance" | "results" | "config";

@@ -128,6 +128,11 @@ interface StudyFormData {
   fulfillmentModel: "recruited" | "rebate";
   shippingProductDescription: string;
 
+  // Enrollment settings (for brand-recruited / "rebate" model)
+  enrollmentCap: number;
+  hasEnrollmentDeadline: boolean;
+  enrollmentDeadline: string;
+
   // Wearable settings (ONLY in Step 1)
   allowNonWearable: boolean;
 
@@ -220,6 +225,9 @@ function AdminStudyCreationContent() {
     targetParticipants: 50,
     fulfillmentModel: "recruited",
     shippingProductDescription: "",
+    enrollmentCap: 75, // Default to 1.5x of default target (50)
+    hasEnrollmentDeadline: false,
+    enrollmentDeadline: "",
     allowNonWearable: true,
     autoConfig: null,
     whatYoullDiscover: [],
@@ -442,11 +450,35 @@ function AdminStudyCreationContent() {
     setExpandedSections((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
+  // Generate URL-friendly slug from product name
+  const generateEnrollmentSlug = (productName: string): string => {
+    const baseSlug = productName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    // Add timestamp suffix to ensure uniqueness
+    const timestamp = Date.now().toString(36);
+    return `${baseSlug}-${timestamp}`;
+  };
+
   // Publish study
   const handlePublish = async () => {
     setIsPublishing(true);
 
     const categoryLabel = selectedCategory?.label || formData.category;
+
+    // Generate enrollment config for brand-recruited studies
+    const enrollmentConfig = formData.fulfillmentModel === "rebate" ? {
+      enrollmentCap: formData.enrollmentCap,
+      enrollmentDeadline: formData.hasEnrollmentDeadline ? formData.enrollmentDeadline : undefined,
+      enrollmentSlug: generateEnrollmentSlug(formData.productName),
+      enrollmentStatus: 'open' as const,
+      enrolledCount: 0,
+    } : undefined;
+
+    // Brand-recruited studies go directly to "active" (enrollment open)
+    // Reputable-recruited studies go to "coming_soon" (build waitlist first)
+    const isBrandRecruits = formData.fulfillmentModel === "rebate";
 
     const study = addStudy({
       name: formData.productName,
@@ -454,7 +486,7 @@ function AdminStudyCreationContent() {
       category: formData.category,
       categoryKey: formData.category,
       categoryLabel: categoryLabel,
-      status: "coming_soon",
+      status: isBrandRecruits ? "active" : "coming_soon",
       tier: tier,
       targetParticipants: formData.targetParticipants,
       startDate: null,
@@ -477,6 +509,7 @@ function AdminStudyCreationContent() {
         formData.fulfillmentModel === "recruited"
           ? formData.shippingProductDescription
           : undefined,
+      enrollmentConfig,
     });
 
     // Clear draft from localStorage
@@ -676,10 +709,22 @@ function AdminStudyCreationContent() {
           max={500}
           className="w-32"
           value={formData.targetParticipants}
-          onChange={(e) => updateFormData({ targetParticipants: parseInt(e.target.value) || 50 })}
+          onChange={(e) => {
+            const newTarget = parseInt(e.target.value) || 50;
+            updateFormData({
+              targetParticipants: newTarget,
+              // Auto-update enrollment cap to 1.5x when target changes (for rebate model)
+              enrollmentCap: formData.fulfillmentModel === "rebate"
+                ? Math.round(newTarget * 1.5)
+                : formData.enrollmentCap
+            });
+          }}
         />
         <p className="text-xs text-muted-foreground">
-          Estimated cost: ${(formData.rebateAmount * formData.targetParticipants).toLocaleString()}
+          {formData.fulfillmentModel === "rebate"
+            ? `Estimated testing rewards: $${(formData.rebateAmount * formData.targetParticipants).toLocaleString()}`
+            : `Estimated cost: $${(formData.rebateAmount * formData.targetParticipants).toLocaleString()}`
+          }
         </p>
       </div>
 
@@ -729,14 +774,18 @@ function AdminStudyCreationContent() {
             </CardContent>
           </Card>
 
-          {/* Rebate Option */}
+          {/* Brand Recruits Option */}
           <Card
             className={`cursor-pointer transition-colors ${
               formData.fulfillmentModel === "rebate"
                 ? "border-primary bg-primary/5"
                 : "hover:border-muted-foreground/50"
             }`}
-            onClick={() => updateFormData({ fulfillmentModel: "rebate" })}
+            onClick={() => updateFormData({
+              fulfillmentModel: "rebate",
+              // Auto-set enrollment cap to 1.5x target when switching
+              enrollmentCap: Math.round(formData.targetParticipants * 1.5)
+            })}
           >
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -754,16 +803,70 @@ function AdminStudyCreationContent() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-primary" />
-                    <span className="font-medium">Participants purchase directly (rebate model)</span>
+                    <span className="font-medium">Your customers</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Participants buy from your site, you provide rebate
+                    You invite customers who&apos;ve purchased. They earn a testing reward for sharing their results.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Enrollment Settings - Only show for brand-recruited model */}
+        {formData.fulfillmentModel === "rebate" && (
+          <Card className="border-dashed border-primary/50 bg-primary/5 mt-4">
+            <CardContent className="pt-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                <Info className="h-4 w-4" />
+                Enrollment Settings
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="enrollmentCap">Enrollment Cap</Label>
+                <Input
+                  id="enrollmentCap"
+                  type="number"
+                  min={formData.targetParticipants}
+                  className="w-32"
+                  value={formData.enrollmentCap}
+                  onChange={(e) => updateFormData({ enrollmentCap: parseInt(e.target.value) || formData.targetParticipants })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Recommend 1.5x your target ({Math.round(formData.targetParticipants * 1.5)}) to account for participants who may not complete
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.hasEnrollmentDeadline}
+                    onCheckedChange={(checked) => updateFormData({ hasEnrollmentDeadline: checked })}
+                  />
+                  <Label>Set enrollment deadline</Label>
+                </div>
+                {formData.hasEnrollmentDeadline && (
+                  <Input
+                    type="date"
+                    value={formData.enrollmentDeadline}
+                    onChange={(e) => updateFormData({ enrollmentDeadline: e.target.value })}
+                    className="w-48"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Optional. Enrollment closes automatically when cap is reached or deadline passes.
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-primary/20">
+                <p className="text-xs text-muted-foreground">
+                  After publishing, you&apos;ll get an enrollment link and email template to share with your customers.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Wearable Settings - ONLY HERE */}
@@ -1281,7 +1384,9 @@ function AdminStudyCreationContent() {
   // ============================================
 
   const renderStep4 = () => {
-    const checklist = [
+    const isBrandRecruits = formData.fulfillmentModel === "rebate";
+
+    const baseChecklist = [
       {
         label: "Brand selected",
         done: !!formData.brandId,
@@ -1298,7 +1403,7 @@ function AdminStudyCreationContent() {
         detail: selectedCategory?.label || "Not set",
       },
       {
-        label: "Rebate amount set",
+        label: "Testing reward set",
         done: formData.rebateAmount > 0,
         detail: `$${formData.rebateAmount} (${heartbeats.total.toLocaleString()} heartbeats)`,
       },
@@ -1308,9 +1413,9 @@ function AdminStudyCreationContent() {
         detail: `${formData.targetParticipants} participants`,
       },
       {
-        label: "Fulfillment model selected",
+        label: "Recruitment model selected",
         done: !!formData.fulfillmentModel,
-        detail: formData.fulfillmentModel === "recruited" ? "Ship to participants" : "Rebate model",
+        detail: isBrandRecruits ? "Your customers (brand recruits)" : "Reputable recruits",
       },
       {
         label: "Study content customized",
@@ -1318,6 +1423,22 @@ function AdminStudyCreationContent() {
         detail: `${formData.whatYoullDiscover.length} discovery points, ${formData.whatYoullDoSections.length} activity sections`,
       },
     ];
+
+    // Add enrollment-specific items for brand-recruited studies
+    const enrollmentChecklist = isBrandRecruits ? [
+      {
+        label: "Enrollment cap set",
+        done: formData.enrollmentCap > 0,
+        detail: `${formData.enrollmentCap} max participants`,
+      },
+      ...(formData.hasEnrollmentDeadline ? [{
+        label: "Enrollment deadline set",
+        done: !!formData.enrollmentDeadline,
+        detail: formData.enrollmentDeadline ? new Date(formData.enrollmentDeadline).toLocaleDateString() : "Not set",
+      }] : []),
+    ] : [];
+
+    const checklist = [...baseChecklist, ...enrollmentChecklist];
 
     const allDone = checklist.every((item) => item.done);
 
@@ -1392,6 +1513,18 @@ function AdminStudyCreationContent() {
                 <p className="text-muted-foreground">Estimated Cost</p>
                 <p className="font-medium">${(formData.rebateAmount * formData.targetParticipants).toLocaleString()}</p>
               </div>
+              {isBrandRecruits && (
+                <>
+                  <div>
+                    <p className="text-muted-foreground">Enrollment Cap</p>
+                    <p className="font-medium">{formData.enrollmentCap} participants</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Recruitment Model</p>
+                    <p className="font-medium">Your customers</p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="pt-4 border-t">
@@ -1415,12 +1548,22 @@ function AdminStudyCreationContent() {
               <Info className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <p className="font-medium text-blue-800 mb-2">What happens when you publish?</p>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Your study will appear in the Reputable app with a &ldquo;Coming Soon&rdquo; badge</li>
-                  <li>• Users can join your waitlist while you prepare for launch</li>
-                  <li>• You&apos;ll control when to start recruiting from the study dashboard</li>
-                  <li>• No participants will be charged until you open recruitment</li>
-                </ul>
+                {isBrandRecruits ? (
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• A unique enrollment page will be created for your study</li>
+                    <li>• You&apos;ll get a shareable link to send to your customers</li>
+                    <li>• Customers who purchase your product can enroll immediately</li>
+                    <li>• You can pause or close enrollment anytime from the dashboard</li>
+                    <li>• Testing rewards are paid directly to participants upon completion</li>
+                  </ul>
+                ) : (
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Your study will appear in the Reputable app with a &ldquo;Coming Soon&rdquo; badge</li>
+                    <li>• Users can join your waitlist while you prepare for launch</li>
+                    <li>• You&apos;ll control when to start recruiting from the study dashboard</li>
+                    <li>• No participants will be charged until you open recruitment</li>
+                  </ul>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1436,12 +1579,12 @@ function AdminStudyCreationContent() {
             {isPublishing ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Publishing...
+                {isBrandRecruits ? "Launching..." : "Publishing..."}
               </>
             ) : (
               <>
                 <Rocket className="h-5 w-5 mr-2" />
-                Publish as Coming Soon
+                {isBrandRecruits ? "Launch Study" : "Publish as Coming Soon"}
               </>
             )}
           </Button>
