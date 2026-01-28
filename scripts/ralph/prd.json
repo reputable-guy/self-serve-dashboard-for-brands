@@ -7,11 +7,11 @@
       "id": "BV-001",
       "title": "Fix ESLint errors for clean quality baseline",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "description": "Fix all 5 existing ESLint errors (unused variables in simulation code). This establishes a clean baseline so Ralph can enforce zero-error policy going forward.",
       "acceptanceCriteria": [
         "`npx next lint` returns zero errors (warnings OK)",
-        "No functional changes — only remove unused imports/variables",
+        "No functional changes \u2014 only remove unused imports/variables",
         "`npx tsc --noEmit` still passes",
         "`npm run build` still succeeds"
       ],
@@ -23,7 +23,7 @@
     },
     {
       "id": "BV-002",
-      "title": "Fix Insights tab — hide missing fields instead of showing hardcoded fallbacks",
+      "title": "Fix Insights tab \u2014 hide missing fields instead of showing hardcoded fallbacks",
       "priority": 2,
       "passes": false,
       "description": "The Insights tab shows identical placeholder data for all 18 real Sensate participants: 'Sleep Quality, Severity 7/10, Struggling for: ongoing, Urgency 6/10, Already Tried: (empty)'. These are hardcoded fallback values. For real data that doesn't have these fields, HIDE the fields entirely instead of showing fake values.",
@@ -31,7 +31,7 @@
         "Real Sensate participants do NOT show identical hardcoded severity/urgency/duration values",
         "Fields without data are hidden, not filled with defaults",
         "Simulated participants with full data still show all fields correctly",
-        "No participant cards look like templates — each shows only its actual data",
+        "No participant cards look like templates \u2014 each shows only its actual data",
         "Build passes"
       ],
       "files": [
@@ -40,7 +40,7 @@
     },
     {
       "id": "BV-003",
-      "title": "Fix Widget tab — product name, real count, no placeholder text",
+      "title": "Fix Widget tab \u2014 product name, real count, no placeholder text",
       "priority": 3,
       "passes": false,
       "description": "Widget tab shows internal study name ('Sensate Sleep & Stress Study (Real Data)') instead of product name. Also shows 'Brand Name' label and 'Product Image' placeholder. Consumer-facing widget must use product/brand names, not internal study names.",
@@ -48,7 +48,7 @@
         "Widget shows brand/product name, not internal study name",
         "No 'Brand Name' or 'Product Image' placeholder text visible",
         "Participant count shows real number from study data",
-        "'undefined people verified' never appears — graceful fallback to 0 or hidden",
+        "'undefined people verified' never appears \u2014 graceful fallback to 0 or hidden",
         "FAQ accordion still works",
         "Build passes"
       ],
@@ -58,12 +58,12 @@
     },
     {
       "id": "BV-004",
-      "title": "Fix verification links — correct routes and valid IDs",
+      "title": "Fix verification links \u2014 correct routes and valid IDs",
       "priority": 4,
       "passes": false,
       "description": "Verification links in Brand View go to broken routes like `/verify/SENSATE--SIM-002/results`. The `/results` suffix doesn't exist as a route. Verification IDs have double-dashes from generated data. Fix all links to use correct route format `/verify/[id]` with valid participant IDs.",
       "acceptanceCriteria": [
-        "All verification links use format `/verify/[valid-id]` — no `/results` suffix",
+        "All verification links use format `/verify/[valid-id]` \u2014 no `/results` suffix",
         "No double-dash IDs in verification links",
         "Links for real participants use their actual verification IDs",
         "Clicking a verification link in the Brand View would reach an existing route",
@@ -97,13 +97,13 @@
       "title": "Add 'Path to Research' section on Overview tab",
       "priority": 6,
       "passes": false,
-      "description": "Customer calls revealed 'retrospective IRB' is the killer pitch — Chris called it 'getting the answer to the test'. Add a visual section to Overview showing how accumulated evidence leads toward study-grade research. Kyle calls it a 'layaway plan on research'. Show progress: X participants → enough signal → retrospective IRB → publishable study.",
+      "description": "Customer calls revealed 'retrospective IRB' is the killer pitch \u2014 Chris called it 'getting the answer to the test'. Add a visual section to Overview showing how accumulated evidence leads toward study-grade research. Kyle calls it a 'layaway plan on research'. Show progress: X participants \u2192 enough signal \u2192 retrospective IRB \u2192 publishable study.",
       "acceptanceCriteria": [
         "Overview tab has a 'Path to Research' or 'Evidence Journey' section",
-        "Shows visual progression: gathering evidence → signal detected → study-ready",
+        "Shows visual progression: gathering evidence \u2192 signal detected \u2192 study-ready",
         "Displays current participant count toward a milestone (e.g., 50, 100)",
         "Brief explanation of retrospective IRB concept in plain language",
-        "Section is visually distinct but not overwhelming — secondary to main results",
+        "Section is visually distinct but not overwhelming \u2014 secondary to main results",
         "Build passes"
       ],
       "files": [
@@ -115,12 +115,12 @@
       "title": "Reframe Insights tab as 'What Your Customers Are Telling You'",
       "priority": 7,
       "passes": false,
-      "description": "From customer calls: Amber (Slacka) is stuck on positioning — 'Is it energy with satiety or satiety with energy?' The demographics and motivation data isn't just analytics, it's market research. Reframe the Insights tab header and sections to emphasize positioning intelligence: why customers bought, what language they use, what motivates them.",
+      "description": "From customer calls: Amber (Slacka) is stuck on positioning \u2014 'Is it energy with satiety or satiety with energy?' The demographics and motivation data isn't just analytics, it's market research. Reframe the Insights tab header and sections to emphasize positioning intelligence: why customers bought, what language they use, what motivates them.",
       "acceptanceCriteria": [
         "Insights tab header/intro reframed around customer understanding, not just study analytics",
         "Motivation and purchase reason data highlighted as positioning intelligence",
         "Section headers use language like 'Why They Bought', 'What They're Saying', 'Who They Are'",
-        "Existing data (demographics, patterns, participant stories) preserved — just reframed",
+        "Existing data (demographics, patterns, participant stories) preserved \u2014 just reframed",
         "Build passes"
       ],
       "files": [
@@ -132,13 +132,13 @@
       "title": "Add Marketing Kit section to Widget tab",
       "priority": 8,
       "passes": false,
-      "description": "All 3 customer calls showed asset creation is table stakes. Kyle is manually creating Instagram carousels and social cards for demos. Add a 'Marketing Kit' section to the Widget tab showing exportable asset previews: social card (aggregate stat), participant spotlight card, Instagram carousel mockup. These are visual previews — actual export can be a follow-up.",
+      "description": "All 3 customer calls showed asset creation is table stakes. Kyle is manually creating Instagram carousels and social cards for demos. Add a 'Marketing Kit' section to the Widget tab showing exportable asset previews: social card (aggregate stat), participant spotlight card, Instagram carousel mockup. These are visual previews \u2014 actual export can be a follow-up.",
       "acceptanceCriteria": [
         "Widget tab has a 'Marketing Kit' or 'Content Assets' section below the widget preview",
         "Shows at least 2 asset preview cards: aggregate stat card + participant spotlight",
         "Each preview shows what it would look like (mock social post format)",
         "Data in previews comes from actual study data (avg improvement, participant quote, etc.)",
-        "Visual design is clean — styled as card previews, not full social media mockups",
+        "Visual design is clean \u2014 styled as card previews, not full social media mockups",
         "Build passes"
       ],
       "files": [
