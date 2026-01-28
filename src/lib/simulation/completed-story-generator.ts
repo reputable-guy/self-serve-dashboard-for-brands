@@ -9,6 +9,7 @@
 import type { ParticipantStory, TierLevel } from '../types';
 import type { Enrollment } from '../enrollment-store';
 import { createAssessmentResult } from '../generators/story-utils';
+import { createSeededRandom } from './seeded-random';
 
 // Outcome types for realistic mix
 export type OutcomeType = 'improved' | 'mixed' | 'no_improvement';
@@ -677,6 +678,22 @@ export function enrollmentToCompletedStory(
 ): ParticipantStory | null {
   if (enrollment.stage !== 'completed' || !enrollment.name) return null;
 
+  // Deterministic: seed Math.random from enrollment ID so same enrollment
+  // always generates the same story (scores, quotes, outcomes)
+  const originalRandom = Math.random;
+  Math.random = createSeededRandom(enrollment.id);
+  try {
+    return _generateStory(enrollment, category, index);
+  } finally {
+    Math.random = originalRandom;
+  }
+}
+
+function _generateStory(
+  enrollment: Enrollment,
+  category: string,
+  index: number
+): ParticipantStory | null {
   const baseline = enrollment.baselineData;
   const outcome = selectOutcome();
   const tier = getCategoryTier(category);
@@ -685,8 +702,8 @@ export function enrollmentToCompletedStory(
   const content = CATEGORY_CONTENT[category] || CATEGORY_CONTENT.default;
   const assessment = CATEGORY_ASSESSMENTS[category] || CATEGORY_ASSESSMENTS.energy;
 
-  // Parse name
-  const nameParts = enrollment.name.split(' ');
+  // Parse name (guaranteed non-null by caller guard)
+  const nameParts = enrollment.name!.split(' ');
   const firstName = nameParts[0];
   const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : '';
   const displayName = `${firstName} ${lastInitial}.`;

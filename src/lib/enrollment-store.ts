@@ -119,7 +119,10 @@ interface EnrollmentStore {
 }
 
 function generateEnrollmentId(): string {
-  return `enroll-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Use Math.random for both parts so the ID is fully deterministic
+  // when Math.random is overridden with a seeded PRNG
+  const pseudoTimestamp = Math.floor(Math.random() * 1e15);
+  return `enroll-${pseudoTimestamp}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 function pickRandom<T>(items: readonly T[]): T {
@@ -146,19 +149,29 @@ function generateParticipantName(): { firstName: string; lastName: string; fullN
 function generateNurtureEvents(studyStartDate: Date, daysInStudy: number, complianceScore: number): NurtureEvent[] {
   const nurtures: NurtureEvent[] = [];
 
+  // Pre-generate ALL random values upfront so PRNG consumption is always
+  // the same regardless of daysInStudy (required for deterministic seeding)
+  const r = {
+    welcomeOpen: Math.random(), welcomeClick: Math.random(),
+    day3Open: Math.random(), day3Click: Math.random(),
+    day7Open: Math.random(), day7Click: Math.random(),
+    day14Open: Math.random(), day14Click: Math.random(),
+    atRiskGate: Math.random(), atRiskOpen: Math.random(), atRiskClick: Math.random(),
+  };
+
   nurtures.push({
     type: 'welcome',
     sentAt: studyStartDate.toISOString(),
-    opened: Math.random() > 0.1,
-    clicked: Math.random() > 0.3,
+    opened: r.welcomeOpen > 0.1,
+    clicked: r.welcomeClick > 0.3,
   });
 
   if (daysInStudy >= 3) {
     nurtures.push({
       type: 'day3_reminder',
       sentAt: new Date(studyStartDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      opened: Math.random() > 0.2,
-      clicked: Math.random() > 0.5,
+      opened: r.day3Open > 0.2,
+      clicked: r.day3Click > 0.5,
     });
   }
 
@@ -166,8 +179,8 @@ function generateNurtureEvents(studyStartDate: Date, daysInStudy: number, compli
     nurtures.push({
       type: 'day7_checkin',
       sentAt: new Date(studyStartDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      opened: Math.random() > 0.3,
-      clicked: Math.random() > 0.6,
+      opened: r.day7Open > 0.3,
+      clicked: r.day7Click > 0.6,
     });
   }
 
@@ -175,18 +188,18 @@ function generateNurtureEvents(studyStartDate: Date, daysInStudy: number, compli
     nurtures.push({
       type: 'day14_milestone',
       sentAt: new Date(studyStartDate.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      opened: Math.random() > 0.3,
-      clicked: Math.random() > 0.6,
+      opened: r.day14Open > 0.3,
+      clicked: r.day14Click > 0.6,
     });
   }
 
   // Add at-risk outreach if compliance is low
-  if (complianceScore < 50 && Math.random() > 0.5) {
+  if (complianceScore < 50 && r.atRiskGate > 0.5) {
     nurtures.push({
       type: 'at_risk_outreach',
       sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      opened: Math.random() > 0.4,
-      clicked: Math.random() > 0.7,
+      opened: r.atRiskOpen > 0.4,
+      clicked: r.atRiskClick > 0.7,
     });
   }
 
@@ -305,7 +318,8 @@ export const useEnrollmentStore = create<EnrollmentStore>()(
 
         if (stage === 'active' || stage === 'started') {
           const studyStartDate = new Date(clickedDate.getTime() + 3 * 24 * 60 * 60 * 1000);
-          const daysInStudy = Math.floor((now.getTime() - studyStartDate.getTime()) / (1000 * 60 * 60 * 24));
+          // Derive daysInStudy from daysAgo (deterministic) rather than wall-clock time
+          const daysInStudy = Math.max(1, daysAgo - 3);
 
           const complianceLevel = Math.random();
           if (complianceLevel > 0.7) {
