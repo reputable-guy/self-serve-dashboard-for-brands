@@ -228,7 +228,7 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
             avgImprovement !== null
               ? isRealData && completedStories[0]?.wearableMetrics?.hrvChange
                 ? "HRV"
-                : `${study.categoryLabel || "Stress & Sleep"} Score`
+                : `${study.categoryLabel || "Wellness"} Score`
               : isPreLaunch
                 ? "Not yet started"
                 : `of ${studyDays} days`
@@ -438,8 +438,10 @@ function FeaturedResultCard({
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {category === "sleep" || category === "stress"
-                        ? "Stress & Sleep Score"
+                      {category === "sleep" ? "Sleep Score"
+                        : category === "stress" ? "Stress Score"
+                        : category === "energy" ? "Energy Score"
+                        : category === "anxiety" ? "Anxiety Score"
                         : "Wellness Score"}
                     </p>
                   </div>

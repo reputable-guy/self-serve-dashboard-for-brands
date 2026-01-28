@@ -133,10 +133,10 @@ export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) 
             {n === 1
               ? "Your first customer story — learn who's buying and why"
               : n < PATTERNS_THRESHOLD
-              ? `${n} customers — their stories are building your positioning`
+              ? `${n} customers — their stories are building your picture`
               : n < AGGREGATES_THRESHOLD
-              ? `${n} customers — patterns in who buys and why they buy`
-              : `${n} customers — full positioning intelligence available`}
+              ? `${n} customers — patterns emerging in who buys and why`
+              : `${n} customers — see who's buying, why, and what they've tried before`}
           </p>
         </div>
         <Badge variant="outline" className="text-[#00D1C1]">

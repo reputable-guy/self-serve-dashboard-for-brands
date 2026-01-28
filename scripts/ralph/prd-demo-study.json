@@ -1,0 +1,121 @@
+{
+  "name": "Demo Study Polish — Brand View Demo-Ready",
+  "version": "1.0",
+  "created": "2026-01-28",
+  "goal": "Make one demo study consistently showcase the full richness of the Brand View for customer calls with Amber, Chris, Michael, etc.",
+  "context": {
+    "investigation_findings": [
+      "Simulation pipeline already generates rich data: hero symptoms, failed alternatives, urgency levels, wearable baselines, journey quotes, emerging patterns, positioning intelligence",
+      "Insights tab with seeded data is EXCELLENT — live activity feed, emerging patterns, 'Why They Bought', 'Who They Are' all working",
+      "Main gaps: only 1/30 completed (Results tab empty), +137% avg improvement unrealistic, data changes every reseed (not stable for demos)",
+      "Participant cards now show 'In their own words' quotes without expanding (fixed in this session)"
+    ],
+    "decision": "Fix the simulation seeder to produce a demo-ready stable dataset, rather than building a hand-crafted dataset from scratch. The simulation already generates 90% of what we need — we just need better defaults.",
+    "buyer_persona": "Curious DTC founder (Amber, Chris, Michael) seeing this for the first time. Not skeptical enterprise VP.",
+    "competitive_reference": "FrontrowMD — trust-first, named sources, clean modal",
+    "category": "sleep (first category, iterate then extend)"
+  },
+  "learnings_from_prior_iterations": {
+    "data_accuracy": "Every computed number must be cross-checked against ground truth. Run validate-data.ts equivalent before presenting.",
+    "qa_is_artifact": "Fill QA-CHECKLIST.md with specific values. No 'Browser QA ✅' without evidence.",
+    "right_study": "Demo study gets the investment. Real Sensate study stays as-is with honest limitations.",
+    "best_results_first": "Always sort by positive outcomes. Featured participant must have best result.",
+    "click_everything": "Widget must open modal. Verification links must resolve. FAQ must expand. Carousel must navigate.",
+    "write_during_not_after": "Persist learnings to memory files during work, not at end of session."
+  },
+  "stories": [
+    {
+      "id": "DEMO-001",
+      "title": "Fix simulation completion ratio for demo seeding",
+      "priority": "P0",
+      "description": "When seeding '30 participants (full demo)', ensure a realistic mix: ~8 completed, ~15 active (various days), ~7 enrolled/baseline. Currently only 1/30 completes.",
+      "acceptance_criteria": [
+        "30-participant seed produces 6-10 completed participants",
+        "Completed participants have full assessment + wearable endpoint data",
+        "Active participants show various study days (day 3, day 10, day 21, etc.)",
+        "Some enrolled participants still in baseline/signing up"
+      ],
+      "quality_check": "Seed, count completed. Must be 6-10. Check Results tab shows 6+ before/after cards."
+    },
+    {
+      "id": "DEMO-002", 
+      "title": "Cap simulated assessment improvements at realistic levels",
+      "priority": "P0",
+      "description": "+137% improvement is not credible. Real Sensate data showed +2% avg HRV. Simulated sleep scores should show 15-40% improvement range for positive outcomes, with some neutral/negative.",
+      "acceptance_criteria": [
+        "Avg improvement for completed participants is 15-35% (not 100%+)",
+        "Individual improvements range from -5% to +50%",
+        "Featured result shows best outcome (30-50% range)",
+        "At least 1-2 neutral/negative outcomes for honesty"
+      ],
+      "quality_check": "Check avg improvement hero card. Must be +15% to +35%. Check individual cards — no +100%+ improvements."
+    },
+    {
+      "id": "DEMO-003",
+      "title": "Make demo seed deterministic (stable for repeatable demos)",
+      "priority": "P0",
+      "description": "Demo data changes every reseed. For customer calls, Pankaj needs the same data every time. Use seeded PRNG based on study ID so the same study always generates the same participants, names, scores, quotes.",
+      "acceptance_criteria": [
+        "Seeding study-sensate-sleep twice produces identical participant data",
+        "Names, scores, quotes, stages are all deterministic",
+        "Different studies (study-sensate-stress) produce different but also deterministic data",
+        "'Reseed' button regenerates the same data (idempotent)"
+      ],
+      "quality_check": "Seed → screenshot → Reset → Seed again → screenshot. Compare. Must be identical."
+    },
+    {
+      "id": "DEMO-004",
+      "title": "Results tab shows rich before/after cards for completed participants",
+      "priority": "P1",
+      "description": "With 6-10 completions from DEMO-001, the Results tab should show compelling before/after cards sorted by best results first. Include assessment scores + wearable metrics + testimonial quotes.",
+      "acceptance_criteria": [
+        "Results tab shows 6+ participant cards",
+        "Cards sorted: positive outcomes first",
+        "Each card shows: assessment score change, testimonial quote, star rating, Verified Results link",
+        "Outcome Distribution chart shows realistic split (60-70% positive, 20% neutral, 10-15% negative)",
+        "Consistent green Completed badges"
+      ],
+      "quality_check": "Screenshot Results tab. Verify sort order matches best-to-worst. Verify Outcome Distribution percentages are realistic."
+    },
+    {
+      "id": "DEMO-005",
+      "title": "Widget tab shows working preview with demo data",
+      "priority": "P1",
+      "description": "Widget badge should show completed count, modal should open with sorted participants, verification link should work.",
+      "acceptance_criteria": [
+        "Widget shows '[N] people verified this product' with completed count",
+        "Click opens VerificationModal with top 6 participants (best results first)",
+        "Verification page link resolves (not 404)",
+        "Product name is clean (no internal suffixes)",
+        "Marketing Kit cards use real demo data"
+      ],
+      "quality_check": "Click widget → modal opens. Click verification link → page loads. Check participant order in modal."
+    },
+    {
+      "id": "DEMO-006",
+      "title": "Polish copy for demo clarity",
+      "priority": "P2",
+      "description": "Small copy fixes from Theban's feedback: 'full positioning intelligence available' is unclear, Overview category label should match study.",
+      "acceptance_criteria": [
+        "Insights subheader is clear for non-technical audience",
+        "Avg Improvement label says 'Sleep Score' (not 'Stress & Sleep Score') for sleep studies",
+        "No jargon that a DTC founder wouldn't understand"
+      ],
+      "quality_check": "Read every heading and label. Ask: would Amber (Slacka founder) understand this without explanation?"
+    }
+  ],
+  "out_of_scope": [
+    "New brand creation (use existing Sensate Sleep demo study)",
+    "Custom participant photos/avatars",
+    "Export/download functionality",
+    "Judge Me / Revo integrations",
+    "ROI dashboard (parked per founder)",
+    "Video content support"
+  ],
+  "process": {
+    "execution": "Ralph loop for DEMO-001 through DEMO-003 (simulation code changes). Manual for DEMO-004 through DEMO-006 (verification + polish).",
+    "self_review": "Fill QA-CHECKLIST.md artifact after each P0 story. Browser verification for all tabs.",
+    "data_validation": "After simulation changes, run equivalent of validate-data.ts to verify score ranges.",
+    "presentation": "Screenshot all 4 tabs + widget modal. Compare against Theban's original feedback. Present what I built + what I caught + decisions made."
+  }
+}

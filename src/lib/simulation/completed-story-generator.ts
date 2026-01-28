@@ -710,7 +710,7 @@ export function enrollmentToCompletedStory(
   }));
 
   // Generate assessment scores based on outcome
-  const baselineScore = baseline?.assessmentData?.compositeScore || (35 + Math.floor(Math.random() * 20));
+  const baselineScore = baseline?.assessmentData?.compositeScore || (40 + Math.floor(Math.random() * 20));
   let endpointScore: number;
   let baselineRaw: number;
   let endpointRaw: number;
@@ -719,23 +719,23 @@ export function enrollmentToCompletedStory(
     // Higher is better (energy, focus, sleep, etc.)
     baselineRaw = Math.floor(baselineScore / 10);
     if (outcome === 'improved') {
-      endpointScore = Math.min(95, baselineScore + 35 + Math.floor(Math.random() * 15));
+      endpointScore = Math.min(95, Math.round(baselineScore * (1.15 + Math.random() * 0.25)));
       endpointRaw = Math.min(10, baselineRaw + 4 + Math.floor(Math.random() * 2));
     } else if (outcome === 'mixed') {
-      endpointScore = baselineScore + 10 + Math.floor(Math.random() * 15);
+      endpointScore = Math.round(baselineScore * (1.0 + Math.random() * 0.12));
       endpointRaw = Math.min(10, baselineRaw + 1 + Math.floor(Math.random() * 2));
     } else {
       endpointScore = baselineScore + Math.floor(Math.random() * 5) - 2;
       endpointRaw = baselineRaw + Math.floor(Math.random() * 2) - 1;
     }
   } else {
-    // Lower is better (stress, anxiety)
+    // Lower is better (stress, anxiety) — improvement means the score goes DOWN
     baselineRaw = Math.min(10, Math.max(1, 10 - Math.floor(baselineScore / 10)));
     if (outcome === 'improved') {
-      endpointScore = Math.min(95, baselineScore + 35 + Math.floor(Math.random() * 15));
+      endpointScore = Math.max(5, Math.round(baselineScore * (0.60 + Math.random() * 0.25)));
       endpointRaw = Math.max(1, baselineRaw - 4 - Math.floor(Math.random() * 2));
     } else if (outcome === 'mixed') {
-      endpointScore = baselineScore + 10 + Math.floor(Math.random() * 15);
+      endpointScore = Math.max(5, Math.round(baselineScore * (0.88 + Math.random() * 0.12)));
       endpointRaw = Math.max(1, baselineRaw - 1 - Math.floor(Math.random() * 2));
     } else {
       endpointScore = baselineScore + Math.floor(Math.random() * 5) - 2;

@@ -14,6 +14,7 @@ import { Sparkles, RotateCcw } from "lucide-react";
 import type { BrandViewTab } from "./types";
 import type { StudyData } from "@/components/admin/study-detail/types";
 import type { ParticipantStory } from "@/lib/types";
+import { createSeededRandom } from "@/lib/simulation/seeded-random";
 
 // Real data imports
 import { SENSATE_REAL_STORIES } from "@/lib/sensate-real-data";
@@ -46,8 +47,7 @@ export function BrandViewShell({
 
   // Select the raw enrollments array (stable reference) and derive counts via useMemo
   const allEnrollments = useEnrollmentStore((s) => s.enrollments);
-  const simulateBatch = useEnrollmentStore((s) => s.simulateBatch);
-  const simulateBaselineBatch = useEnrollmentStore((s) => s.simulateBaselineBatch);
+  const addSimulatedEnrollment = useEnrollmentStore((s) => s.addSimulatedEnrollment);
   const resetEnrollments = useEnrollmentStore((s) => s.resetEnrollments);
 
   const studyEnrollments = useMemo(
@@ -72,18 +72,40 @@ export function BrandViewShell({
       // Reset first to avoid duplicates
       resetEnrollments();
 
-      const counts = { small: 5, medium: 15, full: 30 };
-      const count = counts[size];
+      // Explicit stage distributions for each size
+      type StageDist = { completed: number; active: number; signed_up: number; waiting: number };
+      const distributions: Record<typeof size, StageDist> = {
+        full:   { completed: 8,  active: 15, signed_up: 4, waiting: 3 },
+        medium: { completed: 3,  active: 8,  signed_up: 2, waiting: 2 },
+        small:  { completed: 1,  active: 3,  signed_up: 1, waiting: 0 },
+      };
 
-      // Use simulateBaselineBatch for most (these get baseline data)
-      // and simulateBatch for the rest (random stages)
-      const baselineCount = Math.floor(count * 0.7);
-      const batchCount = count - baselineCount;
+      const dist = distributions[size];
 
-      simulateBaselineBatch(study.id, enrollmentSlug, baselineCount, category);
-      simulateBatch(study.id, enrollmentSlug, batchCount, category);
+      // Temporarily override Math.random with a seeded PRNG so the same
+      // study always produces identical simulated participants.
+      const originalRandom = Math.random;
+      Math.random = createSeededRandom(study.id);
+
+      try {
+        const stages: Array<[keyof StageDist, number]> = [
+          ["completed", dist.completed],
+          ["active", dist.active],
+          ["signed_up", dist.signed_up],
+          ["waiting", dist.waiting],
+        ];
+
+        for (const [stage, count] of stages) {
+          for (let i = 0; i < count; i++) {
+            addSimulatedEnrollment(study.id, enrollmentSlug, stage, category);
+          }
+        }
+      } finally {
+        // Always restore the original Math.random
+        Math.random = originalRandom;
+      }
     },
-    [study.id, enrollmentSlug, category, simulateBatch, simulateBaselineBatch, resetEnrollments]
+    [study.id, enrollmentSlug, category, addSimulatedEnrollment, resetEnrollments]
   );
 
   const handleTabChange = useCallback((tab: BrandViewTab) => {
