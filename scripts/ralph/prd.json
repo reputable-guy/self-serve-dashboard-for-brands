@@ -96,7 +96,7 @@
       "id": "BV-006",
       "title": "Add 'Path to Research' section on Overview tab",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "description": "Customer calls revealed 'retrospective IRB' is the killer pitch \u2014 Chris called it 'getting the answer to the test'. Add a visual section to Overview showing how accumulated evidence leads toward study-grade research. Kyle calls it a 'layaway plan on research'. Show progress: X participants \u2192 enough signal \u2192 retrospective IRB \u2192 publishable study.",
       "acceptanceCriteria": [
         "Overview tab has a 'Path to Research' or 'Evidence Journey' section",
@@ -114,7 +114,7 @@
       "id": "BV-007",
       "title": "Reframe Insights tab as 'What Your Customers Are Telling You'",
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "description": "From customer calls: Amber (Slacka) is stuck on positioning \u2014 'Is it energy with satiety or satiety with energy?' The demographics and motivation data isn't just analytics, it's market research. Reframe the Insights tab header and sections to emphasize positioning intelligence: why customers bought, what language they use, what motivates them.",
       "acceptanceCriteria": [
         "Insights tab header/intro reframed around customer understanding, not just study analytics",
@@ -131,7 +131,7 @@
       "id": "BV-008",
       "title": "Add Marketing Kit section to Widget tab",
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "description": "All 3 customer calls showed asset creation is table stakes. Kyle is manually creating Instagram carousels and social cards for demos. Add a 'Marketing Kit' section to the Widget tab showing exportable asset previews: social card (aggregate stat), participant spotlight card, Instagram carousel mockup. These are visual previews \u2014 actual export can be a follow-up.",
       "acceptanceCriteria": [
         "Widget tab has a 'Marketing Kit' or 'Content Assets' section below the widget preview",

@@ -7,17 +7,82 @@ Started: 2026-01-28
 - Categories: always use `getCategory()` / `getCategoryLabel()` from `@/lib/categories.ts`
 - Real data: stories with `dataSource: 'real'` are sacred — never modify or overwrite
 - Assessment field: `assessmentResult` (singular) on completed story objects, NOT `assessmentResults` (plural)
-- Zustand selectors: never call `store((s) => s.someMethod(arg))` that returns a new array/object each time — causes infinite re-renders. Select stable refs, derive with `useMemo`.
-- Zustand side effects: never call `set()` during render. Use `useEffect` for computed state updates.
+- Zustand selectors: never call `store((s) => s.someMethod(arg))` that returns new array/object — infinite re-renders. Select stable refs, derive with `useMemo`.
+- Zustand side effects: never call `set()` during render. Use `useEffect` for computed state
 - Consumer-facing views (widget, verification): use product name, not internal study name
-- Missing data fields: HIDE the UI element, never show hardcoded fallbacks (e.g., "Severity 7/10")
-- `categorizeStory()`: must handle both real data shape AND simulated data shape. Real data has `finalTestimonial.overallRating`, not `overallRating` at story root. Real data has empty `villainRatings`.
-- Verification links: route is `/verify/[id]` — no `/results` suffix. Verification IDs must match existing participant IDs.
-- ESLint: 5 existing unused-var errors in simulation code (baseline-generator.ts, enrollment-store.ts, early-insights-store.ts). Don't add more.
+- Missing data fields: HIDE the UI element, never show hardcoded fallbacks
+- `categorizeStory()`: handles both data shapes. Real → `finalTestimonial.overallRating`. Simulated → root `overallRating`.
+- Verification links: route is `/verify/[id]` for individual, `/verify/[id]/results` for study aggregate
+- ESLint: underscore prefix `_` not recognized by config — must actually remove unused variables, not prefix
+- `generateVerificationId()`: replaced `-` with `_` in study prefix to prevent double-dashes
+- Brand View shell passes `brand` object — use it for consumer-facing names, not study.name
+- ParticipantInsightCard: `heroSymptomSeverity`, `painDuration`, `desperationLevel` are optional — set to undefined to hide
 
 ## Learnings from Pre-Ralph Build (Jan 28)
-- Built Brand View (4 tabs: Overview, Insights, Results, Widget) — all compile and render
-- 8 bugs caught by founder review, not by self-review. Root cause: no QA step, no UX review step, single data path testing.
-- Sub-agent critiques (4 agents) created noise — wrong buyer persona assumed (enterprise VP, not curious DTC founder). Max 2 agents, include persona + competitive refs.
-- The Brand View IS the product being sold — Pankaj demos it to Amber, Chris, Michael on sales calls. Every improvement shows up in the next demo.
+- Built Brand View (4 tabs: Overview, Insights, Results, Widget)
+- 8 bugs caught by founder review, not self-review
+- Sub-agent critiques (4 agents) created noise — wrong buyer persona
+- The Brand View IS the product being sold on sales calls
+
 ---
+
+## 2026-01-28 15:40 - BV-001
+- Fixed all ESLint errors across 14 files (29 errors total, not 5 as initially estimated)
+- Approach: removed unused variables and imports entirely (underscore prefix not recognized by config)
+- Files: early-insights-store.ts, enrollment-store.ts, baseline-generator.ts, enrollment-tab.tsx, participants-tab.tsx, participant-story-card.tsx, emerging-patterns-card.tsx, brand-insights-tab.tsx, brand-overview-tab.tsx, brand-results-tab.tsx, brand-widget-tab.tsx, join/[slug]/page.tsx, verify/[id]/page.tsx
+- **Learning:** ESLint config doesn't have `argsIgnorePattern: "^_"` — must actually remove, not prefix
+
+---
+
+## 2026-01-28 15:42 - BV-002
+- Removed hardcoded `heroSymptomSeverity: 7`, `painDuration: "ongoing"`, `desperationLevel: 6` from real data cards
+- Set to `undefined` so ParticipantStoryCard conditionally hides them
+- Fixed `triedBefore` → `triedOther` (actual field name on baseline type)
+- **Learning:** Always check the actual TypeScript type before referencing field names
+
+---
+
+## 2026-01-28 15:44 - BV-003 + BV-004
+- Widget tab: added `brandName` prop, replaced "Brand Name" with actual brand name
+- Widget tab: product title now strips "(Real Data)" suffix and "Study" text from study name
+- Product image placeholder: replaced text with icon + "Your Product" label
+- Verification ID generator: replaced dashes with underscores to prevent double-dash in IDs
+- Shell updated to pass `brandName={brand?.name}` to BrandWidgetTab
+- **Learning:** Always pass brand context to consumer-facing components
+
+---
+
+## 2026-01-28 15:45 - BV-005
+- Verified categorizeStory() already works correctly for real data
+- Traced logic: NPS scores map to stars via npsToStars(), HRV path handles real data properly
+- Result: 15 positive, 2 neutral, 1 negative (correct distribution)
+- No code change needed — the earlier assessmentResult fix resolved this
+
+---
+
+## 2026-01-28 15:47 - BV-006
+- Added PathToResearchCard component to Overview tab
+- Three milestones: 10 (Early Signal), 30 (Strong Evidence), 100 (Research Ready)
+- Visual progress: milestone circles with check marks + progress bar
+- Dynamic copy based on participant count stage
+- Uses "layaway plan on research" framing from Kyle's sales calls
+- **Learning:** This is the feature that differentiates us from review platforms
+
+---
+
+## 2026-01-28 15:48 - BV-007
+- Reframed Insights tab header: "Customer Insights" → "What Your Customers Are Telling You"
+- Reframed subheaders: "Participant Stories" → "Who They Are & What They're Saying"
+- "Top Motivations" → "Why They Bought"
+- "Age Distribution" → "Who They Are"
+- Waiting state: reframed as positioning intelligence discovery
+- **Learning:** Same data, different framing = different perceived value
+
+---
+
+## 2026-01-28 15:50 - BV-008
+- Added Marketing Kit section to Widget tab (between embed code and FAQ)
+- Two asset previews: Aggregate stat card (teal gradient) + Participant spotlight card
+- Uses real data when available (participant initials, names, quotes)
+- "Export coming soon" messaging — this is a preview, not functional export
+- **Learning:** Kyle manually creates these assets for every demo call — this feature directly reduces his workload
