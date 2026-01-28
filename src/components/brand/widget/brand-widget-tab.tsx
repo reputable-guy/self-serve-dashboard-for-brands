@@ -32,6 +32,7 @@ import {
   Star,
 } from "lucide-react";
 import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
+import { VerificationModal } from "@/components/widgets/verification-modal";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import type { ParticipantStory } from "@/lib/types";
 
@@ -45,7 +46,7 @@ interface BrandWidgetTabProps {
 export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: BrandWidgetTabProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [, setShowWidgetModal] = useState(false);
+  const [showWidgetModal, setShowWidgetModal] = useState(false);
 
   const isRealData = !!realStories && realStories.length > 0;
 
@@ -89,6 +90,36 @@ export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: B
       ? `${completedCount} people verified this product`
       : `${participantCount} people are testing this product`
     : "Verified by real participants";
+
+  // Build modal participant previews from real stories or demo data
+  // Sort by best HRV improvement first so the modal shows positive results
+  const modalParticipants = useMemo(() => {
+    if (isRealData) {
+      const sorted = [...realStories].sort((a, b) => {
+        const aChange = a.wearableMetrics?.hrvChange?.changePercent ?? 0;
+        const bChange = b.wearableMetrics?.hrvChange?.changePercent ?? 0;
+        return bChange - aChange;
+      });
+      return sorted.slice(0, 6).map((s) => ({
+        id: s.id,
+        name: s.name || "Participant",
+        initials: s.initials || s.name?.[0] || "?",
+        rating: s.finalTestimonial?.overallRating || s.overallRating || 4,
+        primaryMetric: {
+          label: s.wearableMetrics?.hrvChange
+            ? `HRV (${s.wearableMetrics.hrvChange.changePercent > 0 ? "+" : ""}${s.wearableMetrics.hrvChange.changePercent}%)`
+            : "Completed",
+          value: s.wearableMetrics?.hrvChange
+            ? `${s.wearableMetrics.hrvChange.after} ms`
+            : "28 days",
+        },
+        quote: s.finalTestimonial?.quote || "Completed the full study.",
+        device: s.wearableMetrics?.device || "Oura Ring",
+        verificationId: s.verificationId || s.id,
+      }));
+    }
+    return [];
+  }, [isRealData, realStories]);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   // Real data studies link to their results page, demo studies link to verify
@@ -447,6 +478,21 @@ export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: B
           </div>
         </CardContent>
       </Card>
+
+      {/* Verification Modal — opens when widget badge is clicked */}
+      <VerificationModal
+        isOpen={showWidgetModal}
+        onClose={() => setShowWidgetModal(false)}
+        study={{
+          title: studyName,
+          participantCount: completedCount || participantCount,
+          durationDays: 28,
+          wearableType: "Oura Ring",
+          compensationNote: "Participants received a rebate for completing the study.",
+        }}
+        participants={modalParticipants}
+        verifyPageUrl={verifyUrl}
+      />
     </div>
   );
 }

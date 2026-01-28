@@ -56,6 +56,31 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
 
   const totalCompleted = completedStories.length;
 
+  // Sort stories: positive first (by improvement %), then neutral, then negative
+  const sortedStories = useMemo(() => {
+    const getImprovement = (s: ParticipantStory): number => {
+      // For real data with wearable metrics, use HRV
+      if (s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
+        return s.wearableMetrics.hrvChange.changePercent;
+      }
+      // For simulated, use assessment
+      const assess = s.assessmentResults?.[0] || s.assessmentResult;
+      if (assess?.change?.compositePercent !== undefined) {
+        return assess.change.compositePercent;
+      }
+      return 0;
+    };
+
+    return [...completedStories].sort((a, b) => {
+      const catA = categorizeStory(a);
+      const catB = categorizeStory(b);
+      const order = { positive: 0, neutral: 1, negative: 2 };
+      if (order[catA] !== order[catB]) return order[catA] - order[catB];
+      // Within same category, sort by improvement descending
+      return getImprovement(b) - getImprovement(a);
+    });
+  }, [completedStories]);
+
   // No results yet
   if (totalCompleted === 0) {
     return <ResultsWaiting />;
@@ -100,23 +125,23 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
         />
       </div>
 
-      {/* Featured Before/After Story (first positive story) */}
-      {categorized.positive[0] && (
+      {/* Featured Before/After Story (best positive story) */}
+      {sortedStories[0] && (
         <BeforeAfterCard
-          story={categorized.positive[0]}
+          story={sortedStories[0]}
           category={category}
           variant="featured"
         />
       )}
 
-      {/* More Stories Grid */}
-      {completedStories.length > 1 && (
+      {/* More Stories Grid — sorted: positive first, then neutral, then negative */}
+      {sortedStories.length > 1 && (
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-3">
             More Participant Results
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {completedStories.slice(1, 5).map((story) => (
+            {sortedStories.slice(1, 7).map((story) => (
               <BeforeAfterCard
                 key={story.id}
                 story={story}
@@ -200,7 +225,6 @@ function BeforeAfterCard({
   category: string;
   variant: "featured" | "compact";
 }) {
-  const storyCategory = categorizeStory(story);
   const isFeatured = variant === "featured";
   
   // Get assessment results if available (singular or plural field)
@@ -238,13 +262,7 @@ function BeforeAfterCard({
           </div>
           <Badge
             variant="outline"
-            className={
-              storyCategory === "positive"
-                ? "text-emerald-600 border-emerald-200 bg-emerald-50"
-                : storyCategory === "neutral"
-                ? "text-gray-600 border-gray-200"
-                : "text-amber-600 border-amber-200 bg-amber-50"
-            }
+            className="text-emerald-600 border-emerald-200 bg-emerald-50"
           >
             <CheckCircle2 className="h-3 w-3 mr-1" />
             Completed

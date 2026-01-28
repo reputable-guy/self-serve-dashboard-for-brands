@@ -86,3 +86,39 @@ Started: 2026-01-28
 - Uses real data when available (participant initials, names, quotes)
 - "Export coming soon" messaging — this is a preview, not functional export
 - **Learning:** Kyle manually creates these assets for every demo call — this feature directly reduces his workload
+
+---
+
+## 2026-01-28 16:30 - POST-REVIEW RETROSPECTIVE (Theban tested iteration 2)
+
+### Bugs Found by Theban (Not by Self-Review)
+1. Avg Improvement shows +32% HRV — actual is ~4%. Non-deterministic (changes on reload).
+2. Results tab highlights participants with WORST results first (Leah -19%, Stewart -10%, Julian -1%)
+3. Widget click does nothing — never tested
+4. "In their own words" hidden behind "View whole profile" — best content buried
+5. "Who They Are" only shows age ranges — shallow for "positioning intelligence"
+6. Inconsistent Completed badge colors across participant cards
+
+### Root Causes
+- **No data cross-check:** Never compared computed avg (32%) against known ground truth (4%)
+- **Metric polarity blind:** getImprovementPercent() treats all change% the same — for HRV, decrease = BAD but code sorts by highest change%
+- **"QA" was visual scan, not verification:** Loaded pages, didn't click widget, didn't verify numbers
+- **Built on wrong study:** Sensate (old platform, limited data) instead of a new demo study
+
+### Process Fix
+- Created QA-CHECKLIST.md as a fill-in ARTIFACT (not a document to read)
+- Must fill in: computed vs actual values, click results, screenshot paths
+- No presenting until checklist is complete and saved to qa/ directory
+- Updated PROCESS.md Layer 2 to enforce this
+
+### What Went RIGHT (carry forward)
+- Path to Research (customer call insight → feature) — very compelling
+- "What Your Customers Are Telling You" framing — approachable, human
+- Story card visual quality — best work of the session
+- Verification links work now
+- No more hardcoded identical placeholder data
+
+### Key Pattern
+Features informed by customer call insights = best quality (creative work).
+Features requiring data accuracy = same bugs as iteration 1 (discipline work).
+Process helps creative quality. Data accuracy needs explicit verification gates.

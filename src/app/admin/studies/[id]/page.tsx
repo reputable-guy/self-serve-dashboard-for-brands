@@ -19,7 +19,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
-import { useStudiesStore } from "@/lib/studies-store";
+import { useStudiesStore, SEED_STUDIES } from "@/lib/studies-store";
 import { CATEGORY_CONFIGS } from "@/lib/assessments";
 import { StudyDetailsFullPreview } from "@/components/study-details-full-preview";
 import { StudyPreview } from "@/components/study-preview";
@@ -166,7 +166,9 @@ export default function AdminStudyDetailPage() {
         ...storeStudy,
         startDate: storeStudy.startDate ? new Date(storeStudy.startDate).toISOString().split('T')[0] : "",
         endDate: storeStudy.endDate ? new Date(storeStudy.endDate).toISOString().split('T')[0] : "",
-        avgImprovement: Math.floor(Math.random() * 20) + 15, // Generate random for new studies
+        avgImprovement: storeStudy.avgImprovement
+          ?? SEED_STUDIES.find(s => s.id === storeStudy.id)?.avgImprovement
+          ?? Math.floor(Math.random() * 20) + 15, // Use ground truth if available, random fallback for demo
         completionRate: storeStudy.status === 'completed' ? 100 : Math.floor(Math.random() * 20) + 75,
       }
     : legacyStudy;

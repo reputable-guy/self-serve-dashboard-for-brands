@@ -254,20 +254,22 @@ export function ParticipantStoryCard({
           </div>
         </div>
 
+        {/* Verbatim Quote — always visible (this is the most compelling content) */}
+        {card.verbatimQuote && (
+          <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100/50">
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-indigo-600 mb-1">In their own words</p>
+                <p className="text-sm text-slate-600 italic">&ldquo;{card.verbatimQuote}&rdquo;</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Expanded Content */}
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-dashed border-slate-200 space-y-3 animate-in slide-in-from-top-2 duration-200">
-            {card.verbatimQuote && (
-              <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100/50">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-indigo-600 mb-1">In their own words</p>
-                    <p className="text-sm text-slate-600 italic">&ldquo;{card.verbatimQuote}&rdquo;</p>
-                  </div>
-                </div>
-              </div>
-            )}
             {card.failedAlternatives.length > 3 && (
               <div>
                 <p className="text-xs text-slate-500 mb-2">What they&apos;ve tried before:</p>

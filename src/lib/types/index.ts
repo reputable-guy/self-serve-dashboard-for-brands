@@ -494,6 +494,8 @@ export interface Study {
   };
   // Enrollment configuration (for brand-recruited studies only)
   enrollmentConfig?: EnrollmentConfig;
+  // Pre-computed aggregate metrics (ground truth for real data studies)
+  avgImprovement?: number;
   // Legacy fields
   productName?: string;
   durationDays?: number;

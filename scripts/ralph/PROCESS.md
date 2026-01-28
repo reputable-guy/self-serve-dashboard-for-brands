@@ -21,22 +21,43 @@ Ralph does NOT:
 
 ### Layer 2: Self-Review (Orchestrator — Jarvis)
 **Who:** Me (Jarvis), running in the main Clawdbot session
-**What:** After Ralph completes stories, I open a browser and verify.
-**Checklist:**
-- [ ] Screenshot every changed view (Overview, Insights, Results, Widget)
-- [ ] Test with Sensate real data (not just simulation)
-- [ ] Test with empty/new studies
-- [ ] Click every link and button
-- [ ] Check for placeholder text, identical data, missing fields
-- [ ] Check no internal study names in consumer-facing views
-- [ ] Ask: "Would Pankaj be embarrassed demoing this to Amber right now?"
+**What:** After Ralph completes stories, I open a browser and FILL OUT `QA-CHECKLIST.md`.
 
-If issues found → I fix them directly or add stories to prd.json for next Ralph run.
+**THE CHECKLIST IS AN ARTIFACT, NOT A MENTAL EXERCISE.**
+Copy `QA-CHECKLIST.md` → `qa/QA-<date>-<branch>.md`, fill in every field with actual values.
+If any field is empty, QA is not done. If any field is FAIL, fix before presenting.
+
+**Data Accuracy (do this FIRST — before screenshots):**
+1. Open the browser to each view
+2. Write down every computed number (avg improvement, participant count, etc.)
+3. Cross-reference against source data files or known ground truth
+4. If ANY number doesn't match → stop, fix, re-verify
+
+**Interaction Testing (click EVERYTHING):**
+1. Widget click → modal opens?
+2. Verification links → page loads?
+3. Carousel → cards change?
+4. FAQ accordion → expands?
+5. Copy buttons → clipboard works?
+
+**Visual Review (screenshot each tab):**
+1. Take screenshots
+2. Look at them as if you're Pankaj on a call with Amber
+3. Are the RIGHT participants highlighted (best results, not worst)?
+4. Is important content visible without extra clicks?
+
+**Strategic Check:**
+1. Am I building on the study I was told to build on?
+2. Does the underlying data support what I'm displaying?
+
+If issues found → fix directly or add stories to prd.json for next Ralph run.
 
 Sub-agents (max 2) may be used here for:
 - Targeted critique (with buyer persona, competitive refs, constraints)
 - Research or analysis
 - NOT for visual QA — I have a browser
+
+**ITERATION 2 LESSON:** Writing "Browser QA ✅" without a filled-out artifact is lying to yourself. The artifact IS the proof.
 
 ### Layer 3: Synthesis & Presentation (To Theban)
 **Who:** Me (Jarvis) → Theban

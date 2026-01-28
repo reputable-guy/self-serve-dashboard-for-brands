@@ -70,8 +70,15 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
   }, [isRealData, realStories, enrollments, category]);
 
   // Helper: get the primary improvement % for a story (assessment or wearable)
+  // Get the primary improvement metric for a story.
+  // For real data (Sensate), this is HRV changePercent.
+  // For simulated data, assessment compositePercent takes priority.
   const getImprovementPercent = useCallback((s: ParticipantStory): number | null => {
-    // Try assessment data first
+    // For real data: prefer wearable HRV (the actual measured metric)
+    if (isRealData && s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
+      return s.wearableMetrics.hrvChange.changePercent;
+    }
+    // For simulated: try assessment data first
     const assess = s.assessmentResults?.[0] || s.assessmentResult;
     if (assess?.change?.compositePercent !== undefined) {
       return assess.change.compositePercent;
@@ -81,31 +88,40 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
       return s.wearableMetrics.hrvChange.changePercent;
     }
     return null;
-  }, []);
+  }, [isRealData]);
 
+  // Pick the best story: highest POSITIVE improvement + good rating
   const bestStory = useMemo(() => {
     if (completedStories.length === 0) return null;
-    // Prefer stories with the highest actual improvement
     const withScores = completedStories
       .map((s) => ({
         story: s,
         change: getImprovementPercent(s) ?? 0,
+        rating: s.finalTestimonial?.overallRating || s.overallRating || 0,
       }))
-      .sort((a, b) => b.change - a.change);
-    return withScores[0]?.story || completedStories[0];
+      // Sort by: positive change first, then by rating as tiebreaker
+      .sort((a, b) => {
+        if (b.change !== a.change) return b.change - a.change;
+        return b.rating - a.rating;
+      });
+    // Only feature someone with a positive result
+    const best = withScores.find(s => s.change > 0) || withScores[0];
+    return best?.story || completedStories[0];
   }, [completedStories, getImprovementPercent]);
 
-  // Compute real avg improvement from completed stories
+  // Avg improvement: use study's pre-computed ground truth for real data.
+  // For simulated data, compute from stories.
   const avgImprovement = useMemo(() => {
     if (completedStories.length === 0) return null;
-    // For real data studies, use the study's pre-computed avg if available
-    if (isRealData && study.avgImprovement) {
+    // Real data: use verified ground truth from study config
+    if (isRealData && study.avgImprovement !== undefined && study.avgImprovement !== null) {
       return Math.round(
         typeof study.avgImprovement === "number"
           ? study.avgImprovement
-          : parseFloat(study.avgImprovement) || 0
+          : parseFloat(String(study.avgImprovement)) || 0
       );
     }
+    // Simulated: compute from completed stories
     const improvements = completedStories
       .map((s) => getImprovementPercent(s))
       .filter((v): v is number => v !== undefined && v !== null);
