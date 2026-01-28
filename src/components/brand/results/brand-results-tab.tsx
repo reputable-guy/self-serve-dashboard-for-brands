@@ -20,7 +20,6 @@ import {
   Award,
   ExternalLink,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { getCompletedStoriesFromEnrollments, categorizeStory } from "@/lib/simulation";
 import type { StudyData } from "@/components/admin/study-detail/types";
@@ -59,7 +58,7 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
 
   // No results yet
   if (totalCompleted === 0) {
-    return <ResultsWaiting study={study} />;
+    return <ResultsWaiting />;
   }
 
   // Calculate aggregate stats
@@ -371,7 +370,7 @@ function OutcomeBar({
 }
 
 /** Waiting state when no results */
-function ResultsWaiting({ study }: { study: StudyData }) {
+function ResultsWaiting() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
       <Card className="max-w-md w-full border-dashed">

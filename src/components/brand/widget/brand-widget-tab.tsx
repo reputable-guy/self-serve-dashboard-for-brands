@@ -40,7 +40,7 @@ interface BrandWidgetTabProps {
 export function BrandWidgetTab({ studyId, studyName, realStories }: BrandWidgetTabProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showWidgetModal, setShowWidgetModal] = useState(false);
+  const [, setShowWidgetModal] = useState(false);
 
   const isRealData = !!realStories && realStories.length > 0;
 

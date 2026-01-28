@@ -1,0 +1,23 @@
+# Ralph Progress Log
+Started: 2026-01-28
+---
+
+## Codebase Patterns
+- Types: always import from `@/lib/types/index.ts`, never duplicate
+- Categories: always use `getCategory()` / `getCategoryLabel()` from `@/lib/categories.ts`
+- Real data: stories with `dataSource: 'real'` are sacred — never modify or overwrite
+- Assessment field: `assessmentResult` (singular) on completed story objects, NOT `assessmentResults` (plural)
+- Zustand selectors: never call `store((s) => s.someMethod(arg))` that returns a new array/object each time — causes infinite re-renders. Select stable refs, derive with `useMemo`.
+- Zustand side effects: never call `set()` during render. Use `useEffect` for computed state updates.
+- Consumer-facing views (widget, verification): use product name, not internal study name
+- Missing data fields: HIDE the UI element, never show hardcoded fallbacks (e.g., "Severity 7/10")
+- `categorizeStory()`: must handle both real data shape AND simulated data shape. Real data has `finalTestimonial.overallRating`, not `overallRating` at story root. Real data has empty `villainRatings`.
+- Verification links: route is `/verify/[id]` — no `/results` suffix. Verification IDs must match existing participant IDs.
+- ESLint: 5 existing unused-var errors in simulation code (baseline-generator.ts, enrollment-store.ts, early-insights-store.ts). Don't add more.
+
+## Learnings from Pre-Ralph Build (Jan 28)
+- Built Brand View (4 tabs: Overview, Insights, Results, Widget) — all compile and render
+- 8 bugs caught by founder review, not by self-review. Root cause: no QA step, no UX review step, single data path testing.
+- Sub-agent critiques (4 agents) created noise — wrong buyer persona assumed (enterprise VP, not curious DTC founder). Max 2 agents, include persona + competitive refs.
+- The Brand View IS the product being sold — Pankaj demos it to Amber, Chris, Michael on sales calls. Every improvement shows up in the next demo.
+---

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -27,7 +27,6 @@ type EnrollmentState = "loading" | "open" | "closed" | "full" | "not_found" | "s
 
 export default function EnrollmentPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params.slug as string;
 
   // Store hooks

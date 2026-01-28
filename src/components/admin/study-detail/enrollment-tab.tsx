@@ -67,13 +67,11 @@ function getStageBadge(stage: Enrollment["stage"]) {
 export function EnrollmentTab({
   studyId,
   studyName,
-  studyCategory,
   enrollmentSlug,
   enrollmentCap,
   enrollmentStatus,
   enrolledCount,
   rebateAmount = 50,
-  isDemo = false,
 }: EnrollmentTabProps) {
   const [copied, setCopied] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);

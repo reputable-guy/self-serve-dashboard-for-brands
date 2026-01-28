@@ -47,7 +47,7 @@ interface EarlyInsightsStore {
   hasEnoughForAggregates: (studyId: string) => boolean;
 }
 
-export const useEarlyInsightsStore = create<EarlyInsightsStore>()((set, get) => ({
+export const useEarlyInsightsStore = create<EarlyInsightsStore>()((set) => ({
   insightsCache: {},
 
   computeInsights: (studyId: string, categoryLabel?: string) => {

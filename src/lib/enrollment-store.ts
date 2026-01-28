@@ -14,7 +14,6 @@ import { persist } from 'zustand/middleware';
 import type { BaselineData, ParticipantArchetype } from './types';
 import {
   generateBaselineData,
-  selectArchetype,
   FIRST_NAMES,
   LAST_NAMES,
 } from './simulation';

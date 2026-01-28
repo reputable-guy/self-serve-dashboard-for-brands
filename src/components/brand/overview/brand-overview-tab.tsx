@@ -11,7 +11,6 @@ import {
   Clock,
   Quote,
   Activity,
-  ArrowRight,
   Star,
   Shield,
   Sparkles,
@@ -20,7 +19,6 @@ import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { useEarlyInsightsStore } from "@/lib/early-insights-store";
 import {
   getCompletedStoriesFromEnrollments,
-  categorizeStory,
 } from "@/lib/simulation";
 import type { EarlyInsightsData, ParticipantStory } from "@/lib/types";
 import type { StudyData } from "@/components/admin/study-detail/types";
@@ -31,7 +29,7 @@ interface BrandOverviewTabProps {
   realStories?: ParticipantStory[] | null;
 }
 
-export function BrandOverviewTab({ study, brand, realStories }: BrandOverviewTabProps) {
+export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) {
   const { getEnrollmentStats, getEnrollmentsByStudy } = useEnrollmentStore();
   const { computeInsights, getBaselineCount } = useEarlyInsightsStore();
   const [insights, setInsights] = useState<EarlyInsightsData | null>(null);

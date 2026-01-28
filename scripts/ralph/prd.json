@@ -1,0 +1,149 @@
+{
+  "projectName": "Brand View P0/P1 Polish",
+  "branchName": "ralph/brand-view-polish",
+  "description": "Fix bugs caught in founder review, then implement P1 features identified from customer call analysis (Amber/Slacka, Chris/LyfeFuel, Michael/KOH).",
+  "userStories": [
+    {
+      "id": "BV-001",
+      "title": "Fix ESLint errors for clean quality baseline",
+      "priority": 1,
+      "passes": false,
+      "description": "Fix all 5 existing ESLint errors (unused variables in simulation code). This establishes a clean baseline so Ralph can enforce zero-error policy going forward.",
+      "acceptanceCriteria": [
+        "`npx next lint` returns zero errors (warnings OK)",
+        "No functional changes — only remove unused imports/variables",
+        "`npx tsc --noEmit` still passes",
+        "`npm run build` still succeeds"
+      ],
+      "files": [
+        "src/lib/early-insights-store.ts",
+        "src/lib/enrollment-store.ts",
+        "src/lib/simulation/baseline-generator.ts"
+      ]
+    },
+    {
+      "id": "BV-002",
+      "title": "Fix Insights tab — hide missing fields instead of showing hardcoded fallbacks",
+      "priority": 2,
+      "passes": false,
+      "description": "The Insights tab shows identical placeholder data for all 18 real Sensate participants: 'Sleep Quality, Severity 7/10, Struggling for: ongoing, Urgency 6/10, Already Tried: (empty)'. These are hardcoded fallback values. For real data that doesn't have these fields, HIDE the fields entirely instead of showing fake values.",
+      "acceptanceCriteria": [
+        "Real Sensate participants do NOT show identical hardcoded severity/urgency/duration values",
+        "Fields without data are hidden, not filled with defaults",
+        "Simulated participants with full data still show all fields correctly",
+        "No participant cards look like templates — each shows only its actual data",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/insights/brand-insights-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-003",
+      "title": "Fix Widget tab — product name, real count, no placeholder text",
+      "priority": 3,
+      "passes": false,
+      "description": "Widget tab shows internal study name ('Sensate Sleep & Stress Study (Real Data)') instead of product name. Also shows 'Brand Name' label and 'Product Image' placeholder. Consumer-facing widget must use product/brand names, not internal study names.",
+      "acceptanceCriteria": [
+        "Widget shows brand/product name, not internal study name",
+        "No 'Brand Name' or 'Product Image' placeholder text visible",
+        "Participant count shows real number from study data",
+        "'undefined people verified' never appears — graceful fallback to 0 or hidden",
+        "FAQ accordion still works",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/widget/brand-widget-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-004",
+      "title": "Fix verification links — correct routes and valid IDs",
+      "priority": 4,
+      "passes": false,
+      "description": "Verification links in Brand View go to broken routes like `/verify/SENSATE--SIM-002/results`. The `/results` suffix doesn't exist as a route. Verification IDs have double-dashes from generated data. Fix all links to use correct route format `/verify/[id]` with valid participant IDs.",
+      "acceptanceCriteria": [
+        "All verification links use format `/verify/[valid-id]` — no `/results` suffix",
+        "No double-dash IDs in verification links",
+        "Links for real participants use their actual verification IDs",
+        "Clicking a verification link in the Brand View would reach an existing route",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/overview/brand-overview-tab.tsx",
+        "src/components/brand/results/brand-results-tab.tsx",
+        "src/components/brand/widget/brand-widget-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-005",
+      "title": "Fix categorizeStory() to handle both real and simulated data shapes",
+      "priority": 5,
+      "passes": false,
+      "description": "categorizeStory() categorizes all real Sensate stories as 'neutral' because it checks villainRatings (empty for real data) and overallRating at story root (only exists in finalTestimonial for real data). Must handle both data shapes.",
+      "acceptanceCriteria": [
+        "Real Sensate stories with positive finalTestimonial.overallRating categorize as 'improved'",
+        "Real stories with poor ratings categorize correctly (not all 'neutral')",
+        "Simulated stories still categorize correctly",
+        "Results tab outcome distribution reflects actual data, not all-neutral",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/results/brand-results-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-006",
+      "title": "Add 'Path to Research' section on Overview tab",
+      "priority": 6,
+      "passes": false,
+      "description": "Customer calls revealed 'retrospective IRB' is the killer pitch — Chris called it 'getting the answer to the test'. Add a visual section to Overview showing how accumulated evidence leads toward study-grade research. Kyle calls it a 'layaway plan on research'. Show progress: X participants → enough signal → retrospective IRB → publishable study.",
+      "acceptanceCriteria": [
+        "Overview tab has a 'Path to Research' or 'Evidence Journey' section",
+        "Shows visual progression: gathering evidence → signal detected → study-ready",
+        "Displays current participant count toward a milestone (e.g., 50, 100)",
+        "Brief explanation of retrospective IRB concept in plain language",
+        "Section is visually distinct but not overwhelming — secondary to main results",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/overview/brand-overview-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-007",
+      "title": "Reframe Insights tab as 'What Your Customers Are Telling You'",
+      "priority": 7,
+      "passes": false,
+      "description": "From customer calls: Amber (Slacka) is stuck on positioning — 'Is it energy with satiety or satiety with energy?' The demographics and motivation data isn't just analytics, it's market research. Reframe the Insights tab header and sections to emphasize positioning intelligence: why customers bought, what language they use, what motivates them.",
+      "acceptanceCriteria": [
+        "Insights tab header/intro reframed around customer understanding, not just study analytics",
+        "Motivation and purchase reason data highlighted as positioning intelligence",
+        "Section headers use language like 'Why They Bought', 'What They're Saying', 'Who They Are'",
+        "Existing data (demographics, patterns, participant stories) preserved — just reframed",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/insights/brand-insights-tab.tsx"
+      ]
+    },
+    {
+      "id": "BV-008",
+      "title": "Add Marketing Kit section to Widget tab",
+      "priority": 8,
+      "passes": false,
+      "description": "All 3 customer calls showed asset creation is table stakes. Kyle is manually creating Instagram carousels and social cards for demos. Add a 'Marketing Kit' section to the Widget tab showing exportable asset previews: social card (aggregate stat), participant spotlight card, Instagram carousel mockup. These are visual previews — actual export can be a follow-up.",
+      "acceptanceCriteria": [
+        "Widget tab has a 'Marketing Kit' or 'Content Assets' section below the widget preview",
+        "Shows at least 2 asset preview cards: aggregate stat card + participant spotlight",
+        "Each preview shows what it would look like (mock social post format)",
+        "Data in previews comes from actual study data (avg improvement, participant quote, etc.)",
+        "Visual design is clean — styled as card previews, not full social media mockups",
+        "Build passes"
+      ],
+      "files": [
+        "src/components/brand/widget/brand-widget-tab.tsx"
+      ]
+    }
+  ]
+}

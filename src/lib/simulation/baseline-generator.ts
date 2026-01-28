@@ -13,7 +13,6 @@ import type {
   HopedOutcomes,
 } from '../types';
 import {
-  ARCHETYPE_DATA,
   selectArchetype,
   getArchetypeConfig,
   getArchetypeScoreModifier,
@@ -27,7 +26,6 @@ import {
   LIFE_STAGE_WEIGHTS,
   AGE_RANGES,
   AGE_WEIGHTS,
-  VILLAIN_DURATIONS,
   TRIED_OTHER_OPTIONS,
   US_STATES,
 } from './category-content';
@@ -82,7 +80,7 @@ export interface GenerateBaselineOptions {
  * - Wearable baseline data (for Tier 1-2 categories)
  */
 export function generateBaselineData(options: GenerateBaselineOptions = {}): BaselineData {
-  const { category, firstName } = options;
+  const { category } = options;
   const cat = category || 'default';
 
   // Select or use provided archetype

@@ -1,4 +1,4 @@
-# Seville Codebase Guidelines
+# Reputable Self-Serve Dashboard — Codebase Guidelines
 
 ## Architecture Overview
 
@@ -218,6 +218,33 @@ npx playwright test
 3. Create components in `src/components/`
 4. Add pages in `src/app/`
 
+## Domain Rules (Non-Negotiable)
+
+These rules reflect the product's core value proposition. Violating them breaks what makes Reputable different from every other review platform.
+
+1. **Real data is sacred.** Never overwrite, simulate over, or modify real study data (Sensate, LyfeFuel). Real studies have `dataSource: 'real'`. Always check before touching data.
+
+2. **Clean baseline required.** Evidence requires NEW customers who haven't used the product. Existing customers have corrupted baselines. Never build features that imply existing customers can generate efficacy data.
+
+3. **Evidence ≠ reviews.** Reputable provides verified evidence with objective data (wearables, validated assessments), not sentiment. Every UI element should reinforce this distinction.
+
+4. **Internal names ≠ external names.** Study names are internal (`"Sensate Sleep & Stress Study (Real Data)"`). Product/brand names are consumer-facing. Widget and verification pages are seen by end consumers — use product names.
+
+5. **FrontrowMD is the widget reference.** Trust-first design: named sources, FAQ transparency, clean modal. Not flashy data viz.
+
+6. **The buyer is a curious DTC founder**, not a skeptical enterprise VP. Build for "this is cool, let's try it."
+
+7. **Sleep category first.** All demos, examples, and featured content default to sleep.
+
+## Known Gotchas
+
+- `assessmentResult` (singular) on story objects, NOT `assessmentResults` (plural)
+- `categorizeStory()` must check `finalTestimonial.overallRating` for real data, not `overallRating` at story root
+- Real data has empty `villainRatings` — functions that rely on this array must handle empty gracefully
+- Zustand: never select `store((s) => s.method(arg))` that returns new array/object — infinite re-render. Select stable ref, derive with `useMemo`.
+- Zustand: never call `set()` during render — use `useEffect` for computed state
+- Verification route is `/verify/[id]` — no `/results` suffix
+
 ## Code Quality Checklist
 
 Before committing:
@@ -227,3 +254,10 @@ Before committing:
 - [ ] Components are < 200 lines
 - [ ] No magic strings for status values
 - [ ] Build passes (`npm run build`)
+- [ ] `npx tsc --noEmit` clean
+- [ ] `npx next lint` no new errors
+- [ ] No hardcoded fallback values visible (e.g., "Severity 7/10" for missing data — hide instead)
+- [ ] No placeholder text in consumer-facing views ("Brand Name", "Product Image")
+- [ ] All links point to existing routes
+- [ ] Tested with real data (Sensate/LyfeFuel) not just simulated
+- [ ] Would Pankaj be embarrassed demoing this to a customer?

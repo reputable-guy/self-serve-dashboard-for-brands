@@ -98,7 +98,7 @@ export function EmergingPatternsCard({
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-700 truncate max-w-[70%]" title={point.label}>
-                      "{point.label}"
+                      &ldquo;{point.label}&rdquo;
                     </span>
                     <span className="text-slate-500 font-medium tabular-nums">
                       {point.percentage}%

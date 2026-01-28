@@ -137,7 +137,7 @@ export function ParticipantStoryCard({
             Why they&apos;re trying your product
           </div>
           <div className="relative pl-4 border-l-2 border-amber-200 bg-amber-50/30 rounded-r-lg py-2 pr-3">
-            <div className="absolute -left-1 top-1 text-amber-300 text-2xl font-serif leading-none">"</div>
+            <div className="absolute -left-1 top-1 text-amber-300 text-2xl font-serif leading-none">&ldquo;</div>
             <blockquote className="text-slate-700 text-sm leading-relaxed italic">
               {card.heroSymptom}
             </blockquote>
@@ -253,14 +253,14 @@ export function ParticipantStoryCard({
                   <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-medium text-indigo-600 mb-1">In their own words</p>
-                    <p className="text-sm text-slate-600 italic">"{card.verbatimQuote}"</p>
+                    <p className="text-sm text-slate-600 italic">&ldquo;{card.verbatimQuote}&rdquo;</p>
                   </div>
                 </div>
               </div>
             )}
             {card.failedAlternatives.length > 3 && (
               <div>
-                <p className="text-xs text-slate-500 mb-2">What they've tried before:</p>
+                <p className="text-xs text-slate-500 mb-2">What they&apos;ve tried before:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {card.failedAlternatives.map((alt, i) => (
                     <Badge key={i} variant="outline" className="bg-white border-slate-200 text-slate-500 text-xs font-normal">

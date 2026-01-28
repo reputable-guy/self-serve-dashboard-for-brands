@@ -26,7 +26,6 @@ import {
   MailOpen,
   Download,
   Search,
-  Filter,
   TrendingUp,
   AlertTriangle,
   UserCheck,
@@ -37,7 +36,6 @@ import {
 } from "lucide-react";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import type { Enrollment, HealthStatus, NurtureType } from "@/lib/enrollment-store";
-import type { ParticipantArchetype } from "@/lib/types";
 import { enrollmentToCard } from "@/lib/insights/card-transformer";
 import { ParticipantStoryCard } from "./participant-story-card";
 
@@ -120,7 +118,6 @@ export function ParticipantsTab({
   studyName,
   enrollmentSlug,
   studyCategory,
-  isDemo = false,
 }: ParticipantsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
@@ -205,7 +202,6 @@ export function ParticipantsTab({
   };
 
   // Calculate completion projection
-  const completionRate = stats.completed / (stats.active + stats.completed + stats.dropped || 1);
   const projectedCompletions = Math.round(stats.active * (healthStats.on_track / (activeParticipants.length || 1)));
 
   return (

@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -23,7 +23,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { useEarlyInsightsStore, SHOW_AGGREGATES_FROM } from "@/lib/early-insights-store";
 import { ParticipantStoryCard } from "@/components/admin/study-detail/participant-story-card";
 import { InsightsTimeline } from "@/components/admin/study-detail/insights-timeline";
@@ -41,12 +40,10 @@ const PATTERNS_THRESHOLD = 3;
 const AGGREGATES_THRESHOLD = SHOW_AGGREGATES_FROM; // 10
 
 export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) {
-  const { getEnrollmentsByStudy } = useEnrollmentStore();
   const { computeInsights, getBaselineCount } = useEarlyInsightsStore();
   const [insights, setInsights] = useState<EarlyInsightsData | null>(null);
   
   const isRealData = !!realStories && realStories.length > 0;
-  const enrollments = getEnrollmentsByStudy(study.id);
   const category = study.category;
   const baselineCount = getBaselineCount(study.id);
 
@@ -84,7 +81,6 @@ export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) 
   const participantCards = isRealData ? realParticipantCards : (insights?.participantCards || []);
   const timeline = insights?.timeline || [];
   const emergingPatterns = isRealData ? null : insights?.emergingPatterns;
-  const notableQuotes = insights?.notableQuotes || [];
 
   // Compute demographics from real stories or insights
   const demographics = useMemo(() => {
