@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,62 +28,92 @@ import type { StudyData } from "@/components/admin/study-detail/types";
 interface BrandOverviewTabProps {
   study: StudyData;
   brand?: { id: string; name: string; logoUrl?: string };
+  realStories?: ParticipantStory[] | null;
 }
 
-export function BrandOverviewTab({ study, brand }: BrandOverviewTabProps) {
+export function BrandOverviewTab({ study, brand, realStories }: BrandOverviewTabProps) {
   const { getEnrollmentStats, getEnrollmentsByStudy } = useEnrollmentStore();
   const { computeInsights, getBaselineCount } = useEarlyInsightsStore();
   const [insights, setInsights] = useState<EarlyInsightsData | null>(null);
 
+  const isRealData = !!realStories && realStories.length > 0;
+
   const stats = getEnrollmentStats(study.id);
   const enrollments = getEnrollmentsByStudy(study.id);
   const baselineCount = getBaselineCount(study.id);
-  const category = study.category || study.categoryKey;
+  const category = study.category;
 
   useEffect(() => {
-    if (baselineCount > 0) {
+    if (!isRealData && baselineCount > 0) {
       const computed = computeInsights(study.id, category);
       setInsights(computed);
     }
-  }, [study.id, category, baselineCount, computeInsights]);
+  }, [study.id, category, baselineCount, computeInsights, isRealData]);
 
-  const totalEnrolled =
-    stats.signedUp + stats.waiting + stats.active + stats.completed;
-  const totalActive = stats.active;
-  const totalCompleted = stats.completed;
+  // For real data studies, derive counts from the stories
+  const totalEnrolled = isRealData
+    ? (study.targetParticipants || realStories.length)
+    : stats.signedUp + stats.waiting + stats.active + stats.completed;
+  const totalActive = isRealData ? 0 : stats.active;
+  const totalCompleted = isRealData
+    ? realStories.length  // All real stories are completed participants
+    : stats.completed;
 
   // Get completed stories for the featured result
-  const completedStories = useMemo(
-    () => getCompletedStoriesFromEnrollments(enrollments, category),
-    [enrollments, category]
-  );
+  const completedStories = useMemo(() => {
+    if (isRealData) {
+      // Real stories are already completed — filter to those with outcome data
+      // All real stories are completed participants
+      return realStories;
+    }
+    return getCompletedStoriesFromEnrollments(enrollments, category);
+  }, [isRealData, realStories, enrollments, category]);
+
+  // Helper: get the primary improvement % for a story (assessment or wearable)
+  const getImprovementPercent = useCallback((s: ParticipantStory): number | null => {
+    // Try assessment data first
+    const assess = s.assessmentResults?.[0] || s.assessmentResult;
+    if (assess?.change?.compositePercent !== undefined) {
+      return assess.change.compositePercent;
+    }
+    // Fall back to wearable HRV change
+    if (s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
+      return s.wearableMetrics.hrvChange.changePercent;
+    }
+    return null;
+  }, []);
+
   const bestStory = useMemo(() => {
     if (completedStories.length === 0) return null;
-    // Prefer stories with the highest actual assessment improvement
+    // Prefer stories with the highest actual improvement
     const withScores = completedStories
-      .map((s) => {
-        const assess = s.assessmentResults?.[0] || s.assessmentResult;
-        const change = assess?.change?.compositePercent ?? 0;
-        return { story: s, change };
-      })
+      .map((s) => ({
+        story: s,
+        change: getImprovementPercent(s) ?? 0,
+      }))
       .sort((a, b) => b.change - a.change);
     return withScores[0]?.story || completedStories[0];
-  }, [completedStories]);
+  }, [completedStories, getImprovementPercent]);
 
   // Compute real avg improvement from completed stories
   const avgImprovement = useMemo(() => {
     if (completedStories.length === 0) return null;
+    // For real data studies, use the study's pre-computed avg if available
+    if (isRealData && study.avgImprovement) {
+      return Math.round(
+        typeof study.avgImprovement === "number"
+          ? study.avgImprovement
+          : parseFloat(study.avgImprovement) || 0
+      );
+    }
     const improvements = completedStories
-      .map((s) => {
-        const assess = s.assessmentResults?.[0] || s.assessmentResult;
-        return assess?.change?.compositePercent;
-      })
+      .map((s) => getImprovementPercent(s))
       .filter((v): v is number => v !== undefined && v !== null);
     if (improvements.length === 0) return null;
     return Math.round(
       improvements.reduce((a, b) => a + b, 0) / improvements.length
     );
-  }, [completedStories]);
+  }, [completedStories, isRealData, study.avgImprovement, getImprovementPercent]);
 
   // Find most recent enrollment for "latest activity"
   const signedUpEnrollments = enrollments
@@ -94,8 +124,25 @@ export function BrandOverviewTab({ study, brand }: BrandOverviewTabProps) {
     );
   const latestEnrollment = signedUpEnrollments[0];
 
-  // Get a notable quote if available
-  const notableQuote = insights?.notableQuotes?.[0];
+  // Get a notable quote — from real stories' testimonials or from insights
+  const notableQuote = useMemo(() => {
+    if (isRealData) {
+      // Find a story with a good testimonial (not the best story — want variety)
+      const withQuotes = completedStories
+        .filter((s) => s.finalTestimonial?.quote && s !== bestStory)
+        .sort((a, b) => (b.finalTestimonial?.overallRating || 0) - (a.finalTestimonial?.overallRating || 0));
+      const quoter = withQuotes[0] || completedStories.find((s) => s.finalTestimonial?.quote);
+      if (quoter?.finalTestimonial?.quote) {
+        return {
+          quote: quoter.finalTestimonial.quote,
+          initials: quoter.initials || quoter.name?.[0] || "?",
+          context: quoter.finalTestimonial.satisfaction || "Participant testimonial",
+        };
+      }
+      return null;
+    }
+    return insights?.notableQuotes?.[0] || null;
+  }, [isRealData, completedStories, bestStory, insights]);
 
   // Calculate study progress
   const studyDays = 28;
@@ -163,7 +210,9 @@ export function BrandOverviewTab({ study, brand }: BrandOverviewTabProps) {
           label={avgImprovement !== null ? "Avg Improvement" : "Study Day"}
           subtitle={
             avgImprovement !== null
-              ? `${study.categoryLabel || "Stress & Sleep"} Score`
+              ? isRealData && completedStories[0]?.wearableMetrics?.hrvChange
+                ? "HRV"
+                : `${study.categoryLabel || "Stress & Sleep"} Score`
               : isPreLaunch
                 ? "Not yet started"
                 : `of ${studyDays} days`
@@ -222,7 +271,17 @@ export function BrandOverviewTab({ study, brand }: BrandOverviewTabProps) {
                 Latest Activity
               </span>
             </div>
-            {latestEnrollment ? (
+            {isRealData && study.endDate ? (
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Study completed
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(study.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {" · "}{totalCompleted} participants finished
+                </p>
+              </div>
+            ) : latestEnrollment ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-900">
                   {latestEnrollment.name || "New participant"} enrolled
@@ -382,8 +441,44 @@ function FeaturedResultCard({
                 </>
               )}
 
-              {/* Wearable Metric (if available) */}
-              {wearable?.sleepChange && (
+              {/* Wearable HRV Metric (real data — primary for Sensate) */}
+              {!baselineScore && wearable?.hrvChange && (
+                <>
+                  <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Before (Baseline)
+                    </p>
+                    <p className="text-2xl font-bold text-gray-400">
+                      {wearable.hrvChange.before}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">
+                        ms
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      HRV · Oura Ring verified
+                    </p>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
+                    <p className="text-xs text-emerald-600 mb-1 font-medium">
+                      After (Day 28)
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {wearable.hrvChange.after}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">
+                        ms
+                      </span>
+                    </p>
+                    {wearable.hrvChange.changePercent > 0 && (
+                      <p className="text-xs font-semibold text-emerald-600 mt-0.5">
+                        +{Math.round(wearable.hrvChange.changePercent)}% HRV improvement
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Wearable Sleep Metric (simulated data fallback) */}
+              {!baselineScore && !wearable?.hrvChange && wearable?.sleepChange && (
                 <>
                   <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
                     <p className="text-xs text-muted-foreground mb-1">

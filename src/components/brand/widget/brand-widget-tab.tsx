@@ -11,7 +11,12 @@
  */
 
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Code2,
@@ -19,21 +24,27 @@ import {
   Check,
   ExternalLink,
   Shield,
+  HelpCircle,
+  ChevronDown,
 } from "lucide-react";
 import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
+import type { ParticipantStory } from "@/lib/types";
 
 interface BrandWidgetTabProps {
   studyId: string;
   studyName: string;
+  realStories?: ParticipantStory[] | null;
 }
 
-export function BrandWidgetTab({ studyId, studyName }: BrandWidgetTabProps) {
+export function BrandWidgetTab({ studyId, studyName, realStories }: BrandWidgetTabProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showWidgetModal, setShowWidgetModal] = useState(false);
 
-  // Get data from the simulation pipeline
+  const isRealData = !!realStories && realStories.length > 0;
+
+  // Get data from the simulation pipeline (for demo studies)
   const allEnrollments = useEnrollmentStore((s) => s.enrollments);
   const studyEnrollments = useMemo(
     () => allEnrollments.filter((e) => e.studyId === studyId && e.stage !== "clicked"),
@@ -44,30 +55,41 @@ export function BrandWidgetTab({ studyId, studyName }: BrandWidgetTabProps) {
     [studyEnrollments]
   );
 
-  const participantCount = studyEnrollments.length;
+  // Use real data or simulation data
+  const participantCount = isRealData ? realStories.length : studyEnrollments.length;
+  const completedCount = isRealData
+    ? realStories.length  // All real stories are completed participants
+    : completedEnrollments.length;
   const hasParticipants = participantCount > 0;
 
-  // Build avatar data from enrollments
-  const participantAvatars = useMemo(
-    () =>
-      studyEnrollments.slice(0, 4).map((e) => ({
-        id: e.id,
-        initials: e.name
-          ? e.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-          : "??",
-      })),
-    [studyEnrollments]
-  );
+  // Build avatar data from real stories or enrollments
+  const participantAvatars = useMemo(() => {
+    if (isRealData) {
+      return realStories.slice(0, 4).map((s) => ({
+        id: s.id,
+        initials: s.initials || s.name?.[0] || "?",
+      }));
+    }
+    return studyEnrollments.slice(0, 4).map((e) => ({
+      id: e.id,
+      initials: e.name
+        ? e.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+        : "??",
+    }));
+  }, [isRealData, realStories, studyEnrollments]);
 
   // Build headline based on data
   const badgeHeadline = hasParticipants
-    ? completedEnrollments.length > 0
-      ? `${completedEnrollments.length} people verified this product`
+    ? completedCount > 0
+      ? `${completedCount} people verified this product`
       : `${participantCount} people are testing this product`
     : "Verified by real participants";
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const verifyUrl = `${baseUrl}/verify/${studyId}/results`;
+  // Real data studies link to their results page, demo studies link to verify
+  const verifyUrl = isRealData
+    ? `${baseUrl}/verify/${studyId === "study-sensate-real" ? "sensate-results" : studyId === "study-lyfefuel-real" ? "lyfefuel-results" : studyId + "/results"}`
+    : `${baseUrl}/verify/${studyId}/results`;
 
   const embedCode = `<!-- Reputable Verification Widget -->
 <script
@@ -239,6 +261,56 @@ export function BrandWidgetTab({ studyId, studyName }: BrandWidgetTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Methodology FAQ — FrontrowMD-style trust transparency */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            How It Works — FAQ
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            These questions appear when customers click &quot;Learn more&quot; on the widget
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-0">
+          {[
+            {
+              q: "How was this study conducted?",
+              a: "Participants used the product daily for 28 days while wearing an Oura Ring to track objective health metrics. They completed validated assessments at baseline and endpoint.",
+            },
+            {
+              q: "Who are the participants?",
+              a: "Real customers who volunteered for the study. They represent a diverse range of ages, backgrounds, and starting health conditions.",
+            },
+            {
+              q: "Were participants compensated?",
+              a: "Yes, participants received a rebate for completing the full 28-day study. Compensation was the same regardless of their feedback or results.",
+            },
+            {
+              q: "How is the data verified?",
+              a: "All wearable data is pulled directly from Oura Ring APIs — participants cannot modify it. Assessments use clinically validated instruments. Results are independently verified by Reputable.",
+            },
+            {
+              q: "Who owns the data?",
+              a: "Participants own their personal data. Aggregate, anonymized results are shared with the brand to display on their product page.",
+            },
+          ].map((faq, i) => (
+            <details
+              key={i}
+              className="group border-b border-gray-100 last:border-0"
+            >
+              <summary className="flex items-center justify-between py-3 cursor-pointer text-sm font-medium text-gray-900 hover:text-[#00D1C1] transition-colors list-none">
+                {faq.q}
+                <ChevronDown className="h-4 w-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+              </summary>
+              <p className="text-sm text-muted-foreground pb-3 pr-8 leading-relaxed">
+                {faq.a}
+              </p>
+            </details>
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Installation Steps */}
       <Card className="bg-gradient-to-r from-[#00D1C1]/5 to-transparent border-[#00D1C1]/20">

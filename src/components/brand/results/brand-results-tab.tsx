@@ -29,18 +29,23 @@ import Link from "next/link";
 
 interface BrandResultsTabProps {
   study: StudyData;
+  realStories?: ParticipantStory[] | null;
 }
 
-export function BrandResultsTab({ study }: BrandResultsTabProps) {
+export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
   const { getEnrollmentsByStudy } = useEnrollmentStore();
   const enrollments = getEnrollmentsByStudy(study.id);
-  const category = study.category || study.categoryKey;
+  const category = study.category;
+  const isRealData = !!realStories && realStories.length > 0;
 
-  // Get completed stories from enrollments
+  // Get completed stories — real data or from enrollments
   const completedStories = useMemo(() => {
+    if (isRealData) {
+      return realStories; // All real stories are completed participants
+    }
     const stories = getCompletedStoriesFromEnrollments(enrollments, category);
     return stories || [];
-  }, [enrollments, category]);
+  }, [isRealData, realStories, enrollments, category]);
 
   // Categorize stories
   const categorized = useMemo(() => {
@@ -269,8 +274,23 @@ function BeforeAfterCard({
               </div>
             )}
 
-            {/* Wearable Metric (if Tier 1-2) */}
-            {wearable?.sleepChange && (
+            {/* Wearable HRV Metric (real data — primary for Sensate) */}
+            {!baselineScore && wearable?.hrvChange && (
+              <div className={`bg-gray-50 rounded-lg p-3 ${isFeatured ? "" : "flex-1"}`}>
+                <div className="text-xs text-muted-foreground mb-1">HRV (Oura Ring)</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-gray-500">{wearable.hrvChange.before} ms</span>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-lg font-bold text-gray-900">{wearable.hrvChange.after} ms</span>
+                  <span className={`text-sm font-semibold ${wearable.hrvChange.changePercent > 0 ? "text-emerald-600" : "text-gray-500"}`}>
+                    {wearable.hrvChange.changePercent > 0 ? "+" : ""}{Math.round(wearable.hrvChange.changePercent)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Wearable Sleep Metric (simulated fallback) */}
+            {!baselineScore && !wearable?.hrvChange && wearable?.sleepChange && (
               <div className={`bg-gray-50 rounded-lg p-3 ${isFeatured ? "" : "flex-1"}`}>
                 <div className="text-xs text-muted-foreground mb-1">Sleep Score</div>
                 <div className="flex items-baseline gap-2">
@@ -309,7 +329,7 @@ function BeforeAfterCard({
           </div>
           {story.verificationId && (
             <Link
-              href={`/verify/${story.verificationId}/results`}
+              href={`/verify/${story.verificationId}`}
               className="text-xs text-[#00D1C1] hover:underline flex items-center gap-1"
             >
               Verified Results <ExternalLink className="h-3 w-3" />

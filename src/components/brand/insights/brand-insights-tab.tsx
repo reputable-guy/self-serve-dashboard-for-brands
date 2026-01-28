@@ -30,36 +30,87 @@ import { InsightsTimeline } from "@/components/admin/study-detail/insights-timel
 import { EmergingPatternsCard } from "@/components/admin/study-detail/emerging-patterns-card";
 import { HorizontalBarChart } from "@/components/admin/study-detail/shared";
 import type { StudyData } from "@/components/admin/study-detail/types";
-import type { ParticipantInsightCard, EarlyInsightsData } from "@/lib/types";
+import type { ParticipantInsightCard, EarlyInsightsData, ParticipantStory } from "@/lib/types";
 
 interface BrandInsightsTabProps {
   study: StudyData;
+  realStories?: ParticipantStory[] | null;
 }
 
 const PATTERNS_THRESHOLD = 3;
 const AGGREGATES_THRESHOLD = SHOW_AGGREGATES_FROM; // 10
 
-export function BrandInsightsTab({ study }: BrandInsightsTabProps) {
+export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) {
   const { getEnrollmentsByStudy } = useEnrollmentStore();
   const { computeInsights, getBaselineCount } = useEarlyInsightsStore();
   const [insights, setInsights] = useState<EarlyInsightsData | null>(null);
   
+  const isRealData = !!realStories && realStories.length > 0;
   const enrollments = getEnrollmentsByStudy(study.id);
-  const category = study.category || study.categoryKey;
+  const category = study.category;
   const baselineCount = getBaselineCount(study.id);
 
   useEffect(() => {
-    if (baselineCount > 0) {
+    if (!isRealData && baselineCount > 0) {
       const computed = computeInsights(study.id, category);
       setInsights(computed);
     }
-  }, [study.id, category, baselineCount, computeInsights]);
+  }, [study.id, category, baselineCount, computeInsights, isRealData]);
+
+  // For real data: convert real stories to participant insight cards
+  const realParticipantCards: ParticipantInsightCard[] = useMemo(() => {
+    if (!isRealData) return [];
+    const colors = ["#00D1C1", "#F97316", "#8B5CF6", "#3B82F6", "#EF4444", "#10B981"];
+    return realStories.map((s, i) => ({
+      id: s.id,
+      displayName: s.name || "Participant",
+      initials: s.initials || s.name?.[0] || "?",
+      avatarColor: colors[i % colors.length],
+      enrolledAt: s.journey?.startDate || "",
+      enrolledAgo: s.journey?.endDate ? "completed" : "",
+      heroSymptom: s.journey?.villainVariable || "Wellness",
+      heroSymptomSeverity: 7,
+      painDuration: s.baseline?.villainDuration || "ongoing",
+      failedAlternatives: [],
+      desperationLevel: 6,
+      primaryGoal: s.baseline?.hopedResults || s.baseline?.motivation || "Improve wellness",
+      verbatimQuote: s.finalTestimonial?.quote || s.baseline?.motivation,
+      ageRange: s.profile?.ageRange || "Unknown",
+      location: s.profile?.location,
+      baselineScore: s.wearableMetrics?.hrvChange?.before,
+    }));
+  }, [isRealData, realStories]);
   
-  const participantCards = insights?.participantCards || [];
+  const participantCards = isRealData ? realParticipantCards : (insights?.participantCards || []);
   const timeline = insights?.timeline || [];
-  const emergingPatterns = insights?.emergingPatterns;
+  const emergingPatterns = isRealData ? null : insights?.emergingPatterns;
   const notableQuotes = insights?.notableQuotes || [];
-  const demographics = insights?.demographics;
+
+  // Compute demographics from real stories or insights
+  const demographics = useMemo(() => {
+    if (!isRealData) return insights?.demographics || null;
+    // Derive demographics from real story profiles
+    const ageGroups: Record<string, number> = {};
+    const lifeStages: Record<string, number> = {};
+    realStories.forEach((s) => {
+      const age = s.profile?.ageRange || "Unknown";
+      ageGroups[age] = (ageGroups[age] || 0) + 1;
+      const stage = s.profile?.lifeStage || "adult";
+      lifeStages[stage] = (lifeStages[stage] || 0) + 1;
+    });
+    return {
+      ageRanges: Object.entries(ageGroups).map(([range, count]) => ({
+        range,
+        count,
+        percentage: Math.round((count / realStories.length) * 100),
+      })),
+      lifeStages: Object.entries(lifeStages).map(([stage, count]) => ({
+        stage,
+        count,
+        percentage: Math.round((count / realStories.length) * 100),
+      })),
+    };
+  }, [isRealData, realStories, insights?.demographics]);
   const n = participantCards.length;
 
   // Carousel state for story cards
@@ -161,15 +212,14 @@ export function BrandInsightsTab({ study }: BrandInsightsTabProps) {
         <EmergingPatternsCard
           patterns={emergingPatterns}
           participantCount={n}
-          studyCategory={category}
         />
       )}
 
-      {/* Aggregate Charts (n >= 10) */}
-      {n >= AGGREGATES_THRESHOLD && demographics && (
+      {/* Aggregate Charts (n >= 10 or real data) */}
+      {(n >= AGGREGATES_THRESHOLD || isRealData) && demographics && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Motivations */}
-          {insights?.baselineQuestions?.find(q => q.questionId === "motivation") && (
+          {/* Motivations (simulation only — real data doesn't have this) */}
+          {!isRealData && insights?.baselineQuestions?.find(q => q.questionId === "motivation") && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">Top Motivations</CardTitle>
@@ -180,7 +230,7 @@ export function BrandInsightsTab({ study }: BrandInsightsTabProps) {
                     insights.baselineQuestions
                       .find(q => q.questionId === "motivation")!
                       .responses.slice(0, 5)
-                      .map(r => ({ label: r.value, value: r.percentage }))
+                      .map(r => ({ label: r.value, value: r.count || 0, percentage: r.percentage }))
                   }
                 />
               </CardContent>
@@ -188,16 +238,17 @@ export function BrandInsightsTab({ study }: BrandInsightsTabProps) {
           )}
 
           {/* Age Distribution */}
-          {demographics.ageRanges.length > 0 && (
+          {demographics.ageRanges && demographics.ageRanges.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">Age Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <HorizontalBarChart
-                  data={demographics.ageRanges.map(r => ({
+                  data={demographics.ageRanges.map((r: { range: string; count: number; percentage: number }) => ({
                     label: r.range,
-                    value: r.percentage,
+                    value: r.count,
+                    percentage: r.percentage,
                   }))}
                 />
               </CardContent>

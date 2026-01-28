@@ -812,10 +812,23 @@ export function getCompletedStoriesFromEnrollments(
  * Categorize a story as positive, neutral, or negative based on improvement
  */
 export function categorizeStory(story: ParticipantStory): 'positive' | 'neutral' | 'negative' {
-  const finalRating = story.journey.villainRatings[story.journey.villainRatings.length - 1]?.rating || 3;
-  const overallRating = story.overallRating || 3;
+  const finalRating = story.journey?.villainRatings?.[story.journey.villainRatings.length - 1]?.rating || 0;
+  const overallRating = story.overallRating || story.finalTestimonial?.overallRating || 0;
+  
+  // For real data with wearable metrics, use HRV improvement
+  const hrvChange = story.wearableMetrics?.hrvChange?.changePercent;
+  if (hrvChange !== undefined && overallRating > 0) {
+    if (hrvChange > 5 && overallRating >= 4) return 'positive';
+    if (hrvChange < -5 && overallRating < 3) return 'negative';
+    // Use overall rating as tiebreaker
+    if (overallRating >= 4) return 'positive';
+    if (overallRating < 3) return 'negative';
+    return 'neutral';
+  }
 
+  // Simulated stories with villain ratings
   if (finalRating >= 4 && overallRating >= 4) return 'positive';
   if (finalRating <= 2 || overallRating < 3) return 'negative';
+  if (overallRating >= 4) return 'positive';
   return 'neutral';
 }
