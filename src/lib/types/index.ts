@@ -313,10 +313,10 @@ export interface ParticipantInsightCard {
 
   // Their story
   heroSymptom: string;
-  heroSymptomSeverity: number;
-  painDuration: string;
+  heroSymptomSeverity?: number;
+  painDuration?: string;
   failedAlternatives: string[];
-  desperationLevel: number;
+  desperationLevel?: number;
 
   // Their hopes
   primaryGoal: string;

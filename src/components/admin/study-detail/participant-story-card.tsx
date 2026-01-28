@@ -141,45 +141,53 @@ export function ParticipantStoryCard({
             <blockquote className="text-slate-700 text-sm leading-relaxed italic">
               {card.heroSymptom}
             </blockquote>
-            <div className="mt-1 text-xs text-slate-400">
-              Severity: {card.heroSymptomSeverity}/10
-            </div>
+            {card.heroSymptomSeverity != null && (
+              <div className="mt-1 text-xs text-slate-400">
+                Severity: {card.heroSymptomSeverity}/10
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Duration & Failed Alternatives - Side by Side */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* How Long They've Been Struggling */}
-          <div className="p-2.5 rounded-lg bg-slate-50/60 border border-slate-100">
-            <div className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-slate-400" />
-              Struggling for
-            </div>
-            <span className="text-sm font-semibold text-slate-700">
-              {card.painDuration}
-            </span>
-          </div>
+        {/* Duration & Failed Alternatives - Side by Side (only show when data exists) */}
+        {(card.painDuration || card.failedAlternatives.length > 0) && (
+          <div className={`grid gap-3 mb-4 ${card.painDuration && card.failedAlternatives.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {/* How Long They've Been Struggling */}
+            {card.painDuration && (
+              <div className="p-2.5 rounded-lg bg-slate-50/60 border border-slate-100">
+                <div className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  Struggling for
+                </div>
+                <span className="text-sm font-semibold text-slate-700">
+                  {card.painDuration}
+                </span>
+              </div>
+            )}
 
-          {/* What Didn't Work */}
-          <div className="p-2.5 rounded-lg bg-rose-50/40 border border-rose-100/50">
-            <div className="text-[10px] uppercase tracking-wide text-rose-400 font-medium mb-1.5 flex items-center gap-1">
-              <X className="w-3 h-3 text-rose-400" />
-              Already tried
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {card.failedAlternatives.slice(0, 2).map((alt, i) => (
-                <span key={i} className="text-xs text-rose-600 font-medium">
-                  {alt}{i < Math.min(1, card.failedAlternatives.length - 1) ? ',' : ''}
-                </span>
-              ))}
-              {card.failedAlternatives.length > 2 && (
-                <span className="text-xs text-rose-400">
-                  +{card.failedAlternatives.length - 2} more
-                </span>
-              )}
-            </div>
+            {/* What Didn't Work */}
+            {card.failedAlternatives.length > 0 && (
+              <div className="p-2.5 rounded-lg bg-rose-50/40 border border-rose-100/50">
+                <div className="text-[10px] uppercase tracking-wide text-rose-400 font-medium mb-1.5 flex items-center gap-1">
+                  <X className="w-3 h-3 text-rose-400" />
+                  Already tried
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {card.failedAlternatives.slice(0, 2).map((alt, i) => (
+                    <span key={i} className="text-xs text-rose-600 font-medium">
+                      {alt}{i < Math.min(1, card.failedAlternatives.length - 1) ? ',' : ''}
+                    </span>
+                  ))}
+                  {card.failedAlternatives.length > 2 && (
+                    <span className="text-xs text-rose-400">
+                      +{card.failedAlternatives.length - 2} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Wearable Baseline Data */}
         {card.wearableBaseline && card.wearableBaseline.metrics.length > 0 && (
@@ -207,14 +215,16 @@ export function ParticipantStoryCard({
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
-          <div title={`Urgency: ${card.desperationLevel}/10 - How desperately they need a solution (1=mild curiosity, 10=tried everything, desperate for relief)`}>
-            <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
-              Urgency
+        <div className={`grid gap-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100 ${card.desperationLevel != null ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {card.desperationLevel != null && (
+            <div title={`Urgency: ${card.desperationLevel}/10 - How desperately they need a solution (1=mild curiosity, 10=tried everything, desperate for relief)`}>
+              <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
+                Urgency
+              </div>
+              <DesperationGauge level={card.desperationLevel} showLabel />
             </div>
-            <DesperationGauge level={card.desperationLevel} showLabel />
-          </div>
-          <div className="border-l border-slate-200 pl-3">
+          )}
+          <div className={card.desperationLevel != null ? "border-l border-slate-200 pl-3" : ""}>
             <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
               Hopes to achieve
             </div>
