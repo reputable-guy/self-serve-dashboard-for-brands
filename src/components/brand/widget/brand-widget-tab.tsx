@@ -34,16 +34,18 @@ import {
 import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
+import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";
 import type { ParticipantStory } from "@/lib/types";
 
 interface BrandWidgetTabProps {
   studyId: string;
   studyName: string;
   brandName?: string;
+  category?: string;
   realStories?: ParticipantStory[] | null;
 }
 
-export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: BrandWidgetTabProps) {
+export function BrandWidgetTab({ studyId, studyName, brandName, category, realStories }: BrandWidgetTabProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showWidgetModal, setShowWidgetModal] = useState(false);
@@ -118,8 +120,40 @@ export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: B
         verificationId: s.verificationId || s.id,
       }));
     }
+
+    // Simulated data: generate completed stories from enrollments
+    if (completedEnrollments.length > 0) {
+      const stories = getCompletedStoriesFromEnrollments(completedEnrollments, category || "sleep");
+      const sorted = [...stories].sort((a, b) => {
+        const aPercent = a.assessmentResult?.change?.compositePercent ?? 0;
+        const bPercent = b.assessmentResult?.change?.compositePercent ?? 0;
+        return bPercent - aPercent;
+      });
+      return sorted.slice(0, 6).map((s) => {
+        const pct = s.assessmentResult?.change?.compositePercent;
+        const lastQuote = s.journey?.keyQuotes?.[s.journey.keyQuotes.length - 1];
+        return {
+          id: s.id,
+          name: s.name || "Participant",
+          initials: s.initials || s.name?.[0] || "?",
+          rating: s.overallRating || 4,
+          primaryMetric: {
+            label: pct !== undefined
+              ? `${pct > 0 ? "+" : ""}${pct}%`
+              : "Completed",
+            value: s.assessmentResult
+              ? `${s.assessmentResult.endpoint.compositeScore}/100`
+              : "28 days",
+          },
+          quote: (typeof lastQuote === 'string' ? lastQuote : lastQuote?.quote) || "Completed the full study.",
+          device: "Oura Ring",
+          verificationId: s.verificationId || s.id,
+        };
+      });
+    }
+
     return [];
-  }, [isRealData, realStories]);
+  }, [isRealData, realStories, completedEnrollments, category]);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   // Real data studies link to their results page, demo studies link to verify

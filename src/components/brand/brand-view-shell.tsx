@@ -231,7 +231,7 @@ export function BrandViewShell({
           <BrandResultsTab study={study} realStories={realStories} />
         )}
         {activeTab === "brand-widget" && (
-          <BrandWidgetTab studyId={study.id} studyName={study.name} brandName={brand?.name} realStories={realStories} />
+          <BrandWidgetTab studyId={study.id} studyName={study.name} brandName={brand?.name} category={category} realStories={realStories} />
         )}
       </main>
 
