@@ -1,5 +1,12 @@
 # QA Checklist — Fill Before Presenting to Theban
 
+## Process Rules (Updated Jan 28 — Theban's demo feedback)
+1. **Click every link.** If there's a "Verified Results" link, navigate to it. 404 = fail.
+2. **Check for repeated content.** Scroll through 5+ participant cards — are quotes unique? Names diverse?
+3. **Test from buyer POV.** Read every label aloud. Would a DTC founder understand without context?
+4. **Validate metrics against reality.** Does the metric correspond to an actual wearable API output?
+5. **Give heartbeats.** If QA takes >5 min, send a status update.
+
 **This is an artifact, not a process document.**
 Every item must have a PASS/FAIL with evidence (screenshot path or specific value).
 If any item is FAIL, fix it before presenting. If you can't fix it, list it as a known issue WITH the specific wrong value.
