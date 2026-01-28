@@ -199,8 +199,8 @@ function BeforeAfterCard({
   const storyCategory = categorizeStory(story);
   const isFeatured = variant === "featured";
   
-  // Get assessment results if available
-  const assessment = story.assessmentResults?.[0];
+  // Get assessment results if available (singular or plural field)
+  const assessment = story.assessmentResults?.[0] || story.assessmentResult;
   const baselineScore = assessment?.baseline?.compositeScore;
   const endpointScore = assessment?.endpoint?.compositeScore;
   const scoreChange = assessment?.change?.compositePercent;
