@@ -26,6 +26,10 @@ import {
   Shield,
   HelpCircle,
   ChevronDown,
+  Image as ImageIcon,
+  TrendingUp,
+  Quote,
+  Star,
 } from "lucide-react";
 import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
@@ -265,6 +269,96 @@ export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: B
           </CardContent>
         </Card>
       </div>
+
+      {/* Marketing Kit — Asset previews for social/email/ads */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            Marketing Kit
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Ready-to-use content assets from your study data
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Asset 1: Aggregate Stat Card */}
+            <div className="border rounded-xl overflow-hidden bg-white">
+              <div className="bg-gradient-to-br from-[#00D1C1] to-[#00A89D] p-5 text-white">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-xs font-medium opacity-90">Verified by Reputable</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">
+                    {completedCount > 0 ? `${completedCount}` : "—"}
+                  </span>
+                  <span className="text-sm opacity-80">people verified</span>
+                </div>
+                <p className="text-sm mt-2 opacity-90">
+                  {completedCount > 0
+                    ? `Real customers tested this product for 28 days with wearable tracking`
+                    : "Verified participant results coming soon"}
+                </p>
+              </div>
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-xs text-gray-600">
+                    {completedCount > 0 ? "Aggregate stat card" : "Preview"}
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Instagram / Email</span>
+              </div>
+            </div>
+
+            {/* Asset 2: Participant Spotlight */}
+            <div className="border rounded-xl overflow-hidden bg-white">
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#00D1C1] to-emerald-400 flex items-center justify-center text-white text-sm font-bold">
+                    {isRealData && realStories[0]?.initials ? realStories[0].initials : "JR"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {isRealData && realStories[0]?.name ? realStories[0].name : "Participant Spotlight"}
+                    </p>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className="h-3 w-3 text-amber-400 fill-amber-400" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 mb-2">
+                  <Quote className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                  <p className="text-xs text-gray-600 italic line-clamp-2">
+                    {isRealData && realStories[0]?.finalTestimonial?.quote
+                      ? realStories[0].finalTestimonial.quote
+                      : "Very satisfied with the product experience."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <Shield className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] text-emerald-600 font-medium">Verified by Reputable · 28-day study</span>
+                </div>
+              </div>
+              <div className="border-t p-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Quote className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-xs text-gray-600">Participant spotlight</span>
+                </div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Social / Ads</span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            Export and customization coming soon — use these as templates for your marketing team
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Methodology FAQ — FrontrowMD-style trust transparency */}
       <Card>
