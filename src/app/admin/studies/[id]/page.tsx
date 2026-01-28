@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   Activity,
   Users,
   UserCheck,
+  Eye,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
 import { useStudiesStore } from "@/lib/studies-store";
@@ -36,6 +37,7 @@ import {
   getTierColor,
 } from "@/components/admin/study-detail";
 import type { TabId } from "@/components/admin/study-detail";
+import { BrandViewShell } from "@/components/brand";
 
 // ============================================
 // PREVIEW MODAL COMPONENT
@@ -148,6 +150,9 @@ export default function AdminStudyDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get("view") === "brand" ? "brand" : "admin";
+  const [viewMode, setViewMode] = useState<"admin" | "brand">(initialView);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [showPreview, setShowPreview] = useState(false);
 
@@ -246,6 +251,17 @@ export default function AdminStudyDetailPage() {
     },
   ];
 
+  // Brand View Mode
+  if (viewMode === "brand") {
+    return (
+      <BrandViewShell
+        study={study}
+        brand={brand ? { id: brand.id, name: brand.name, logoUrl: brand.logoUrl } : undefined}
+        onBackToAdmin={() => setViewMode("admin")}
+      />
+    );
+  }
+
   return (
     <div className="p-8">
       {/* Breadcrumb */}
@@ -278,6 +294,16 @@ export default function AdminStudyDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* View as Brand Button */}
+        <Button
+          variant="outline"
+          onClick={() => setViewMode("brand")}
+          className="gap-2"
+        >
+          <Eye className="h-4 w-4" />
+          View as Brand
+        </Button>
       </div>
 
       {/* Tabs */}
