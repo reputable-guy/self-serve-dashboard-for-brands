@@ -34,10 +34,11 @@ import type { ParticipantStory } from "@/lib/types";
 interface BrandWidgetTabProps {
   studyId: string;
   studyName: string;
+  brandName?: string;
   realStories?: ParticipantStory[] | null;
 }
 
-export function BrandWidgetTab({ studyId, studyName, realStories }: BrandWidgetTabProps) {
+export function BrandWidgetTab({ studyId, studyName, brandName, realStories }: BrandWidgetTabProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [, setShowWidgetModal] = useState(false);
@@ -131,12 +132,15 @@ export function BrandWidgetTab({ studyId, studyName, realStories }: BrandWidgetT
             <div className="max-w-lg mx-auto">
               <div className="flex gap-6">
                 {/* Product image placeholder */}
-                <div className="w-40 h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm flex-shrink-0">
-                  Product Image
+                <div className="w-40 h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
+                  <div className="text-center">
+                    <Shield className="h-8 w-8 text-gray-300 mx-auto mb-1" />
+                    <span className="text-[10px] text-gray-400">Your Product</span>
+                  </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">Brand Name</p>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{studyName}</h3>
+                  <p className="text-xs text-muted-foreground mb-1">{brandName || "Your Brand"}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{brandName ? studyName.replace(/\s*\(.*?\)\s*/g, '').replace(/study/gi, '').trim() || studyName : "Your Product"}</h3>
                   <div className="flex items-center gap-1 mb-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span key={star} className="text-amber-400 text-sm">★</span>

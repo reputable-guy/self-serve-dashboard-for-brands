@@ -663,7 +663,7 @@ function generateWearableMetrics(category: string, outcome: OutcomeType, tier: T
  * Generate a verification ID for the participant
  */
 function generateVerificationId(studyId: string, index: number): string {
-  const studyPrefix = studyId.replace(/^study-/, '').toUpperCase().slice(0, 8);
+  const studyPrefix = studyId.replace(/^study-/, '').replace(/-/g, '_').toUpperCase().slice(0, 8);
   return `${studyPrefix}-SIM-${String(index + 1).padStart(3, '0')}`;
 }
 
