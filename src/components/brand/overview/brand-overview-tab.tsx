@@ -286,12 +286,10 @@ function FeaturedResultCard({
   const endpointScore = assessment?.endpoint?.compositeScore;
   const scoreChange = assessment?.change?.compositePercent;
   const testimonial = story.finalTestimonial;
+  const lastQuote = story.journey?.keyQuotes?.slice(-1)[0];
+  const displayQuote = testimonial?.quote || lastQuote?.quote;
   const rating = testimonial?.overallRating || story.overallRating || 4;
   const wearable = story.wearableMetrics;
-
-  // Get the before challenge
-  const beforeChallenge =
-    story.baseline?.motivation || story.journey?.villainVariable;
 
   return (
     <Card className="border-[#00D1C1]/20 bg-gradient-to-r from-[#00D1C1]/5 via-transparent to-emerald-50/30 overflow-hidden">
@@ -416,12 +414,12 @@ function FeaturedResultCard({
         </div>
 
         {/* Testimonial Quote */}
-        {testimonial?.quote && (
+        {displayQuote && (
           <div className="mt-4 pt-4 border-t border-[#00D1C1]/10">
             <blockquote className="text-sm text-gray-700 italic leading-relaxed">
-              &ldquo;{testimonial.quote}&rdquo;
+              &ldquo;{displayQuote}&rdquo;
             </blockquote>
-            {testimonial.reportedBenefits?.length > 0 && (
+            {testimonial?.reportedBenefits && testimonial.reportedBenefits.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {testimonial.reportedBenefits.slice(0, 3).map((b) => (
                   <Badge

@@ -208,8 +208,10 @@ function BeforeAfterCard({
   // Get wearable metrics if available
   const wearable = story.wearableMetrics;
 
-  // Get testimonial
+  // Get testimonial — try finalTestimonial first, fall back to journey keyQuotes
   const testimonial = story.finalTestimonial;
+  const lastQuote = story.journey?.keyQuotes?.slice(-1)[0];
+  const displayQuote = testimonial?.quote || lastQuote?.quote;
   const rating = testimonial?.overallRating || story.overallRating || 4;
 
   return (
@@ -285,9 +287,9 @@ function BeforeAfterCard({
         )}
 
         {/* Testimonial Quote */}
-        {testimonial?.quote && (
+        {displayQuote && (
           <blockquote className={`text-gray-700 italic leading-relaxed mb-3 ${isFeatured ? "text-sm" : "text-xs"}`}>
-            &ldquo;{isFeatured ? testimonial.quote : testimonial.quote.slice(0, 120) + (testimonial.quote.length > 120 ? "..." : "")}&rdquo;
+            &ldquo;{isFeatured ? displayQuote : displayQuote.slice(0, 120) + (displayQuote.length > 120 ? "..." : "")}&rdquo;
           </blockquote>
         )}
 
