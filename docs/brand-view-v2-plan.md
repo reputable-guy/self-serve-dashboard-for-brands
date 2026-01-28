@@ -77,11 +77,42 @@ Built v1 shell + 4 tabs. Ran 4 sub-agent critiques (brand exec, sales rep, produ
 
 ---
 
+### NEW P1 — From Customer Calls (Jan 28: Amber/Slacka, Chris/LyfeFuel, Michael/KOH)
+
+11. **Marketing Asset Export ("Marketing Kit" tab or section)**
+    - All 3 customers want data packaged for distribution (Instagram carousels, paid ads, email content)
+    - Kyle is manually creating these assets for demos — they're landing
+    - MVP: Downloadable social card images (participant story card, aggregate stats card)
+    - Reference: Kyle's carousel examples shown on calls
+
+12. **"Path to Research" visualization**
+    - Retrospective IRB pitch landed with 2/3 customers ("layaway plan on research", "getting the answer to the test")
+    - Show brands how evidence accumulates toward study-grade data
+    - Could be a progress indicator: "12 of 50 participants needed for publishable study" or milestone markers
+    - Unique differentiator — no review platform offers this
+
+13. **Fix Insights tab for real data**
+    - Currently shows identical placeholder data for all real participants (Severity 7/10, Urgency 6/10, "ongoing" for everyone)
+    - Real Sensate stories don't have heroSymptom, painDuration, failedAlternatives fields
+    - Fix: hide fields that don't have real data instead of filling with fake defaults
+    - Redesign card layout for what real data DOES have (wearable metrics, testimonials, demographics)
+
+14. **Fix Widget tab for real studies**
+    - Shows study name ("Sensate Sleep & Stress Study (Real Data)") instead of product name
+    - "Brand Name" and "Product Image" are placeholders
+    - Need to pull product name/image from study config or brand data
+
+15. **QA pass on all tabs with real data**
+    - Every tab must look correct with Sensate AND LyfeFuel real data
+    - Every link must resolve to a real page
+    - No placeholder text visible on real data studies
+
 ## Implementation Order
 
-**Round 1 (now):** P0 items 1-4 — make the Brand View actually useful with real data
-**Round 2:** P1 items 5-7 — polish the key selling screens
-**Round 3:** P2 items 8-10 — delight features
+**Round 1 (done):** P0 items 1-4 — Brand View with real data, featured result, widget
+**Round 2 (now):** P1 items 13-15 — QA + fix real data rendering issues
+**Round 3:** P1 items 5-7, 11-12 — Polish + marketing assets + research path
+**Round 4:** P2 items 8-10 — Delight features
 
 ---
 
