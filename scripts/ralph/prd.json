@@ -25,7 +25,7 @@
       "id": "BV-002",
       "title": "Fix Insights tab \u2014 hide missing fields instead of showing hardcoded fallbacks",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "description": "The Insights tab shows identical placeholder data for all 18 real Sensate participants: 'Sleep Quality, Severity 7/10, Struggling for: ongoing, Urgency 6/10, Already Tried: (empty)'. These are hardcoded fallback values. For real data that doesn't have these fields, HIDE the fields entirely instead of showing fake values.",
       "acceptanceCriteria": [
         "Real Sensate participants do NOT show identical hardcoded severity/urgency/duration values",
@@ -42,7 +42,7 @@
       "id": "BV-003",
       "title": "Fix Widget tab \u2014 product name, real count, no placeholder text",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "description": "Widget tab shows internal study name ('Sensate Sleep & Stress Study (Real Data)') instead of product name. Also shows 'Brand Name' label and 'Product Image' placeholder. Consumer-facing widget must use product/brand names, not internal study names.",
       "acceptanceCriteria": [
         "Widget shows brand/product name, not internal study name",
@@ -60,7 +60,7 @@
       "id": "BV-004",
       "title": "Fix verification links \u2014 correct routes and valid IDs",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "description": "Verification links in Brand View go to broken routes like `/verify/SENSATE--SIM-002/results`. The `/results` suffix doesn't exist as a route. Verification IDs have double-dashes from generated data. Fix all links to use correct route format `/verify/[id]` with valid participant IDs.",
       "acceptanceCriteria": [
         "All verification links use format `/verify/[valid-id]` \u2014 no `/results` suffix",
@@ -79,7 +79,7 @@
       "id": "BV-005",
       "title": "Fix categorizeStory() to handle both real and simulated data shapes",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "description": "categorizeStory() categorizes all real Sensate stories as 'neutral' because it checks villainRatings (empty for real data) and overallRating at story root (only exists in finalTestimonial for real data). Must handle both data shapes.",
       "acceptanceCriteria": [
         "Real Sensate stories with positive finalTestimonial.overallRating categorize as 'improved'",

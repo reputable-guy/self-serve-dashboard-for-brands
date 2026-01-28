@@ -14,6 +14,8 @@ import {
   Star,
   Shield,
   Sparkles,
+  FlaskConical,
+  ArrowRight,
 } from "lucide-react";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { useEarlyInsightsStore } from "@/lib/early-insights-store";
@@ -323,6 +325,12 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
           </CardContent>
         </Card>
       </div>
+
+      {/* Path to Research — the "layaway plan on research" */}
+      <PathToResearchCard
+        participantCount={totalCompleted}
+        hasCompletions={hasCompletions}
+      />
     </div>
   );
 }
@@ -590,6 +598,111 @@ function HeroCard({
           {value}
         </p>
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATH TO RESEARCH — The "layaway plan on research"
+// ─────────────────────────────────────────────────────────────────────────────
+
+function PathToResearchCard({
+  participantCount,
+  hasCompletions,
+}: {
+  participantCount: number;
+  hasCompletions: boolean;
+}) {
+  // Milestones toward research-grade evidence
+  const milestones = [
+    { count: 10, label: "Early Signal", desc: "Initial evidence of product efficacy" },
+    { count: 30, label: "Strong Evidence", desc: "Statistically meaningful patterns" },
+    { count: 100, label: "Research Ready", desc: "Eligible for retrospective IRB study" },
+  ];
+
+  const currentMilestone = milestones.findIndex((m) => participantCount < m.count);
+  const nextMilestone = milestones[currentMilestone === -1 ? milestones.length - 1 : currentMilestone];
+  const progressToNext = nextMilestone
+    ? Math.min(100, Math.round((participantCount / nextMilestone.count) * 100))
+    : 100;
+
+  return (
+    <Card className="border-purple-100 bg-gradient-to-r from-purple-50/50 to-transparent">
+      <CardContent className="pt-6 pb-5">
+        <div className="flex items-center gap-2 mb-4">
+          <FlaskConical className="h-4 w-4 text-purple-600" />
+          <span className="text-sm font-semibold text-gray-900">
+            Path to Research
+          </span>
+          <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs ml-auto">
+            {participantCount} / {nextMilestone?.count || 100} participants
+          </Badge>
+        </div>
+
+        {/* Milestone Progress */}
+        <div className="flex items-center gap-2 mb-4">
+          {milestones.map((milestone, i) => {
+            const reached = participantCount >= milestone.count;
+            const isCurrent = i === currentMilestone;
+            return (
+              <div key={milestone.count} className="flex items-center flex-1">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                        reached
+                          ? "bg-purple-600 text-white"
+                          : isCurrent
+                          ? "bg-purple-100 text-purple-600 ring-2 ring-purple-300"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
+                      {reached ? "✓" : milestone.count}
+                    </div>
+                    <span
+                      className={`text-xs font-medium ${
+                        reached ? "text-purple-600" : isCurrent ? "text-gray-900" : "text-gray-400"
+                      }`}
+                    >
+                      {milestone.label}
+                    </span>
+                  </div>
+                </div>
+                {i < milestones.length - 1 && (
+                  <ArrowRight className={`h-3 w-3 mx-1 flex-shrink-0 ${reached ? "text-purple-400" : "text-gray-200"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Progress Bar */}
+        {hasCompletions && (
+          <div className="mb-3">
+            <div className="w-full bg-purple-100 rounded-full h-1.5">
+              <div
+                className="h-1.5 rounded-full bg-purple-500 transition-all duration-1000"
+                style={{ width: `${progressToNext}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Explanation */}
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {participantCount >= 100 ? (
+            <>Your evidence base is research-ready. You can file a <strong>retrospective IRB</strong> to publish these results as a formal study — no upfront hypothesis needed.</>
+          ) : participantCount >= 30 ? (
+            <>Strong evidence accumulating. At 100 participants, you can convert this into a <strong>published research study</strong> — a retrospective IRB lets you study data you&apos;ve already collected.</>
+          ) : participantCount >= 10 ? (
+            <>Early signal detected. Keep growing — at 30+ participants, patterns become statistically meaningful. At 100, you&apos;re eligible for a retrospective study publication.</>
+          ) : hasCompletions ? (
+            <>Every completed participant builds toward publishable research. Think of it as a <strong>layaway plan on research</strong> — accumulate evidence, then study it when you&apos;re ready.</>
+          ) : (
+            <>As participants complete their journey, evidence accumulates toward publishable research. No upfront hypothesis needed — discover your signal first, then publish.</>
+          )}
+        </p>
       </CardContent>
     </Card>
   );
