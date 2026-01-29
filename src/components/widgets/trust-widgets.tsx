@@ -146,8 +146,8 @@ export function TrustStripWidget({
         
         {/* Text */}
         <span className="text-sm text-gray-700">
-          <span className="font-medium">{participantCount} verified</span>
-          <span className="text-gray-500 hidden sm:inline"> · Tracked with wearables</span>
+          <span className="font-medium">Verified by {participantCount} customers</span>
+          <span className="text-gray-500 hidden sm:inline"> · Wearable tracked</span>
         </span>
       </div>
       
@@ -186,7 +186,7 @@ export function TrustCardWidget({
   return (
     <button
       onClick={onOpenModal}
-      className="group w-full max-w-[280px] bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden text-left"
+      className="group w-full bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden text-left"
     >
       {/* Main content */}
       <div className="p-4">
@@ -245,7 +245,9 @@ export function TrustSectionWidget({
   participants = [],
   brandColor = "#00D1C1",
   onOpenModal,
-}: TrustWidgetProps & { showParticipantPreviews?: boolean }) {
+  durationDays = 28,
+  deviceType = "Oura Ring",
+}: TrustWidgetProps & { showParticipantPreviews?: boolean; durationDays?: number; deviceType?: string }) {
   const displayParticipants = participants.length > 0
     ? participants.slice(0, 3)
     : [
@@ -321,7 +323,7 @@ export function TrustSectionWidget({
       <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            28-day study · Oura Ring verified · Independent analysis
+            {durationDays}-day study · {deviceType} verified · Independent analysis
           </p>
           <button
             onClick={onOpenModal}
@@ -347,16 +349,16 @@ export const WIDGET_STYLES: { value: WidgetStyle; label: string; description: st
   {
     value: "strip",
     label: "Trust Strip",
-    description: "Compact bar — minimal footprint, works anywhere",
+    description: "Compact bar — minimal footprint, perfect below Add to Cart",
   },
   {
     value: "card",
     label: "Trust Card", 
-    description: "Floating card — more prominent, positioned placement",
+    description: "Prominent card — more visibility, shows key stats",
   },
   {
     value: "section",
     label: "Trust Section",
-    description: "Full-width section — maximum visibility, shows participants",
+    description: "Full-width block — maximum impact, shows participants",
   },
 ];
