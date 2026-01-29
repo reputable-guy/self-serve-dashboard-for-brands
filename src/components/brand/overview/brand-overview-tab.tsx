@@ -136,18 +136,22 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
   }, [completedStories, isRealData, study.avgImprovement, getImprovementPercent]);
 
   // Determine the best metric label for the cohort (what does "avg improvement" refer to?)
-  const bestMetricLabel = useMemo(() => {
+  const bestMetricInfo = useMemo(() => {
     if (isRealData && completedStories[0]?.wearableMetrics?.hrvChange) {
-      return "HRV";
+      return { label: "HRV", lowerIsBetter: false };
     }
     // For simulated data, find the most common bestMetric label across participants
-    const labels: Record<string, number> = {};
+    const labels: Record<string, { count: number; lowerIsBetter: boolean }> = {};
     for (const s of completedStories) {
-      const label = s.wearableMetrics?.bestMetric?.label;
-      if (label) labels[label] = (labels[label] || 0) + 1;
+      const best = s.wearableMetrics?.bestMetric;
+      if (best?.label) {
+        if (!labels[best.label]) labels[best.label] = { count: 0, lowerIsBetter: !!best.lowerIsBetter };
+        labels[best.label].count++;
+      }
     }
-    const sorted = Object.entries(labels).sort((a, b) => b[1] - a[1]);
-    return sorted[0]?.[0] || (study.categoryLabel || "Wellness") + " Score";
+    const sorted = Object.entries(labels).sort((a, b) => b[1].count - a[1].count);
+    if (sorted[0]) return { label: sorted[0][0], lowerIsBetter: sorted[0][1].lowerIsBetter };
+    return { label: (study.categoryLabel || "Wellness") + " Score", lowerIsBetter: false };
   }, [isRealData, completedStories, study.categoryLabel]);
 
   // Find most recent enrollment for "latest activity"
@@ -237,7 +241,7 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
           icon={<TrendingUp className="h-5 w-5 text-purple-500" />}
           value={
             avgImprovement !== null
-              ? `+${avgImprovement}%`
+              ? `${bestMetricInfo.lowerIsBetter ? '↓' : '+'}${avgImprovement}%`
               : totalEnrolled > 0
                 ? `Day ${currentDay}`
                 : "—"
@@ -245,7 +249,7 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
           label={avgImprovement !== null ? "Avg Improvement" : "Study Day"}
           subtitle={
             avgImprovement !== null
-              ? bestMetricLabel
+              ? bestMetricInfo.label
               : isPreLaunch
                 ? "Not yet started"
                 : `of ${studyDays} days`
