@@ -142,7 +142,7 @@ export function BrandWidgetTab({ studyId, studyName, brandName, category, realSt
         let metricValue: string;
         if (best) {
           const pct = best.lowerIsBetter ? Math.abs(best.changePercent) : best.changePercent;
-          metricLabel = `${best.label || 'Improved'} ${pct > 0 ? '+' : ''}${pct}%`;
+          metricLabel = `${best.label || 'Improved'} ${best.lowerIsBetter ? '↓' : '+'}${pct}%`;
           metricValue = best.unit === 'min'
             ? `${Math.floor(best.after / 60)}h ${best.after % 60}m`
             : `${best.after}${best.unit}`;
