@@ -700,16 +700,34 @@ export interface MockTestimonial {
   videoDuration?: string;
 }
 
+/** Individual wearable metric change (before → after) */
+export interface WearableMetricChange {
+  before: number;
+  after: number;
+  unit: string;
+  changePercent: number;
+  /** Human-readable label for this metric (e.g., "Deep Sleep", "Sleep Efficiency") */
+  label?: string;
+  /** True if lower values are better (e.g., sleep latency, resting HR) */
+  lowerIsBetter?: boolean;
+}
+
 export interface WearableMetrics {
   device: string;
-  sleepChange?: { before: number; after: number; unit: string; changePercent: number };
-  deepSleepChange?: { before: number; after: number; unit: string; changePercent: number };
-  hrvChange?: { before: number; after: number; unit: string; changePercent: number };
-  restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
-  stepsChange?: { before: number; after: number; unit: string; changePercent: number };
-  activeMinutesChange?: { before: number; after: number; unit: string; changePercent: number };
-  activeCaloriesChange?: { before: number; after: number; unit: string; changePercent: number };
-  sleepEfficiencyChange?: { before: number; after: number; unit: string; changePercent: number };
+  /** The single metric that improved the most (for hero display) */
+  bestMetric?: WearableMetricChange;
+  // Sleep metrics (Vital/Oura API outputs)
+  sleepChange?: WearableMetricChange;
+  deepSleepChange?: WearableMetricChange;
+  remSleepChange?: WearableMetricChange;
+  sleepLatencyChange?: WearableMetricChange;
+  sleepEfficiencyChange?: WearableMetricChange;
+  hrvChange?: WearableMetricChange;
+  // Activity/recovery metrics
+  restingHrChange?: WearableMetricChange;
+  stepsChange?: WearableMetricChange;
+  activeMinutesChange?: WearableMetricChange;
+  activeCaloriesChange?: WearableMetricChange;
 }
 
 /** Data source type for distinguishing real vs demo/generated data */

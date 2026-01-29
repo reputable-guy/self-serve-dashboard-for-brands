@@ -122,3 +122,47 @@ Started: 2026-01-28
 Features informed by customer call insights = best quality (creative work).
 Features requiring data accuracy = same bugs as iteration 1 (discipline work).
 Process helps creative quality. Data accuracy needs explicit verification gates.
+
+---
+
+## 2026-01-28 17:00 - DEMO STUDY BUILD (Session 6)
+
+### What Was Built (DEMO-001 through DEMO-006)
+- DEMO-001: Completion ratio 8/30 (was 1/30). Explicit stage distributions in seedDemoData.
+- DEMO-002: Realistic scores +24% avg (was +137%). Multiplicative scoring 15-40% for improved.
+- DEMO-003: Deterministic seeding via mulberry32 PRNG. Fixed enrollment IDs (no Date.now), pre-generated nurture event random values, seeded story generator per enrollment ID.
+- DEMO-005: Widget modal was showing "0 of 8 participants" — added simulated story generation.
+- DEMO-006: Copy polish ("Sleep Score" → simplified labels).
+
+### Key Technical Patterns
+- `seeded-random.ts`: mulberry32 PRNG, use enrollment.id as seed for deterministic per-participant output
+- `generateEnrollmentId`: use `Math.floor(Math.random() * 1e15)` not `Date.now()` for determinism
+- `generateNurtureEvents`: pre-generate ALL random values upfront (fixed PRNG consumption order)
+- `daysInStudy`: derive from `daysAgo - 3` (deterministic) not `now.getTime()` (non-deterministic)
+
+---
+
+## 2026-01-28 18:30 - DEMO STUDY REVIEW FEEDBACK (Theban tested)
+
+### What Theban Liked
+- +24% avg improvement feels credible (was +137%) ✅
+- Deterministic seeding works perfectly (verified twice) ✅
+- Live Insights is "quite engaging" ✅
+- "Struggling for" and "Already tried" sections "extremely useful" ✅
+- Good/Below Average/Poor wearable indicators look great ✅
+
+### What Theban Caught (Bugs & Gaps)
+1. **Duplicate quotes** — Same "why they're trying" text on multiple participants. Pool is ~6-8 per category. Need 25-30 unique per category.
+2. **Verified Results links broken** — `/verify/SENSATE_-SIM-007` has no route handler
+3. **"Sleep Score" isn't a real wearable metric** — Vital API gives REM, deep sleep, latency, efficiency, HRV. Must show actual metrics and which one moved most.
+4. **"View full profile" does nothing** — Vestigial button since quotes moved inline. Remove.
+5. **Results cards underwhelming** — Just name + score + quote. Need: hero symptom, duration, what they tried before. Mini customer stories.
+6. **Widget floating badge over "Add to Cart"** — Conversion optimization fear for brands. Needs design-first redesign.
+7. **Text truncation** on "hopes to achieve"
+
+### Critical Learnings
+- **WEARABLE METRICS ARE THE DIFFERENTIATOR.** "Sleep Score" composite hides the thing that makes Reputable special. Show: "Deep Sleep +22 min" or "Sleep Efficiency 78% → 91%". Individual metrics that moved = proof.
+- **CONTENT DIVERSITY IS CHEAP AND HIGH-IMPACT.** 25-30 unique quotes per category eliminates the "feels artificial" problem. High ROI fix.
+- **WIDGET NEEDS DESIGN BEFORE CODE.** Don't iterate on widget layout in code. Explore options (below reviews, inline badge, separate card) as mockups first.
+- **VALIDATE ROUTES ACTUALLY RESOLVE.** Link existing ≠ page existing. Click every link, confirm HTTP 200.
+- **TIME-BOX DEBUGGING.** Went 45+ min on deterministic seeding rabbit hole without check-in. Rule: status update every 20 min during autonomous work.

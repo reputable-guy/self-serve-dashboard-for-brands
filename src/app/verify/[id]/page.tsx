@@ -633,6 +633,33 @@ export default function VerifyPage() {
     const simulatedStory = getSimulatedStory(id);
 
     if (simulatedStory) {
+      // Build metrics from wearable data (individual metrics, not composites)
+      const wearableMetricsList: { label: string; value: string; positive: boolean }[] = [];
+      const wm = simulatedStory.wearableMetrics;
+      if (wm?.bestMetric) {
+        const best = wm.bestMetric;
+        const pct = best.lowerIsBetter ? Math.abs(best.changePercent) : best.changePercent;
+        wearableMetricsList.push({
+          label: best.label || 'Best Metric',
+          value: `${best.lowerIsBetter ? '↓' : '+'}${pct}%`,
+          positive: pct > 0,
+        });
+      }
+      if (wm?.deepSleepChange && wm.deepSleepChange !== wm.bestMetric) {
+        wearableMetricsList.push({ label: 'Deep Sleep', value: `+${wm.deepSleepChange.changePercent}%`, positive: wm.deepSleepChange.changePercent > 0 });
+      }
+      if (wm?.hrvChange && wm.hrvChange !== wm.bestMetric) {
+        wearableMetricsList.push({ label: 'HRV', value: `+${wm.hrvChange.changePercent}%`, positive: wm.hrvChange.changePercent > 0 });
+      }
+      // Fallback to assessment if no wearable metrics
+      if (wearableMetricsList.length === 0 && simulatedStory.assessmentResult) {
+        wearableMetricsList.push({
+          label: simulatedStory.assessmentResult.categoryLabel,
+          value: `+${simulatedStory.assessmentResult.change.compositePercent}%`,
+          positive: true,
+        });
+      }
+
       // Create a mock testimonial from the simulated story
       const mockTestimonial: MockTestimonial = {
         id: parseInt(simulatedMatch[2]),
@@ -644,9 +671,7 @@ export default function VerifyPage() {
         overallRating: simulatedStory.overallRating ?? 4,
         story: simulatedStory.journey.keyQuotes[simulatedStory.journey.keyQuotes.length - 1]?.quote ||
                `This product made a real difference for my ${simulatedStory.journey.villainVariable}.`,
-        metrics: simulatedStory.assessmentResult
-          ? [{ label: simulatedStory.assessmentResult.categoryLabel, value: `+${simulatedStory.assessmentResult.change.compositePercent}%`, positive: true }]
-          : [],
+        metrics: wearableMetricsList.slice(0, 3),
         benefits: ["Improved " + simulatedStory.journey.villainVariable, "Better overall wellbeing"],
         verified: true,
         verificationId: simulatedStory.verificationId ?? id,

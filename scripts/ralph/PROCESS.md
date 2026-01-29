@@ -27,6 +27,9 @@ Ralph does NOT:
 Copy `QA-CHECKLIST.md` → `qa/QA-<date>-<branch>.md`, fill in every field with actual values.
 If any field is empty, QA is not done. If any field is FAIL, fix before presenting.
 
+**MINDSET: ADVERSARIAL, NOT CONFIRMATORY.**
+Don't look for things that work. Assume there are 5 problems you haven't found yet. Your job is to find them before Theban does. Ask: "What would Theban criticize?" — then go looking for exactly that.
+
 **Data Accuracy (do this FIRST — before screenshots):**
 1. Open the browser to each view
 2. Write down every computed number (avg improvement, participant count, etc.)
@@ -51,6 +54,12 @@ If any field is empty, QA is not done. If any field is FAIL, fix before presenti
 2. Does the underlying data support what I'm displaying?
 
 If issues found → fix directly or add stories to prd.json for next Ralph run.
+
+**TIME-BOXING (Added Jan 28 — seeding rabbit hole):**
+- Send a heartbeat/status update to Theban every **20 minutes** during autonomous work
+- If stuck debugging a single issue for >20 min: step back, ask "is this the right investment?"
+- If a story is taking >30 min total: flag it, consider splitting or deferring
+- Status updates are brief: "Still on it — fixing X" or "Hit a snag with Y, trying Z approach"
 
 Sub-agents (max 2) may be used here for:
 - Targeted critique (with buyer persona, competitive refs, constraints)

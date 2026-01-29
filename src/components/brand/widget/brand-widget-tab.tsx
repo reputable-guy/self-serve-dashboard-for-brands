@@ -124,29 +124,45 @@ export function BrandWidgetTab({ studyId, studyName, brandName, category, realSt
     // Simulated data: generate completed stories from enrollments
     if (completedEnrollments.length > 0) {
       const stories = getCompletedStoriesFromEnrollments(completedEnrollments, category || "sleep");
+      // Sort by best wearable metric improvement
       const sorted = [...stories].sort((a, b) => {
-        const aPercent = a.assessmentResult?.change?.compositePercent ?? 0;
-        const bPercent = b.assessmentResult?.change?.compositePercent ?? 0;
-        return bPercent - aPercent;
+        const getBest = (s: typeof a) => {
+          const best = s.wearableMetrics?.bestMetric;
+          if (best) return best.lowerIsBetter ? Math.abs(best.changePercent) : best.changePercent;
+          return s.assessmentResult?.change?.compositePercent ?? 0;
+        };
+        return getBest(b) - getBest(a);
       });
       return sorted.slice(0, 6).map((s) => {
-        const pct = s.assessmentResult?.change?.compositePercent;
+        const best = s.wearableMetrics?.bestMetric;
         const lastQuote = s.journey?.keyQuotes?.[s.journey.keyQuotes.length - 1];
+        
+        // Show individual wearable metric, not assessment composite
+        let metricLabel: string;
+        let metricValue: string;
+        if (best) {
+          const pct = best.lowerIsBetter ? Math.abs(best.changePercent) : best.changePercent;
+          metricLabel = `${best.label || 'Improved'} ${pct > 0 ? '+' : ''}${pct}%`;
+          metricValue = best.unit === 'min'
+            ? `${Math.floor(best.after / 60)}h ${best.after % 60}m`
+            : `${best.after}${best.unit}`;
+        } else {
+          const pct = s.assessmentResult?.change?.compositePercent;
+          metricLabel = pct !== undefined ? `${pct > 0 ? "+" : ""}${pct}%` : "Completed";
+          metricValue = s.assessmentResult ? `${s.assessmentResult.endpoint.compositeScore}/100` : "28 days";
+        }
+
         return {
           id: s.id,
           name: s.name || "Participant",
           initials: s.initials || s.name?.[0] || "?",
           rating: s.overallRating || 4,
           primaryMetric: {
-            label: pct !== undefined
-              ? `${pct > 0 ? "+" : ""}${pct}%`
-              : "Completed",
-            value: s.assessmentResult
-              ? `${s.assessmentResult.endpoint.compositeScore}/100`
-              : "28 days",
+            label: metricLabel,
+            value: metricValue,
           },
           quote: (typeof lastQuote === 'string' ? lastQuote : lastQuote?.quote) || "Completed the full study.",
-          device: "Oura Ring",
+          device: s.wearableMetrics?.device || "Oura Ring",
           verificationId: s.verificationId || s.id,
         };
       });

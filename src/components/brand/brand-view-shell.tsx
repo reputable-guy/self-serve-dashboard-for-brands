@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { BrandViewHeader } from "./brand-view-header";
 import { BrandViewTabs } from "./brand-view-tabs";
 import { BrandViewFooter } from "./brand-view-footer";
@@ -15,6 +15,7 @@ import type { BrandViewTab } from "./types";
 import type { StudyData } from "@/components/admin/study-detail/types";
 import type { ParticipantStory } from "@/lib/types";
 import { createSeededRandom } from "@/lib/simulation/seeded-random";
+import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";
 
 // Real data imports
 import { SENSATE_REAL_STORIES } from "@/lib/sensate-real-data";
@@ -66,6 +67,25 @@ export function BrandViewShell({
   // Demo data seeder (only for non-real-data studies)
   const enrollmentSlug = study.enrollmentConfig?.enrollmentSlug || study.id;
   const category = study.category || "sleep";
+
+  // Persist simulated completed stories to sessionStorage so /verify/[id] pages work
+  const completedEnrollments = useMemo(
+    () => studyEnrollments.filter((e) => e.stage === "completed"),
+    [studyEnrollments]
+  );
+  useEffect(() => {
+    if (isRealDataStudy || completedEnrollments.length === 0) return;
+    try {
+      const stories = getCompletedStoriesFromEnrollments(completedEnrollments, category);
+      const storyMap: Record<string, ParticipantStory> = {};
+      for (const s of stories) {
+        if (s.verificationId) storyMap[s.verificationId] = s;
+      }
+      sessionStorage.setItem('reputable-simulated-stories', JSON.stringify(storyMap));
+    } catch {
+      // sessionStorage may be unavailable in SSR or private browsing
+    }
+  }, [isRealDataStudy, completedEnrollments, category]);
 
   const seedDemoData = useCallback(
     (size: "small" | "medium" | "full") => {

@@ -23,18 +23,28 @@ If any item is FAIL, fix it before presenting. If you can't fix it, list it as a
 - [ ] **Avg improvement number:** Computed = ___ | Known ground truth = ___ | MATCH? ___
 - [ ] **Participant count:** Displayed = ___ | Actual = ___ | MATCH? ___
 - [ ] **Featured participant:** Name = ___ | Their actual result = ___ | Is this a GOOD result? ___
+- [ ] **Metrics are REAL wearable outputs?** Listed metrics = ___ | Do these exist in Vital/Oura API? ___ (No composite "Sleep Score" — use REM, deep sleep, latency, efficiency, HRV)
 - [ ] **All displayed metrics:** Cross-check at least 3 participants against source data
   - Participant 1: ___ | Source: ___ | Match? ___
   - Participant 2: ___ | Source: ___ | Match? ___
   - Participant 3: ___ | Source: ___ | Match? ___
 
+### Content Diversity (Added Jan 28 — duplicate quote problem)
+- [ ] **Quote uniqueness:** Read quotes on 5+ participant cards. Are they ALL distinct? ___ | Any repeats? ___
+- [ ] **Name diversity:** Scan participant names. Any duplicates or implausible patterns? ___
+- [ ] **"Why they're trying" diversity:** Are motivations varied across participants? ___
+
 ### Interaction Testing
 - [ ] **Widget click:** Does clicking open the modal? Result: ___
-- [ ] **Verification link:** Click it. Does it load? URL: ___ | HTTP status: ___
+- [ ] **Verification link:** Click the link. Does a page LOAD (not 404)? URL: ___ | HTTP status: ___
+- [ ] **All internal links:** Click EVERY link on every tab. List any that don't resolve:
+  - Link 1: ___ | Resolves? ___
+  - Link 2: ___ | Resolves? ___
 - [ ] **Carousel arrows:** Do they navigate? Cards change? ___
 - [ ] **FAQ accordion:** Do all 5 expand/collapse? ___
 - [ ] **Copy buttons:** Does embed code copy to clipboard? ___
 - [ ] **"View as Brand" toggle:** Does switching back to Admin work? ___
+- [ ] **Vestigial buttons:** Any buttons that do nothing when clicked? List: ___
 
 ### Visual Scan (Every Tab)
 - [ ] **Overview tab screenshot:** path: ___

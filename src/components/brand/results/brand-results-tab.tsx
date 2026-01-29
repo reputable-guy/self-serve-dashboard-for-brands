@@ -59,11 +59,16 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
   // Sort stories: positive first (by improvement %), then neutral, then negative
   const sortedStories = useMemo(() => {
     const getImprovement = (s: ParticipantStory): number => {
-      // For real data with wearable metrics, use HRV
+      // Best wearable metric (normalized for lower-is-better)
+      const best = s.wearableMetrics?.bestMetric;
+      if (best?.changePercent !== undefined) {
+        return best.lowerIsBetter ? Math.abs(best.changePercent) : best.changePercent;
+      }
+      // HRV fallback (real data)
       if (s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
         return s.wearableMetrics.hrvChange.changePercent;
       }
-      // For simulated, use assessment
+      // Assessment fallback
       const assess = s.assessmentResults?.[0] || s.assessmentResult;
       if (assess?.change?.compositePercent !== undefined) {
         return assess.change.compositePercent;
@@ -215,10 +220,18 @@ function HeroStatCard({
   );
 }
 
-/** Before/After Story Card */
+/** Format minutes into human-readable duration */
+function formatMinutes(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+/** Before/After Story Card — shows individual wearable metrics, not composites */
 function BeforeAfterCard({
   story,
-  category,
   variant,
 }: {
   story: ParticipantStory;
@@ -226,21 +239,36 @@ function BeforeAfterCard({
   variant: "featured" | "compact";
 }) {
   const isFeatured = variant === "featured";
-  
-  // Get assessment results if available (singular or plural field)
-  const assessment = story.assessmentResults?.[0] || story.assessmentResult;
-  const baselineScore = assessment?.baseline?.compositeScore;
-  const endpointScore = assessment?.endpoint?.compositeScore;
-  const scoreChange = assessment?.change?.compositePercent;
-
-  // Get wearable metrics if available
   const wearable = story.wearableMetrics;
+  const best = wearable?.bestMetric;
+
+  // Assessment fallback for non-wearable categories
+  const assessment = story.assessmentResults?.[0] || story.assessmentResult;
 
   // Get testimonial — try finalTestimonial first, fall back to journey keyQuotes
   const testimonial = story.finalTestimonial;
   const lastQuote = story.journey?.keyQuotes?.slice(-1)[0];
   const displayQuote = testimonial?.quote || lastQuote?.quote;
   const rating = testimonial?.overallRating || story.overallRating || 4;
+
+  // Collect secondary metrics (up to 2 for compact, 3 for featured)
+  type MetricChange = { before: number; after: number; unit: string; changePercent: number; label?: string; lowerIsBetter?: boolean };
+  const secondaryMetrics: MetricChange[] = useMemo(() => {
+    if (!wearable) return [];
+    const candidates: (MetricChange | undefined)[] = [
+      wearable.deepSleepChange, wearable.sleepEfficiencyChange, wearable.hrvChange,
+      wearable.remSleepChange, wearable.sleepLatencyChange, wearable.sleepChange, wearable.restingHrChange,
+    ];
+    return candidates
+      .filter((m): m is MetricChange => !!m && typeof m === 'object' && 'changePercent' in m)
+      .filter(m => m !== best)
+      .slice(0, isFeatured ? 3 : 2);
+  }, [wearable, best, isFeatured]);
+
+  // Hero symptom and context for mini customer story
+  const heroSymptom = story.baseline?.motivation;
+  const villainDuration = story.baseline?.villainDuration;
+  const triedBefore = story.baseline?.triedOther;
 
   return (
     <Card className={`${isFeatured ? "border-[#00D1C1]/30 bg-gradient-to-r from-[#00D1C1]/5 to-transparent" : ""}`}>
@@ -255,7 +283,7 @@ function BeforeAfterCard({
               <span className="text-sm font-medium text-gray-900">{story.name}</span>
               {story.profile?.location && (
                 <span className="text-xs text-muted-foreground ml-2">
-                  {story.profile.location}
+                  {story.profile.ageRange} · {story.profile.location}
                 </span>
               )}
             </div>
@@ -269,57 +297,94 @@ function BeforeAfterCard({
           </Badge>
         </div>
 
-        {/* Before/After Metrics */}
-        {(baselineScore !== undefined || wearable) && (
-          <div className={`${isFeatured ? "grid grid-cols-2 gap-4 mb-4" : "flex gap-4 mb-3"}`}>
-            {/* Assessment Score */}
-            {baselineScore !== undefined && endpointScore !== undefined && (
-              <div className={`bg-gray-50 rounded-lg p-3 ${isFeatured ? "" : "flex-1"}`}>
-                <div className="text-xs text-muted-foreground mb-1">
-                  {assessment?.categoryLabel || category} Score
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">{Math.round(baselineScore)}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-lg font-bold text-gray-900">{Math.round(endpointScore)}</span>
-                  {scoreChange !== undefined && (
-                    <span className={`text-sm font-semibold ${scoreChange > 0 ? "text-emerald-600" : "text-gray-500"}`}>
-                      {scoreChange > 0 ? "+" : ""}{Math.round(scoreChange)}%
-                    </span>
-                  )}
-                </div>
-              </div>
+        {/* Mini Customer Story Context */}
+        {(heroSymptom || villainDuration || triedBefore) && (
+          <div className={`bg-gray-50/70 rounded-lg p-2.5 mb-3 space-y-1 ${isFeatured ? '' : 'text-xs'}`}>
+            {heroSymptom && (
+              <p className="text-xs text-gray-600">
+                <span className="font-medium text-gray-700">Struggling with:</span> {heroSymptom.length > 80 ? heroSymptom.slice(0, 80) + '…' : heroSymptom}
+              </p>
             )}
+            {villainDuration && (
+              <p className="text-xs text-gray-500">
+                <span className="font-medium text-gray-600">For:</span> {villainDuration}
+              </p>
+            )}
+            {triedBefore && triedBefore !== 'Yes, various options' && (
+              <p className="text-xs text-gray-500">
+                <span className="font-medium text-gray-600">Previously tried:</span> {triedBefore.length > 60 ? triedBefore.slice(0, 60) + '…' : triedBefore}
+              </p>
+            )}
+          </div>
+        )}
 
-            {/* Wearable HRV Metric (real data — primary for Sensate) */}
-            {!baselineScore && wearable?.hrvChange && (
-              <div className={`bg-gray-50 rounded-lg p-3 ${isFeatured ? "" : "flex-1"}`}>
-                <div className="text-xs text-muted-foreground mb-1">HRV (Oura Ring)</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">{wearable.hrvChange.before} ms</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-lg font-bold text-gray-900">{wearable.hrvChange.after} ms</span>
-                  <span className={`text-sm font-semibold ${wearable.hrvChange.changePercent > 0 ? "text-emerald-600" : "text-gray-500"}`}>
-                    {wearable.hrvChange.changePercent > 0 ? "+" : ""}{Math.round(wearable.hrvChange.changePercent)}%
-                  </span>
-                </div>
-              </div>
-            )}
+        {/* Best Wearable Metric — hero display */}
+        {best ? (
+          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+            <div className="text-xs text-muted-foreground mb-1">
+              {best.label || 'Wearable Metric'} · {wearable?.device || 'Wearable verified'}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm text-gray-500">
+                {best.unit === 'min' ? formatMinutes(best.before) : `${best.before}${best.unit}`}
+              </span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-lg font-bold text-gray-900">
+                {best.unit === 'min' ? formatMinutes(best.after) : `${best.after}${best.unit}`}
+              </span>
+              <span className={`text-sm font-semibold ${
+                (best.lowerIsBetter ? best.changePercent < 0 : best.changePercent > 0) ? "text-emerald-600" : "text-gray-500"
+              }`}>
+                {best.lowerIsBetter
+                  ? `↓${Math.abs(best.changePercent)}%`
+                  : `+${Math.round(best.changePercent)}%`
+                }
+              </span>
+            </div>
+          </div>
+        ) : wearable?.hrvChange ? (
+          /* Real data HRV fallback */
+          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+            <div className="text-xs text-muted-foreground mb-1">HRV · {wearable.device || 'Oura Ring'}</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm text-gray-500">{wearable.hrvChange.before} ms</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-lg font-bold text-gray-900">{wearable.hrvChange.after} ms</span>
+              <span className={`text-sm font-semibold ${wearable.hrvChange.changePercent > 0 ? "text-emerald-600" : "text-gray-500"}`}>
+                {wearable.hrvChange.changePercent > 0 ? "+" : ""}{Math.round(wearable.hrvChange.changePercent)}%
+              </span>
+            </div>
+          </div>
+        ) : assessment?.baseline?.compositeScore !== undefined ? (
+          /* Assessment fallback */
+          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+            <div className="text-xs text-muted-foreground mb-1">{assessment.categoryLabel} Score</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm text-gray-500">{Math.round(assessment.baseline.compositeScore)}/100</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-lg font-bold text-gray-900">{Math.round(assessment.endpoint.compositeScore)}/100</span>
+              {assessment.change?.compositePercent !== undefined && (
+                <span className={`text-sm font-semibold ${assessment.change.compositePercent > 0 ? "text-emerald-600" : "text-gray-500"}`}>
+                  +{Math.round(assessment.change.compositePercent)}%
+                </span>
+              )}
+            </div>
+          </div>
+        ) : null}
 
-            {/* Wearable Sleep Metric (simulated fallback) */}
-            {!baselineScore && !wearable?.hrvChange && wearable?.sleepChange && (
-              <div className={`bg-gray-50 rounded-lg p-3 ${isFeatured ? "" : "flex-1"}`}>
-                <div className="text-xs text-muted-foreground mb-1">Sleep Score</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">{wearable.sleepChange.before}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-lg font-bold text-gray-900">{wearable.sleepChange.after}</span>
-                  <span className={`text-sm font-semibold ${wearable.sleepChange.changePercent > 0 ? "text-emerald-600" : "text-gray-500"}`}>
-                    {wearable.sleepChange.changePercent > 0 ? "+" : ""}{Math.round(wearable.sleepChange.changePercent)}%
-                  </span>
-                </div>
-              </div>
-            )}
+        {/* Secondary Wearable Metrics — compact inline */}
+        {secondaryMetrics.length > 0 && (
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {secondaryMetrics.map((m, i) => {
+              const label = ('label' in m ? m.label : '') || 'Metric';
+              const isLower = 'lowerIsBetter' in m && m.lowerIsBetter;
+              const improved = isLower ? m.changePercent < 0 : m.changePercent > 0;
+              return (
+                <span key={i} className={`text-xs px-2 py-1 rounded-full ${improved ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {label}: {isLower ? `↓${Math.abs(m.changePercent)}%` : `+${Math.round(m.changePercent)}%`}
+                </span>
+              );
+            })}
           </div>
         )}
 

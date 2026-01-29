@@ -6,7 +6,7 @@
  * verification links, and a mix of outcomes.
  */
 
-import type { ParticipantStory, TierLevel } from '../types';
+import type { ParticipantStory, TierLevel, WearableMetricChange, WearableMetrics } from '../types';
 import type { Enrollment } from '../enrollment-store';
 import { createAssessmentResult } from '../generators/story-utils';
 import { createSeededRandom } from './seeded-random';
@@ -47,7 +47,13 @@ const CATEGORY_CONTENT: Record<string, {
   noImprovementQuotes: { day: number; quotes: string[]; context: string }[];
 }> = {
   sleep: {
-    villainVariables: ['poor sleep quality', 'trouble falling asleep', 'waking up tired', 'racing thoughts at bedtime', 'restless nights', 'waking up multiple times'],
+    villainVariables: [
+      'poor sleep quality', 'trouble falling asleep', 'waking up tired',
+      'racing thoughts at bedtime', 'restless nights', 'waking up multiple times',
+      'light sleep all night', 'waking up at 3am', 'daytime drowsiness from bad sleep',
+      'can\'t turn off my brain at night', 'tossing and turning for hours',
+      'never feeling rested no matter how long I sleep',
+    ],
     improvedQuotes: [
       { day: 14, quotes: [
         "I'm actually falling asleep within 15 minutes now. Used to take an hour.",
@@ -55,13 +61,48 @@ const CATEGORY_CONTENT: Record<string, {
         "My partner says I'm not tossing and turning anymore.",
         "Waking up feeling refreshed for the first time in years.",
         "The racing thoughts at bedtime have really calmed down.",
+        "My Oura Ring is showing deep sleep went from 30 to 50 minutes.",
+        "I don't reach for my phone at 2am anymore — just sleep straight through.",
+        "Noticed I'm not hitting snooze five times. Just... wake up and go.",
+        "The difference in my energy by noon tells me the sleep is actually working.",
+        "Two weeks in and my sleep latency dropped from 40 minutes to under 15.",
+        "My wife asked what changed because I stopped snoring as much.",
+        "I had three nights in a row of 7+ hours. That hasn't happened in a year.",
+        "REM sleep is up 20 minutes according to my watch. Can feel it too.",
+        "The 3am wake-ups have gone from every night to maybe once a week.",
+        "Falling asleep feels natural now instead of like a battle.",
       ], context: "Week 2 check-in" },
       { day: 28, quotes: [
-        "My sleep score went from 65 to 85. I feel like a different person.",
+        "Deep sleep went from 35 minutes to nearly an hour. I feel like a new person.",
         "28 days in and I'm getting the best sleep of my adult life.",
         "This completely transformed my sleep. Deep, restorative rest every night.",
         "I used to dread bedtime. Now I actually look forward to it.",
         "The change in my sleep quality has been dramatic. Worth every penny.",
+        "My HRV went up 15 points. My body is actually recovering overnight now.",
+        "Sleep efficiency is at 92%. I didn't even know what that meant before this.",
+        "I wake up before my alarm now. That's never happened in my adult life.",
+        "The data doesn't lie — every metric improved. Total sleep, deep sleep, REM, all of it.",
+        "My partner started the product too after seeing what it did for me.",
+        "I've tried melatonin, CBT-i, sleep hygiene — nothing worked like this.",
+        "Going from 5.5 to 7 hours of actual sleep is life-changing.",
+        "My trainer noticed my recovery scores are way up. Sleep is the foundation.",
+        "I finally understand what 'restorative sleep' actually feels like.",
+        "Night sweats gone, 3am wake-ups gone, morning grogginess gone. All of it.",
+        "Four weeks ago I was averaging 25 minutes of deep sleep. Now it's 55.",
+        "Honestly skeptical going in, but the wearable data convinced me. It's real.",
+        "My sleep latency went from 45 minutes to 8. I close my eyes and I'm out.",
+        "The improvement in my mood and focus during the day — all from better sleep.",
+        "I track everything and the before/after is undeniable. This works.",
+        "Went from waking 3-4 times a night to sleeping straight through.",
+        "My kids noticed I'm not cranky in the morning anymore. That says it all.",
+        "REM cycles are longer and deeper. Dreams are vivid again — in a good way.",
+        "This solved a problem I've had for over a decade. No exaggeration.",
+        "Sleep efficiency from 76% to 93%. The numbers speak for themselves.",
+        "I've recommended this to three friends already based on my results.",
+        "The first week I thought it was placebo. By week four, the data proved it wasn't.",
+        "I'm sleeping 90 fewer minutes but feeling more rested. It's all quality now.",
+        "My resting heart rate dropped 5 bpm. My body is finally resting properly.",
+        "Never thought a supplement could change my sleep this much. The data is clear.",
       ], context: "Final reflection" },
     ],
     mixedQuotes: [
@@ -70,12 +111,29 @@ const CATEGORY_CONTENT: Record<string, {
         "Falling asleep easier, but still waking up at 3am occasionally.",
         "Quality seems improved, but quantity is the same.",
         "Good nights mixed with some not-so-good ones.",
+        "Deep sleep is up slightly but I still wake up groggy some mornings.",
+        "Week one was great. Week two leveled off a bit.",
+        "My HRV improved a few points but sleep duration hasn't changed much.",
+        "Better than before but not the transformation I was hoping for yet.",
+        "I fall asleep faster but still only getting about 6 hours total.",
+        "Some real improvement in how rested I feel, other nights same as before.",
       ], context: "Week 2 check-in" },
       { day: 28, quotes: [
         "I sleep deeper but still wake up once or twice. It's an improvement though.",
         "Not a complete fix, but my sleep is noticeably better overall.",
         "The bad nights are less bad, and the good nights are more frequent.",
-        "Modest improvement - maybe 30% better than before I started.",
+        "Modest improvement — maybe 30% better than before I started.",
+        "Deep sleep went up about 10 minutes. Not dramatic but I'll take it.",
+        "Some metrics improved, others stayed flat. Net positive though.",
+        "I'd say my sleep went from a 4/10 to a 6/10. Progress, not perfection.",
+        "The first two weeks were better than the last two. Not sure what happened.",
+        "Fall asleep faster for sure, but total sleep time is about the same.",
+        "Helped with the quality side but I still struggle with getting enough hours.",
+        "My partner sleeps great on it. For me it's more subtle but still noticeable.",
+        "Better baseline sleep but stress still tanks my nights. Not the product's fault.",
+        "HRV improved a few points. Not dramatic but the trend is real.",
+        "I'd continue using it — the improvement is real even if it's modest.",
+        "The racing mind is calmer but I still have occasional rough nights.",
       ], context: "Final reflection" },
     ],
     noImprovementQuotes: [
@@ -83,11 +141,22 @@ const CATEGORY_CONTENT: Record<string, {
         "Honestly, not seeing much difference yet.",
         "Still struggling with the same sleep issues.",
         "Hoped for more by now, but sleep is about the same.",
+        "My wearable data looks roughly the same as baseline week.",
+        "Gave it an honest two weeks. Sleep patterns haven't shifted.",
+        "Maybe a placebo effect night one, but nothing sustained.",
+        "My sleep issues might be too deep-rooted for this alone.",
       ], context: "Week 2 check-in" },
       { day: 28, quotes: [
         "Sleep is about the same. Maybe I need a longer trial period.",
         "Unfortunately no real change in my sleep patterns.",
         "Didn't work for me, but everyone's different I guess.",
+        "The data shows basically flat across all metrics. No improvement for me.",
+        "Wish I had a better result to report. My sleep issues persist.",
+        "Tried it faithfully for 28 days. Just not the right fit for my situation.",
+        "My sleep problems are probably more behavioral than supplement-solvable.",
+        "No change in deep sleep, REM, or total sleep. Plateaued at baseline.",
+        "I appreciate the honest tracking — at least I know definitively it didn't help me.",
+        "Might work for others but my insomnia needs something stronger.",
       ], context: "Final reflection" },
     ],
   },
@@ -572,7 +641,39 @@ function getCategoryTier(category: string): TierLevel {
 }
 
 /**
- * Generate wearable metrics based on category and outcome
+ * Compute the best (most improved) wearable metric from a WearableMetrics object.
+ * For "lower is better" metrics (e.g., sleep latency), improvement is the reduction %.
+ */
+function computeBestMetric(metrics: Partial<WearableMetrics>): WearableMetricChange | undefined {
+  const metricKeys: (keyof WearableMetrics)[] = [
+    'sleepChange', 'deepSleepChange', 'remSleepChange', 'sleepLatencyChange',
+    'sleepEfficiencyChange', 'hrvChange', 'restingHrChange',
+    'stepsChange', 'activeMinutesChange', 'activeCaloriesChange',
+  ];
+
+  let best: WearableMetricChange | undefined;
+  let bestImprovement = -Infinity;
+
+  for (const key of metricKeys) {
+    const metric = metrics[key] as WearableMetricChange | undefined;
+    if (!metric || typeof metric !== 'object' || !('changePercent' in metric)) continue;
+    // For "lower is better" metrics, improvement = negative changePercent (i.e., went down)
+    const improvement = metric.lowerIsBetter ? -metric.changePercent : metric.changePercent;
+    if (improvement > bestImprovement) {
+      bestImprovement = improvement;
+      best = metric;
+    }
+  }
+  return best;
+}
+
+/**
+ * Generate wearable metrics based on category and outcome.
+ * Returns individual Vital/Oura API metrics — NOT composites like "Sleep Score".
+ * 
+ * Sleep metrics: Total Sleep, Deep Sleep, REM Sleep, Sleep Latency, Sleep Efficiency, HRV
+ * Stress metrics: HRV, Resting HR
+ * Recovery metrics: HRV, Total Sleep, Resting HR
  */
 function generateWearableMetrics(category: string, outcome: OutcomeType, tier: TierLevel) {
   // Only Tier 1-2 have primary wearable metrics
@@ -584,77 +685,151 @@ function generateWearableMetrics(category: string, outcome: OutcomeType, tier: T
     no_improvement: 0,
   };
   const mult = outcomeMultiplier[outcome];
+  // Add per-metric variance so not every metric improves identically
+  const variance = () => 0.7 + Math.random() * 0.6; // 0.7x to 1.3x
 
   const devices = ['Apple Watch Series 9', 'Oura Ring Gen 3', 'Whoop 4.0', 'Garmin Venu 3', 'Fitbit Sense 2'];
   const device = devices[Math.floor(Math.random() * devices.length)];
 
   if (category === 'sleep') {
-    const baselineSleep = 330 + Math.floor(Math.random() * 40); // 330-370 min
-    const sleepImprovement = Math.floor((20 + Math.random() * 30) * mult);
+    // Total Sleep Duration (minutes)
+    const baselineSleep = 330 + Math.floor(Math.random() * 40); // 5.5-6.2h
+    const sleepImprovement = Math.floor((20 + Math.random() * 30) * mult * variance());
+    
+    // Deep Sleep Duration (minutes)
     const baselineDeep = 35 + Math.floor(Math.random() * 15); // 35-50 min
-    const deepImprovement = Math.floor((15 + Math.random() * 25) * mult);
-    const baselineHrv = 35 + Math.floor(Math.random() * 15); // 35-50 ms
-    const hrvImprovement = Math.floor((10 + Math.random() * 15) * mult);
+    const deepImprovement = Math.floor((12 + Math.random() * 20) * mult * variance());
+    
+    // REM Sleep Duration (minutes)
+    const baselineRem = 65 + Math.floor(Math.random() * 25); // 65-90 min
+    const remImprovement = Math.floor((10 + Math.random() * 18) * mult * variance());
 
-    return {
-      device,
-      sleepChange: {
-        before: baselineSleep,
-        after: baselineSleep + sleepImprovement,
-        unit: 'min' as const,
-        changePercent: Math.round((sleepImprovement / baselineSleep) * 100),
-      },
-      deepSleepChange: {
-        before: baselineDeep,
-        after: baselineDeep + deepImprovement,
-        unit: 'min' as const,
-        changePercent: Math.round((deepImprovement / baselineDeep) * 100),
-      },
-      hrvChange: {
-        before: baselineHrv,
-        after: baselineHrv + hrvImprovement,
-        unit: 'ms' as const,
-        changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
-      },
+    // Sleep Latency (minutes) — LOWER is better
+    const baselineLatency = 18 + Math.floor(Math.random() * 25); // 18-43 min
+    const latencyReduction = Math.floor((8 + Math.random() * 15) * mult * variance());
+
+    // Sleep Efficiency (%) — higher is better
+    const baselineEfficiency = 75 + Math.floor(Math.random() * 10); // 75-85%
+    const efficiencyImprovement = Math.floor((5 + Math.random() * 10) * mult * variance());
+
+    // HRV (ms)
+    const baselineHrv = 35 + Math.floor(Math.random() * 15); // 35-50 ms
+    const hrvImprovement = Math.floor((8 + Math.random() * 12) * mult * variance());
+
+    const sleepChange = {
+      before: baselineSleep,
+      after: baselineSleep + sleepImprovement,
+      unit: 'min',
+      changePercent: Math.round((sleepImprovement / baselineSleep) * 100),
+      label: 'Total Sleep',
     };
+    const deepSleepChange = {
+      before: baselineDeep,
+      after: baselineDeep + deepImprovement,
+      unit: 'min',
+      changePercent: Math.round((deepImprovement / baselineDeep) * 100),
+      label: 'Deep Sleep',
+    };
+    const remSleepChange = {
+      before: baselineRem,
+      after: baselineRem + remImprovement,
+      unit: 'min',
+      changePercent: Math.round((remImprovement / baselineRem) * 100),
+      label: 'REM Sleep',
+    };
+    const sleepLatencyChange = {
+      before: baselineLatency,
+      after: Math.max(3, baselineLatency - latencyReduction),
+      unit: 'min',
+      changePercent: -Math.round((latencyReduction / baselineLatency) * 100),
+      label: 'Sleep Latency',
+      lowerIsBetter: true,
+    };
+    const sleepEfficiencyChange = {
+      before: baselineEfficiency,
+      after: Math.min(98, baselineEfficiency + efficiencyImprovement),
+      unit: '%',
+      changePercent: Math.round((efficiencyImprovement / baselineEfficiency) * 100),
+      label: 'Sleep Efficiency',
+    };
+    const hrvChange = {
+      before: baselineHrv,
+      after: baselineHrv + hrvImprovement,
+      unit: 'ms',
+      changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
+      label: 'HRV',
+    };
+
+    const result = { device, sleepChange, deepSleepChange, remSleepChange, sleepLatencyChange, sleepEfficiencyChange, hrvChange };
+    const bestMetric = computeBestMetric(result);
+    return { ...result, bestMetric };
   }
 
   if (category === 'stress') {
-    const baselineHrv = 35 + Math.floor(Math.random() * 10); // Lower baseline for stressed
-    const hrvImprovement = Math.floor((15 + Math.random() * 20) * mult);
+    const baselineHrv = 30 + Math.floor(Math.random() * 10); // Lower baseline for stressed
+    const hrvImprovement = Math.floor((12 + Math.random() * 18) * mult * variance());
+    
+    // Resting HR — LOWER is better
+    const baselineRhr = 68 + Math.floor(Math.random() * 12); // 68-80 bpm
+    const rhrReduction = Math.floor((3 + Math.random() * 6) * mult * variance());
 
-    return {
-      device,
-      hrvChange: {
-        before: baselineHrv,
-        after: baselineHrv + hrvImprovement,
-        unit: 'ms' as const,
-        changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
-      },
+    const hrvChange = {
+      before: baselineHrv,
+      after: baselineHrv + hrvImprovement,
+      unit: 'ms',
+      changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
+      label: 'HRV',
     };
+    const restingHrChange = {
+      before: baselineRhr,
+      after: Math.max(55, baselineRhr - rhrReduction),
+      unit: 'bpm',
+      changePercent: -Math.round((rhrReduction / baselineRhr) * 100),
+      label: 'Resting Heart Rate',
+      lowerIsBetter: true,
+    };
+
+    const result = { device, hrvChange, restingHrChange };
+    const bestMetric = computeBestMetric(result);
+    return { ...result, bestMetric };
   }
 
   if (category === 'recovery') {
     const baselineHrv = 40 + Math.floor(Math.random() * 15);
-    const hrvImprovement = Math.floor((12 + Math.random() * 18) * mult);
+    const hrvImprovement = Math.floor((10 + Math.random() * 15) * mult * variance());
     const baselineSleep = 340 + Math.floor(Math.random() * 30);
-    const sleepImprovement = Math.floor((15 + Math.random() * 25) * mult);
+    const sleepImprovement = Math.floor((15 + Math.random() * 25) * mult * variance());
+    
+    // Resting HR
+    const baselineRhr = 65 + Math.floor(Math.random() * 10);
+    const rhrReduction = Math.floor((2 + Math.random() * 5) * mult * variance());
 
-    return {
-      device,
-      sleepChange: {
-        before: baselineSleep,
-        after: baselineSleep + sleepImprovement,
-        unit: 'min' as const,
-        changePercent: Math.round((sleepImprovement / baselineSleep) * 100),
-      },
-      hrvChange: {
-        before: baselineHrv,
-        after: baselineHrv + hrvImprovement,
-        unit: 'ms' as const,
-        changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
-      },
+    const sleepChange = {
+      before: baselineSleep,
+      after: baselineSleep + sleepImprovement,
+      unit: 'min',
+      changePercent: Math.round((sleepImprovement / baselineSleep) * 100),
+      label: 'Total Sleep',
     };
+    const hrvChange = {
+      before: baselineHrv,
+      after: baselineHrv + hrvImprovement,
+      unit: 'ms',
+      changePercent: Math.round((hrvImprovement / baselineHrv) * 100),
+      label: 'HRV',
+    };
+    const restingHrChange = {
+      before: baselineRhr,
+      after: Math.max(55, baselineRhr - rhrReduction),
+      unit: 'bpm',
+      changePercent: -Math.round((rhrReduction / baselineRhr) * 100),
+      label: 'Resting Heart Rate',
+      lowerIsBetter: true,
+    };
+
+    const result = { device, sleepChange, hrvChange, restingHrChange };
+    const bestMetric = computeBestMetric(result);
+    return { ...result, bestMetric };
   }
 
   return undefined;

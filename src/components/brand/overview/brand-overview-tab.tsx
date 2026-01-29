@@ -69,21 +69,25 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
     return getCompletedStoriesFromEnrollments(enrollments, category);
   }, [isRealData, realStories, enrollments, category]);
 
-  // Helper: get the primary improvement % for a story (assessment or wearable)
   // Get the primary improvement metric for a story.
-  // For real data (Sensate), this is HRV changePercent.
-  // For simulated data, assessment compositePercent takes priority.
+  // Priority: bestMetric (computed from wearable data) → assessment → HRV fallback
   const getImprovementPercent = useCallback((s: ParticipantStory): number | null => {
-    // For real data: prefer wearable HRV (the actual measured metric)
+    // Wearable best metric (the individual metric that improved most)
+    if (s.wearableMetrics?.bestMetric?.changePercent !== undefined) {
+      const m = s.wearableMetrics.bestMetric;
+      // For "lower is better" metrics, changePercent is negative but improvement is positive
+      return m.lowerIsBetter ? Math.abs(m.changePercent) : m.changePercent;
+    }
+    // For real data: prefer wearable HRV
     if (isRealData && s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
       return s.wearableMetrics.hrvChange.changePercent;
     }
-    // For simulated: try assessment data first
+    // Assessment fallback
     const assess = s.assessmentResults?.[0] || s.assessmentResult;
     if (assess?.change?.compositePercent !== undefined) {
       return assess.change.compositePercent;
     }
-    // Fall back to wearable HRV change
+    // HRV fallback
     if (s.wearableMetrics?.hrvChange?.changePercent !== undefined) {
       return s.wearableMetrics.hrvChange.changePercent;
     }
@@ -130,6 +134,21 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
       improvements.reduce((a, b) => a + b, 0) / improvements.length
     );
   }, [completedStories, isRealData, study.avgImprovement, getImprovementPercent]);
+
+  // Determine the best metric label for the cohort (what does "avg improvement" refer to?)
+  const bestMetricLabel = useMemo(() => {
+    if (isRealData && completedStories[0]?.wearableMetrics?.hrvChange) {
+      return "HRV";
+    }
+    // For simulated data, find the most common bestMetric label across participants
+    const labels: Record<string, number> = {};
+    for (const s of completedStories) {
+      const label = s.wearableMetrics?.bestMetric?.label;
+      if (label) labels[label] = (labels[label] || 0) + 1;
+    }
+    const sorted = Object.entries(labels).sort((a, b) => b[1] - a[1]);
+    return sorted[0]?.[0] || (study.categoryLabel || "Wellness") + " Score";
+  }, [isRealData, completedStories, study.categoryLabel]);
 
   // Find most recent enrollment for "latest activity"
   const signedUpEnrollments = enrollments
@@ -226,9 +245,7 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
           label={avgImprovement !== null ? "Avg Improvement" : "Study Day"}
           subtitle={
             avgImprovement !== null
-              ? isRealData && completedStories[0]?.wearableMetrics?.hrvChange
-                ? "HRV"
-                : `${study.categoryLabel || "Wellness"} Score`
+              ? bestMetricLabel
               : isPreLaunch
                 ? "Not yet started"
                 : `of ${studyDays} days`
@@ -355,22 +372,44 @@ export function BrandOverviewTab({ study, realStories }: BrandOverviewTabProps) 
 // FEATURED RESULT CARD — The transformation story
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Format minutes into human-readable duration */
+function formatMinutes(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
 function FeaturedResultCard({
   story,
-  category,
 }: {
   story: ParticipantStory;
   category: string;
 }) {
-  const assessment = story.assessmentResults?.[0] || story.assessmentResult;
-  const baselineScore = assessment?.baseline?.compositeScore;
-  const endpointScore = assessment?.endpoint?.compositeScore;
-  const scoreChange = assessment?.change?.compositePercent;
   const testimonial = story.finalTestimonial;
   const lastQuote = story.journey?.keyQuotes?.slice(-1)[0];
   const displayQuote = testimonial?.quote || lastQuote?.quote;
   const rating = testimonial?.overallRating || story.overallRating || 4;
   const wearable = story.wearableMetrics;
+  const best = wearable?.bestMetric;
+
+  // For real data without bestMetric, fall back to HRV or assessment
+  const assessment = story.assessmentResults?.[0] || story.assessmentResult;
+
+  // Collect all individual wearable metrics for secondary display
+  type MetricChange = { before: number; after: number; unit: string; changePercent: number; label?: string; lowerIsBetter?: boolean };
+  const secondaryMetrics: MetricChange[] = useMemo(() => {
+    if (!wearable) return [];
+    const candidates: (MetricChange | undefined)[] = [
+      wearable.deepSleepChange, wearable.remSleepChange, wearable.sleepEfficiencyChange,
+      wearable.sleepLatencyChange, wearable.hrvChange, wearable.sleepChange, wearable.restingHrChange,
+    ];
+    return candidates
+      .filter((m): m is MetricChange => !!m && typeof m === 'object' && 'changePercent' in m)
+      .filter(m => m !== best)
+      .slice(0, 3);
+  }, [wearable, best]);
 
   return (
     <Card className="border-[#00D1C1]/20 bg-gradient-to-r from-[#00D1C1]/5 via-transparent to-emerald-50/30 overflow-hidden">
@@ -418,117 +457,129 @@ function FeaturedResultCard({
                   />
                 ))}
               </div>
+              {wearable?.device && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  📱 {wearable.device}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Before → After Metrics */}
+          {/* Wearable Metrics — Hero + Secondary */}
           <div className="flex-1">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Assessment Score */}
-              {baselineScore !== undefined && endpointScore !== undefined && (
-                <>
-                  <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Before (Day 1)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-400">
-                      {Math.round(baselineScore)}
+            {/* Hero Metric: the single best wearable metric */}
+            {best ? (
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Before (Baseline)
+                  </p>
+                  <p className="text-2xl font-bold text-gray-400">
+                    {best.unit === 'min' ? formatMinutes(best.before) : best.before}
+                    {best.unit !== 'min' && (
                       <span className="text-xs font-normal text-muted-foreground ml-1">
-                        / 100
+                        {best.unit}
                       </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {category === "sleep" ? "Sleep Score"
-                        : category === "stress" ? "Stress Score"
-                        : category === "energy" ? "Energy Score"
-                        : category === "anxiety" ? "Anxiety Score"
-                        : "Wellness Score"}
-                    </p>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
-                    <p className="text-xs text-emerald-600 mb-1 font-medium">
-                      After (Day 28)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(endpointScore)}
-                      <span className="text-xs font-normal text-muted-foreground ml-1">
-                        / 100
-                      </span>
-                    </p>
-                    {scoreChange !== undefined && (
-                      <p className="text-xs font-semibold text-emerald-600 mt-0.5">
-                        {scoreChange > 0 ? "+" : ""}
-                        {Math.round(scoreChange)}% improvement
-                      </p>
                     )}
-                  </div>
-                </>
-              )}
-
-              {/* Wearable HRV Metric (real data — primary for Sensate) */}
-              {!baselineScore && wearable?.hrvChange && (
-                <>
-                  <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Before (Baseline)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-400">
-                      {wearable.hrvChange.before}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {best.label || 'Wearable metric'}
+                  </p>
+                </div>
+                <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
+                  <p className="text-xs text-emerald-600 mb-1 font-medium">
+                    After (Day 28)
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {best.unit === 'min' ? formatMinutes(best.after) : best.after}
+                    {best.unit !== 'min' && (
                       <span className="text-xs font-normal text-muted-foreground ml-1">
-                        ms
+                        {best.unit}
                       </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      HRV · Oura Ring verified
-                    </p>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
-                    <p className="text-xs text-emerald-600 mb-1 font-medium">
-                      After (Day 28)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {wearable.hrvChange.after}
-                      <span className="text-xs font-normal text-muted-foreground ml-1">
-                        ms
-                      </span>
-                    </p>
-                    {wearable.hrvChange.changePercent > 0 && (
-                      <p className="text-xs font-semibold text-emerald-600 mt-0.5">
-                        +{Math.round(wearable.hrvChange.changePercent)}% HRV improvement
-                      </p>
                     )}
-                  </div>
-                </>
-              )}
-
-              {/* Wearable Sleep Metric (simulated data fallback) */}
-              {!baselineScore && !wearable?.hrvChange && wearable?.sleepChange && (
-                <>
-                  <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Sleep Score (Before)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-400">
-                      {wearable.sleepChange.before}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Oura Ring verified
-                    </p>
-                  </div>
-                  <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
-                    <p className="text-xs text-emerald-600 mb-1 font-medium">
-                      Sleep Score (After)
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {wearable.sleepChange.after}
-                    </p>
+                  </p>
+                  <p className="text-xs font-semibold text-emerald-600 mt-0.5">
+                    {best.lowerIsBetter
+                      ? `${Math.abs(best.changePercent)}% reduction`
+                      : `+${Math.round(best.changePercent)}% improvement`
+                    }
+                  </p>
+                </div>
+              </div>
+            ) : wearable?.hrvChange ? (
+              /* Fallback for real data without bestMetric */
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
+                  <p className="text-xs text-muted-foreground mb-1">Before (Baseline)</p>
+                  <p className="text-2xl font-bold text-gray-400">
+                    {wearable.hrvChange.before}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">ms</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">HRV</p>
+                </div>
+                <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
+                  <p className="text-xs text-emerald-600 mb-1 font-medium">After (Day 28)</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {wearable.hrvChange.after}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">ms</span>
+                  </p>
+                  {wearable.hrvChange.changePercent > 0 && (
                     <p className="text-xs font-semibold text-emerald-600 mt-0.5">
-                      +{Math.round(wearable.sleepChange.changePercent)}% improvement
+                      +{Math.round(wearable.hrvChange.changePercent)}% improvement
                     </p>
-                  </div>
-                </>
-              )}
-            </div>
+                  )}
+                </div>
+              </div>
+            ) : assessment?.baseline?.compositeScore !== undefined ? (
+              /* Assessment fallback for non-wearable categories */
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/80 rounded-lg p-3 border border-gray-100">
+                  <p className="text-xs text-muted-foreground mb-1">Before (Day 1)</p>
+                  <p className="text-2xl font-bold text-gray-400">
+                    {Math.round(assessment.baseline.compositeScore)}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">/100</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{assessment.categoryLabel} Score</p>
+                </div>
+                <div className="bg-white/80 rounded-lg p-3 border border-emerald-100">
+                  <p className="text-xs text-emerald-600 mb-1 font-medium">After (Day 28)</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {Math.round(assessment.endpoint.compositeScore)}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">/100</span>
+                  </p>
+                  {assessment.change?.compositePercent !== undefined && (
+                    <p className="text-xs font-semibold text-emerald-600 mt-0.5">
+                      +{Math.round(assessment.change.compositePercent)}% improvement
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Secondary Wearable Metrics — compact row */}
+            {secondaryMetrics.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {secondaryMetrics.map((m, i) => {
+                  const label = ('label' in m ? m.label : '') || 'Metric';
+                  const isLower = 'lowerIsBetter' in m && m.lowerIsBetter;
+                  const pct = Math.abs(m.changePercent);
+                  const improved = isLower ? m.changePercent < 0 : m.changePercent > 0;
+                  return (
+                    <div key={i} className="bg-gray-50/80 rounded-lg p-2 text-center">
+                      <p className="text-xs text-muted-foreground truncate">{label}</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                        {m.unit === 'min' ? formatMinutes(m.before) : `${m.before}${m.unit}`}
+                        {' → '}
+                        {m.unit === 'min' ? formatMinutes(m.after) : `${m.after}${m.unit}`}
+                      </p>
+                      <p className={`text-xs font-medium mt-0.5 ${improved ? 'text-emerald-600' : 'text-gray-500'}`}>
+                        {improved ? (isLower ? `↓${pct}%` : `+${pct}%`) : `${m.changePercent > 0 ? '+' : ''}${m.changePercent}%`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
