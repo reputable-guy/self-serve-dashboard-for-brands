@@ -44,6 +44,14 @@ import {
 } from "lucide-react";
 import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
+import {
+  TrustStripWidget,
+  TrustCardWidget,
+  TrustSectionWidget,
+  WIDGET_STYLES,
+  type WidgetStyle,
+  type TrustWidgetParticipant,
+} from "@/components/widgets/trust-widgets";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";
 import {
@@ -74,6 +82,7 @@ interface WidgetConfig {
   position: "bottom-left" | "bottom-right";
   mode: WidgetDisplayMode | null;
   featuredParticipantIds: string[];
+  widgetStyle: WidgetStyle;
 }
 
 interface ParticipantPreviewItem {
@@ -220,6 +229,7 @@ export function BrandWidgetTab({
   const [position, setPosition] = useState<"bottom-left" | "bottom-right">("bottom-left");
   const [selectedMode, setSelectedMode] = useState<WidgetDisplayMode | null>(null);
   const [featuredParticipantIds, setFeaturedParticipantIds] = useState<string[]>([]);
+  const [widgetStyle, setWidgetStyle] = useState<WidgetStyle>("card");
 
   // --- Data sources ---
   const useWidgetDataTs = hasWidgetData(studyId);
@@ -395,6 +405,7 @@ export function BrandWidgetTab({
         if (config.brandColor) setBrandColor(config.brandColor);
         if (config.position) setPosition(config.position);
         if (config.mode) setSelectedMode(config.mode);
+        if (config.widgetStyle) setWidgetStyle(config.widgetStyle);
         if (config.featuredParticipantIds && config.featuredParticipantIds.length > 0) {
           setFeaturedParticipantIds(config.featuredParticipantIds);
         } else {
@@ -419,9 +430,10 @@ export function BrandWidgetTab({
       position,
       mode: selectedMode,
       featuredParticipantIds,
+      widgetStyle,
     };
     localStorage.setItem(getConfigKey(studyId), JSON.stringify(config));
-  }, [brandColor, position, selectedMode, featuredParticipantIds, studyId]);
+  }, [brandColor, position, selectedMode, featuredParticipantIds, widgetStyle, studyId]);
 
   // --- Badge data ---
   const participantAvatars = useMemo(() => {
@@ -466,7 +478,7 @@ export function BrandWidgetTab({
   const embedCode = `<!-- Reputable Verification Widget -->
 <script src="https://embed.reputable.health/widget.js"></script>
 <div
-  data-reputable-widget="badge"
+  data-reputable-widget="${widgetStyle}"
   data-study-id="${studyId}"
   data-mode="${currentMode?.mode || "individual"}"
   data-color="${brandColor}"
@@ -493,101 +505,239 @@ export function BrandWidgetTab({
   return (
     <div className="space-y-6">
       {/* ===================== */}
+      {/* WIDGET STYLE SELECTOR */}
+      {/* ===================== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Shield className="h-4 w-4 text-[#00D1C1]" />
+            Choose Widget Style
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Select how the verification badge appears on your product page
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {WIDGET_STYLES.map((style) => (
+              <button
+                key={style.value}
+                onClick={() => setWidgetStyle(style.value)}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  widgetStyle === style.value
+                    ? "border-[#00D1C1] bg-[#00D1C1]/5"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                      widgetStyle === style.value ? "border-[#00D1C1]" : "border-gray-300"
+                    }`}
+                  >
+                    {widgetStyle === style.value && (
+                      <div className="h-2 w-2 rounded-full bg-[#00D1C1]" />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium">{style.label}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {style.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ===================== */}
       {/* WIDGET PREVIEW ON MOCK PRODUCT PAGE */}
       {/* ===================== */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#00D1C1]" />
-                Widget Preview
+              <CardTitle className="text-sm font-medium">
+                Live Preview
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                This is how the verification badge appears on your product page
+                See how your widget looks on a real product page
               </p>
             </div>
             <Badge
               variant="outline"
-              className="bg-[#00D1C1]/10 text-[#00D1C1] border-[#00D1C1]/20"
+              className="bg-emerald-50 text-emerald-700 border-emerald-200"
             >
-              <Sparkles className="h-3 w-3 mr-1" />
-              Auto-optimized
+              <Check className="h-3 w-3 mr-1" />
+              {WIDGET_STYLES.find(s => s.value === widgetStyle)?.label}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          {/* Mock Product Page */}
-          <div className="relative border rounded-xl bg-white p-8 min-h-[350px]">
-            <div className="max-w-lg mx-auto">
-              <div className="flex gap-6">
-                {/* Product image placeholder */}
-                <div className="w-40 h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
-                  <div className="text-center">
-                    <Shield className="h-8 w-8 text-gray-300 mx-auto mb-1" />
-                    <span className="text-[10px] text-gray-400">Your Product</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {brandName || "Your Brand"}
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {brandName
-                      ? studyName
-                          .replace(/\s*\(.*?\)\s*/g, "")
-                          .replace(/study/gi, "")
-                          .trim() || studyName
-                      : "Your Product"}
-                  </h3>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star} className="text-amber-400 text-sm">
-                        ★
-                      </span>
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">
-                      (142 reviews)
-                    </span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900 mb-3">$49.99</p>
-                  <div className="bg-gray-900 text-white text-center py-2.5 px-4 rounded-lg text-sm font-medium">
-                    Add to Cart
-                  </div>
+        <CardContent className="p-0">
+          {/* Professional Mock Product Page */}
+          <div className="bg-white border-t">
+            {/* Mock browser chrome */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-b">
+              <div className="flex gap-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 border">
+                  yourstore.com/products/{studyName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}
                 </div>
               </div>
             </div>
 
-            {/* Widget — position responds to config */}
-            <div
-              className={`absolute bottom-4 w-[280px] ${
-                position === "bottom-left" ? "left-4" : "right-4"
-              }`}
-            >
-              <FloatingBadgeWidget
-                participantCount={hasParticipants ? participantCount : 47}
-                studyTitle={studyName}
-                badgeHeadline={
-                  hasParticipants
-                    ? badgeHeadline
-                    : "47 people verified this product"
-                }
-                participants={
-                  hasParticipants
-                    ? participantAvatars
-                    : [
-                        { id: "demo-1", initials: "SM" },
-                        { id: "demo-2", initials: "JR" },
-                        { id: "demo-3", initials: "AL" },
-                        { id: "demo-4", initials: "MK" },
-                      ]
-                }
-                brandColor={brandColor}
-                onOpenModal={() => setShowWidgetModal(true)}
-              />
+            {/* Product page content */}
+            <div className="p-6 md:p-8">
+              <div className="max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Product Image */}
+                  <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
+                    <div className="text-center p-8">
+                      <div 
+                        className="h-24 w-24 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                        style={{ backgroundColor: `${brandColor}15` }}
+                      >
+                        <Shield className="h-12 w-12" style={{ color: brandColor }} />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">
+                        {brandName || "Your Brand"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">Product Image</p>
+                    </div>
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="flex flex-col">
+                    <div className="mb-1">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {brandName || "Your Brand"}
+                      </span>
+                    </div>
+                    
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                      {studyName
+                        .replace(/\s*\(.*?\)\s*/g, "")
+                        .replace(/study/gi, "")
+                        .replace(/sleep\s*&?\s*stress/gi, "")
+                        .trim() || "Premium Product"}
+                    </h1>
+                    
+                    {/* Reviews */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className="h-4 w-4 text-amber-400 fill-amber-400"
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">4.8 (142 reviews)</span>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-6">
+                      <span className="text-3xl font-bold text-gray-900">$49.99</span>
+                      <span className="text-sm text-gray-500 line-through ml-2">$59.99</span>
+                    </div>
+
+                    {/* Add to Cart */}
+                    <button className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors mb-4">
+                      Add to Cart
+                    </button>
+
+                    {/* Trust Strip Widget (if selected) */}
+                    {widgetStyle === "strip" && (
+                      <div className="mb-4">
+                        <TrustStripWidget
+                          participantCount={hasParticipants ? participantCount : 30}
+                          headline={badgeHeadline}
+                          participants={
+                            hasParticipants
+                              ? participantAvatars.map(p => ({ ...p, name: p.initials }))
+                              : [
+                                  { id: "1", initials: "JR" },
+                                  { id: "2", initials: "SM" },
+                                  { id: "3", initials: "AL" },
+                                ]
+                          }
+                          brandColor={brandColor}
+                          onOpenModal={() => setShowWidgetModal(true)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Trust Card Widget (if selected) */}
+                    {widgetStyle === "card" && (
+                      <div className="mb-4">
+                        <TrustCardWidget
+                          participantCount={hasParticipants ? participantCount : 30}
+                          headline={hasParticipants 
+                            ? `${participantCount} people verified this product with wearable data`
+                            : "30 people verified this product with wearable data"
+                          }
+                          subheadline="28-day study · Oura Ring tracked"
+                          participants={
+                            hasParticipants
+                              ? participantAvatars.map(p => ({ ...p, name: p.initials }))
+                              : [
+                                  { id: "1", initials: "JR" },
+                                  { id: "2", initials: "SM" },
+                                  { id: "3", initials: "AL" },
+                                ]
+                          }
+                          brandColor={brandColor}
+                          onOpenModal={() => setShowWidgetModal(true)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Product description */}
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                      <p>
+                        Backed by real customer data. Results verified through 
+                        wearable health tracking over a 28-day study period.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trust Section Widget (if selected) - below the fold */}
+                {widgetStyle === "section" && (
+                  <div className="mt-8 pt-8 border-t">
+                    <TrustSectionWidget
+                      participantCount={hasParticipants ? participantCount : 30}
+                      headline={hasParticipants 
+                        ? badgeHeadline
+                        : "30 real customers tested this product for 28 days with Oura Ring health tracking"
+                      }
+                      participants={
+                        hasParticipants
+                          ? allParticipantPreviews.slice(0, 3).map(p => ({
+                              id: p.id,
+                              initials: p.initials,
+                              name: p.name,
+                              metric: p.primaryMetric.value + " " + p.primaryMetric.label,
+                            }))
+                          : [
+                              { id: "1", initials: "JR", name: "James R.", metric: "+18% HRV" },
+                              { id: "2", initials: "SM", name: "Sarah M.", metric: "+24% Deep Sleep" },
+                              { id: "3", initials: "AL", name: "Alex L.", metric: "+12% Recovery" },
+                            ]
+                      }
+                      brandColor={brandColor}
+                      onOpenModal={() => setShowWidgetModal(true)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
+          <p className="text-xs text-muted-foreground py-3 text-center bg-gray-50 border-t">
             Click the widget to preview the modal that opens for customers
           </p>
         </CardContent>
@@ -624,8 +774,7 @@ export function BrandWidgetTab({
               <span
                 className="inline-block h-3 w-3 rounded-full align-middle border"
                 style={{ backgroundColor: brandColor }}
-              />{" "}
-              {" · "}Position: <span className="font-medium capitalize">{position.replace("-", " ")}</span>
+              />
             </p>
           )}
         </CardHeader>
@@ -723,32 +872,7 @@ export function BrandWidgetTab({
               </div>
             </div>
 
-            {/* Position */}
-            <div>
-              <p className="text-sm font-medium mb-2">Widget Position</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPosition("bottom-left")}
-                  className={`flex-1 p-3 rounded-lg border text-sm transition-colors ${
-                    position === "bottom-left"
-                      ? "border-[#00D1C1] bg-[#00D1C1]/5 text-[#00D1C1]"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  Bottom Left
-                </button>
-                <button
-                  onClick={() => setPosition("bottom-right")}
-                  className={`flex-1 p-3 rounded-lg border text-sm transition-colors ${
-                    position === "bottom-right"
-                      ? "border-[#00D1C1] bg-[#00D1C1]/5 text-[#00D1C1]"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  Bottom Right
-                </button>
-              </div>
-            </div>
+            {/* Note: Position removed - new widget styles are all inline, not floating */}
 
             {/* Featured Participants */}
             {allParticipantPreviews.length > 0 && (
