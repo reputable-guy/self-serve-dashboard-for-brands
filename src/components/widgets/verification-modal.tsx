@@ -241,7 +241,7 @@ export function VerificationModal({
                   Participants Who Completed This Study
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  Below are {participants.length} of {study.participantCount}{" "}
+                  Below are {Math.min(3, participants.length)} of {study.participantCount}{" "}
                   participants who completed the {study.durationDays}-day
                   verified study.{" "}
                   {verifyPageUrl && (
