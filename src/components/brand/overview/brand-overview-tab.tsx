@@ -405,9 +405,15 @@ function FeaturedResultCard({
   type MetricChange = { before: number; after: number; unit: string; changePercent: number; label?: string; lowerIsBetter?: boolean };
   const secondaryMetrics: MetricChange[] = useMemo(() => {
     if (!wearable) return [];
+    // Build candidates with explicit labels for each metric type
     const candidates: (MetricChange | undefined)[] = [
-      wearable.deepSleepChange, wearable.remSleepChange, wearable.sleepEfficiencyChange,
-      wearable.sleepLatencyChange, wearable.hrvChange, wearable.sleepChange, wearable.restingHrChange,
+      wearable.deepSleepChange && { ...wearable.deepSleepChange, label: wearable.deepSleepChange.label || 'Deep Sleep' },
+      wearable.remSleepChange && { ...wearable.remSleepChange, label: wearable.remSleepChange.label || 'REM Sleep' },
+      wearable.sleepEfficiencyChange && { ...wearable.sleepEfficiencyChange, label: wearable.sleepEfficiencyChange.label || 'Sleep Efficiency' },
+      wearable.sleepLatencyChange && { ...wearable.sleepLatencyChange, label: wearable.sleepLatencyChange.label || 'Sleep Latency', lowerIsBetter: true },
+      wearable.hrvChange && { ...wearable.hrvChange, label: wearable.hrvChange.label || 'HRV' },
+      wearable.sleepChange && { ...wearable.sleepChange, label: wearable.sleepChange.label || 'Total Sleep' },
+      wearable.restingHrChange && { ...wearable.restingHrChange, label: wearable.restingHrChange.label || 'Resting HR', lowerIsBetter: true },
     ];
     return candidates
       .filter((m): m is MetricChange => !!m && typeof m === 'object' && 'changePercent' in m)

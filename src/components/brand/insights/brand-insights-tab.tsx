@@ -65,7 +65,7 @@ export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) 
       avatarColor: colors[i % colors.length],
       enrolledAt: s.journey?.startDate || "",
       enrolledAgo: s.journey?.endDate ? "completed" : "",
-      heroSymptom: s.journey?.villainVariable || "Wellness",
+      heroSymptom: s.baseline?.hopedResults || s.journey?.villainVariable || "Wellness",
       // Only show severity/duration/desperation if real data has them — never hardcode fallbacks
       heroSymptomSeverity: undefined,
       painDuration: s.baseline?.villainDuration || undefined,
