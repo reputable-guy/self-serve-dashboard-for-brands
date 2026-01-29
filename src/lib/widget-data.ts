@@ -442,7 +442,7 @@ export function getDefaultFeaturedParticipantIds(studyId: string): string[] {
       const change = metricMatch ? parseInt(metricMatch[1], 10) : 0;
       
       // Calculate score: rating * 10 + metric improvement
-      let score = p.rating * 10 + change;
+      const score = p.rating * 10 + change;
       
       return { id: p.id, score, change };
     })

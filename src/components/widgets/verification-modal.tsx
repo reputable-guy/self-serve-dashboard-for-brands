@@ -41,6 +41,7 @@ interface VerificationModalProps {
   study: StudyInfo;
   participants: ParticipantPreview[];
   verifyPageUrl?: string;
+  brandColor?: string;
 }
 
 // FAQ item component with expand/collapse
@@ -78,11 +79,21 @@ function FAQItem({
 }
 
 // Participant card in the modal
-function ParticipantCard({ participant }: { participant: ParticipantPreview }) {
+function ParticipantCard({ participant, brandColor = "#00D1C1" }: { participant: ParticipantPreview; brandColor?: string }) {
+  // Compute darker shade for hover/gradient
+  const darkerColor = brandColor.replace(/^#/, '');
+  const r = Math.max(0, parseInt(darkerColor.substring(0, 2), 16) - 20);
+  const g = Math.max(0, parseInt(darkerColor.substring(2, 4), 16) - 20);
+  const b = Math.max(0, parseInt(darkerColor.substring(4, 6), 16) - 20);
+  const darkColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+
   return (
     <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
       {/* Avatar */}
-      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#00D1C1] to-[#00A89D] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+      <div 
+        className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+        style={{ background: `linear-gradient(135deg, ${brandColor}, ${darkColor})` }}
+      >
         {participant.initials}
       </div>
 
@@ -92,7 +103,7 @@ function ParticipantCard({ participant }: { participant: ParticipantPreview }) {
           <span className="font-medium text-gray-900 text-sm">
             {participant.name}
           </span>
-          <BadgeCheck className="h-4 w-4 text-[#00D1C1]" />
+          <BadgeCheck className="h-4 w-4" style={{ color: brandColor }} />
           {/* Star rating */}
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -110,7 +121,7 @@ function ParticipantCard({ participant }: { participant: ParticipantPreview }) {
 
         {/* Metric + Device */}
         <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
-          <span className="font-semibold text-[#00D1C1]">
+          <span className="font-semibold" style={{ color: brandColor }}>
             {participant.primaryMetric.value} {participant.primaryMetric.label}
           </span>
           <span className="text-gray-400">·</span>
@@ -127,7 +138,8 @@ function ParticipantCard({ participant }: { participant: ParticipantPreview }) {
       <Link
         href={`/verify/${participant.verificationId}`}
         target="_blank"
-        className="flex items-center gap-1 text-xs font-medium text-[#00D1C1] hover:text-[#00A89D] flex-shrink-0"
+        className="flex items-center gap-1 text-xs font-medium flex-shrink-0 hover:opacity-80"
+        style={{ color: brandColor }}
       >
         View Story
         <ExternalLink className="h-3 w-3" />
@@ -142,6 +154,7 @@ export function VerificationModal({
   study,
   participants,
   verifyPageUrl,
+  brandColor = "#00D1C1",
 }: VerificationModalProps) {
   // Close on escape key
   useEffect(() => {
@@ -247,7 +260,8 @@ export function VerificationModal({
                   {verifyPageUrl && (
                     <Link
                       href={verifyPageUrl}
-                      className="text-[#00D1C1] hover:underline"
+                      className="hover:underline"
+                      style={{ color: brandColor }}
                     >
                       View all participants →
                     </Link>
@@ -261,6 +275,7 @@ export function VerificationModal({
                   <ParticipantCard
                     key={participant.id}
                     participant={participant}
+                    brandColor={brandColor}
                   />
                 ))}
               </div>
@@ -283,14 +298,15 @@ export function VerificationModal({
           <div className="p-4 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs text-gray-500">
-                <Shield className="h-4 w-4 text-[#00D1C1]" />
+                <Shield className="h-4 w-4" style={{ color: brandColor }} />
                 <span>Independently verified by Reputable</span>
               </div>
               {verifyPageUrl && (
                 <Link
                   href={verifyPageUrl}
                   target="_blank"
-                  className="flex items-center gap-1 text-xs font-medium text-[#00D1C1] hover:text-[#00A89D]"
+                  className="flex items-center gap-1 text-xs font-medium hover:opacity-80"
+                  style={{ color: brandColor }}
                 >
                   View Full Study
                   <ExternalLink className="h-3 w-3" />

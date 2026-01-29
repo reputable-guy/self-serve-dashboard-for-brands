@@ -33,13 +33,12 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
-  TrendingUp,
-  Quote,
   Star,
   Palette,
   Users,
   RotateCcw,
   Settings2,
+  Download,
 } from "lucide-react";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import {
@@ -61,6 +60,7 @@ import {
   type WidgetModeConfig,
 } from "@/lib/widget-data";
 import type { ParticipantStory } from "@/lib/types";
+import { ExportModal, type ParticipantData } from "@/components/brand/marketing-kit";
 
 // ============================================
 // TYPES
@@ -222,6 +222,8 @@ export function BrandWidgetTab({
   const [copiedLink, setCopiedLink] = useState(false);
   const [showWidgetModal, setShowWidgetModal] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedExportParticipant, setSelectedExportParticipant] = useState<ParticipantPreviewItem | null>(null);
 
   // Config state (persisted to localStorage)
   const [brandColor, setBrandColor] = useState("#00D1C1");
@@ -497,6 +499,43 @@ export function BrandWidgetTab({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // --- Export helper: Convert participant preview to export data format ---
+  const convertToExportData = useCallback((participant: ParticipantPreviewItem): ParticipantData => {
+    // Parse the primary metric value to extract numbers
+    const metricMatch = participant.primaryMetric.value.match(/([+-]?\d+)/);
+    const changePercent = metricMatch ? parseInt(metricMatch[1], 10) : 0;
+    
+    // Create mock metrics based on available data
+    // In real implementation, this would come from the full participant data
+    const metrics: ParticipantData["metrics"] = [
+      {
+        label: participant.primaryMetric.label,
+        before: 100,
+        after: 100 + changePercent,
+        unit: "",
+        changePercent: Math.abs(changePercent),
+      },
+    ];
+
+    return {
+      id: participant.id,
+      name: participant.name,
+      initials: participant.initials,
+      quote: participant.quote,
+      rating: participant.rating,
+      studyDuration: 28,
+      device: participant.device,
+      verificationId: participant.verificationId,
+      verificationUrl: `${baseUrl}/verify/${studyId}/participant/${participant.verificationId}`,
+      metrics,
+    };
+  }, [baseUrl, studyId]);
+
+  const handleOpenExport = useCallback((participant: ParticipantPreviewItem) => {
+    setSelectedExportParticipant(participant);
+    setShowExportModal(true);
+  }, []);
+
   // ============================================
   // RENDER
   // ============================================
@@ -736,9 +775,18 @@ export function BrandWidgetTab({
               </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground py-3 text-center bg-gray-50 border-t">
-            Click the widget to preview the modal that opens for customers
-          </p>
+          <div className="py-3 bg-gray-50 border-t flex items-center justify-between px-4">
+            <p className="text-xs text-muted-foreground">
+              Click the widget to preview the modal that opens for customers
+            </p>
+            <a 
+              href={`/demo/widget-placements/${studyId}`}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#00D1C1] hover:text-[#00B5A6] transition-colors"
+            >
+              Preview on different page types
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
         </CardContent>
       </Card>
 
@@ -1081,106 +1129,103 @@ export function BrandWidgetTab({
             Marketing Kit
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Ready-to-use content assets from your study data
+            Export verified participant stories as Instagram carousels and marketing assets
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Asset 1: Aggregate Stat Card */}
-            <div className="border rounded-xl overflow-hidden bg-white">
-              <div
-                className="p-5 text-white"
-                style={{
-                  background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
-                }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="h-4 w-4" />
-                  <span className="text-xs font-medium opacity-90">
-                    Verified by Reputable
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">
-                    {completedCount > 0 ? `${completedCount}` : "—"}
-                  </span>
-                  <span className="text-sm opacity-80">people verified</span>
-                </div>
-                <p className="text-sm mt-2 opacity-90">
-                  {completedCount > 0
-                    ? "Real customers tested this product for 28 days with wearable tracking"
-                    : "Verified participant results coming soon"}
-                </p>
-              </div>
-              <div className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-xs text-gray-600">
-                    {completedCount > 0 ? "Aggregate stat card" : "Preview"}
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                  Instagram / Email
-                </span>
-              </div>
-            </div>
-
-            {/* Asset 2: Participant Spotlight */}
-            <div className="border rounded-xl overflow-hidden bg-white">
-              <div className="p-5">
-                <div className="flex items-center gap-3 mb-3">
+          {allParticipantPreviews.length > 0 ? (
+            <>
+              {/* Participant Cards with Export Buttons */}
+              <div className="space-y-3 mb-4">
+                {allParticipantPreviews.slice(0, 4).map((participant) => (
                   <div
-                    className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: brandColor }}
+                    key={participant.id}
+                    className="border rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow"
                   >
-                    {allParticipantPreviews[0]?.initials || "JR"}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {allParticipantPreviews[0]?.name || "Participant Spotlight"}
-                    </p>
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          className="h-3 w-3 text-amber-400 fill-amber-400"
-                        />
-                      ))}
+                    <div className="p-4 flex items-center gap-4">
+                      {/* Avatar */}
+                      <div
+                        className="h-12 w-12 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        style={{ backgroundColor: brandColor }}
+                      >
+                        {participant.initials}
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {participant.name}
+                          </p>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`h-3 w-3 ${
+                                  s <= Math.round(participant.rating)
+                                    ? "text-amber-400 fill-amber-400"
+                                    : "text-gray-200"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span
+                            className="font-medium"
+                            style={{ color: brandColor }}
+                          >
+                            {participant.primaryMetric.value} {participant.primaryMetric.label}
+                          </span>
+                          <span>·</span>
+                          <span>{participant.device}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 italic truncate mt-1">
+                          &quot;{participant.quote}&quot;
+                        </p>
+                      </div>
+
+                      {/* Export Button */}
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenExport(participant)}
+                        className="flex-shrink-0"
+                        style={{ backgroundColor: brandColor }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
+                      </Button>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1 mb-2">
-                  <Quote className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                  <p className="text-xs text-gray-600 italic line-clamp-2">
-                    {allParticipantPreviews[0]?.quote ||
-                      "Very satisfied with the product experience."}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <Shield className="h-3 w-3 text-emerald-500" />
-                  <span className="text-[10px] text-emerald-600 font-medium">
-                    Verified by Reputable · 28-day study
-                  </span>
-                </div>
+                ))}
               </div>
-              <div className="border-t p-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Quote className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs text-gray-600">
-                    Participant spotlight
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                  Social / Ads
-                </span>
-              </div>
-            </div>
-          </div>
 
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            Export and customization coming soon — use these as templates for your
-            marketing team
-          </p>
+              {/* Info text */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-emerald-500" />
+                  <span>All exports include verification badge</span>
+                </div>
+                <span>1080×1350px · Instagram ready</span>
+              </div>
+            </>
+          ) : (
+            // Empty state when no participants
+            <div className="text-center py-8">
+              <div
+                className="h-16 w-16 mx-auto rounded-full flex items-center justify-center mb-4"
+                style={{ backgroundColor: `${brandColor}15` }}
+              >
+                <ImageIcon className="h-8 w-8" style={{ color: brandColor }} />
+              </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                No completed stories yet
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Marketing assets will be available once participants complete the study
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1298,7 +1343,32 @@ export function BrandWidgetTab({
         }}
         participants={modalParticipants}
         verifyPageUrl={verifyUrl}
+        brandColor={brandColor}
       />
+
+      {/* ===================== */}
+      {/* EXPORT MODAL */}
+      {/* ===================== */}
+      {selectedExportParticipant && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => {
+            setShowExportModal(false);
+            setSelectedExportParticipant(null);
+          }}
+          participant={convertToExportData(selectedExportParticipant)}
+          brandName={brandName}
+          studyName={studyName}
+          initialBrandSettings={{
+            primaryColor: brandColor,
+            secondaryColor: "#10B981",
+            textColor: "#1F2937",
+            backgroundColor: "#F9FAFB",
+            logoPosition: "top-right",
+            fontFamily: "Inter, sans-serif",
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -89,23 +89,49 @@ export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) 
     // Derive demographics from real story profiles
     const ageGroups: Record<string, number> = {};
     const lifeStages: Record<string, number> = {};
+    const goalGroups: Record<string, number> = {};
+    let totalWithProfile = 0;
+
     realStories.forEach((s) => {
-      const age = s.profile?.ageRange || "Unknown";
+      const profile = s.profile;
+      if (!profile) return;
+      totalWithProfile++;
+
+      const age = profile.ageRange || "Unknown";
       ageGroups[age] = (ageGroups[age] || 0) + 1;
-      const stage = s.profile?.lifeStage || "adult";
+      
+      const stage = profile.lifeStage || "Working professional";
       lifeStages[stage] = (lifeStages[stage] || 0) + 1;
+
+      const goal = profile.primaryWellnessGoal;
+      if (goal) {
+        goalGroups[goal] = (goalGroups[goal] || 0) + 1;
+      }
     });
+
+    const total = totalWithProfile || realStories.length;
     return {
-      ageRanges: Object.entries(ageGroups).map(([range, count]) => ({
-        range,
-        count,
-        percentage: Math.round((count / realStories.length) * 100),
-      })),
-      lifeStages: Object.entries(lifeStages).map(([stage, count]) => ({
-        stage,
-        count,
-        percentage: Math.round((count / realStories.length) * 100),
-      })),
+      ageRanges: Object.entries(ageGroups)
+        .sort((a, b) => b[1] - a[1])
+        .map(([range, count]) => ({
+          range,
+          count,
+          percentage: Math.round((count / total) * 100),
+        })),
+      lifeStages: Object.entries(lifeStages)
+        .sort((a, b) => b[1] - a[1])
+        .map(([stage, count]) => ({
+          stage,
+          count,
+          percentage: Math.round((count / total) * 100),
+        })),
+      primaryGoals: Object.entries(goalGroups)
+        .sort((a, b) => b[1] - a[1])
+        .map(([goal, count]) => ({
+          goal,
+          count,
+          percentage: Math.round((count / total) * 100),
+        })),
     };
   }, [isRealData, realStories, insights?.demographics]);
   const n = participantCards.length;
@@ -214,38 +240,99 @@ export function BrandInsightsTab({ study, realStories }: BrandInsightsTabProps) 
 
       {/* Aggregate Charts (n >= 10 or real data) */}
       {(n >= AGGREGATES_THRESHOLD || isRealData) && demographics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Motivations (simulation only — real data doesn't have this) */}
-          {!isRealData && insights?.baselineQuestions?.find(q => q.questionId === "motivation") && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Why They Bought</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <HorizontalBarChart
-                  data={
-                    insights.baselineQuestions
-                      .find(q => q.questionId === "motivation")!
-                      .responses.slice(0, 5)
-                      .map(r => ({ label: r.value, value: r.count || 0, percentage: r.percentage }))
-                  }
-                />
-              </CardContent>
-            </Card>
-          )}
+        <div className="space-y-4">
+          {/* Row 1: Motivations & Age */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Motivations (simulation only — real data doesn't have this) */}
+            {!isRealData && insights?.baselineQuestions?.find(q => q.questionId === "motivation") && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Why They Bought</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HorizontalBarChart
+                    data={
+                      insights.baselineQuestions
+                        .find(q => q.questionId === "motivation")!
+                        .responses.slice(0, 5)
+                        .map(r => ({ label: r.value, value: r.count || 0, percentage: r.percentage }))
+                    }
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Age Distribution */}
-          {demographics.ageRanges && demographics.ageRanges.length > 0 && (
+            {/* Age Distribution */}
+            {demographics.ageRanges && demographics.ageRanges.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Age Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HorizontalBarChart
+                    data={demographics.ageRanges.map((r: { range: string; count: number; percentage: number }) => ({
+                      label: r.range,
+                      value: r.count,
+                      percentage: r.percentage,
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Row 2: Life Stages & Wellness Goals */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Life Stages */}
+            {demographics.lifeStages && demographics.lifeStages.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Life Stage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HorizontalBarChart
+                    data={demographics.lifeStages.slice(0, 5).map((s: { stage: string; count: number; percentage: number }) => ({
+                      label: s.stage,
+                      value: s.count,
+                      percentage: s.percentage,
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Primary Wellness Goals */}
+            {demographics.primaryGoals && demographics.primaryGoals.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Primary Wellness Goals</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HorizontalBarChart
+                    data={demographics.primaryGoals.slice(0, 5).map((g: { goal: string; count: number; percentage: number }) => ({
+                      label: g.goal,
+                      value: g.count,
+                      percentage: g.percentage,
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Row 3: What They've Tried Before (from emerging patterns) */}
+          {emergingPatterns?.commonFailedAlternatives && emergingPatterns.commonFailedAlternatives.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Who They Are</CardTitle>
+                <CardTitle className="text-sm font-medium">What They&apos;ve Tried Before</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Products and solutions that didn&apos;t work for them</p>
               </CardHeader>
               <CardContent>
                 <HorizontalBarChart
-                  data={demographics.ageRanges.map((r: { range: string; count: number; percentage: number }) => ({
-                    label: r.range,
-                    value: r.count,
-                    percentage: r.percentage,
+                  data={emergingPatterns.commonFailedAlternatives.slice(0, 6).map(alt => ({
+                    label: alt.label,
+                    value: alt.count,
+                    percentage: Math.round((alt.count / n) * 100),
                   }))}
                 />
               </CardContent>
