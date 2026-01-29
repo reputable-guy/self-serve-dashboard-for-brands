@@ -25,7 +25,7 @@ export const SEED_STUDIES: Study[] = [
     status: "completed",
     tier: 2,
     participants: 18,  // 18 completed out of 25 enrolled (72% completion)
-    avgImprovement: 2, // Ground truth: avg HRV change across 18 participants = +1.9%, rounded to 2%
+    avgImprovement: 4, // Ground truth: avg HRV change across 18 participants = +3.94%, rounded to 4%
     targetParticipants: 25,
     startDate: "2024-09-25T00:00:00.000Z",
     endDate: "2024-11-17T00:00:00.000Z",

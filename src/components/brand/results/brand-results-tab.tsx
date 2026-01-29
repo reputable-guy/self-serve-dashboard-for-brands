@@ -255,9 +255,15 @@ function BeforeAfterCard({
   type MetricChange = { before: number; after: number; unit: string; changePercent: number; label?: string; lowerIsBetter?: boolean };
   const secondaryMetrics: MetricChange[] = useMemo(() => {
     if (!wearable) return [];
+    // Build candidates with explicit labels for each metric type
     const candidates: (MetricChange | undefined)[] = [
-      wearable.deepSleepChange, wearable.sleepEfficiencyChange, wearable.hrvChange,
-      wearable.remSleepChange, wearable.sleepLatencyChange, wearable.sleepChange, wearable.restingHrChange,
+      wearable.deepSleepChange && { ...wearable.deepSleepChange, label: wearable.deepSleepChange.label || 'Deep Sleep' },
+      wearable.sleepEfficiencyChange && { ...wearable.sleepEfficiencyChange, label: wearable.sleepEfficiencyChange.label || 'Sleep Efficiency', lowerIsBetter: false },
+      wearable.hrvChange && { ...wearable.hrvChange, label: wearable.hrvChange.label || 'HRV' },
+      wearable.remSleepChange && { ...wearable.remSleepChange, label: wearable.remSleepChange.label || 'REM Sleep' },
+      wearable.sleepLatencyChange && { ...wearable.sleepLatencyChange, label: wearable.sleepLatencyChange.label || 'Sleep Latency', lowerIsBetter: true },
+      wearable.sleepChange && { ...wearable.sleepChange, label: wearable.sleepChange.label || 'Total Sleep' },
+      wearable.restingHrChange && { ...wearable.restingHrChange, label: wearable.restingHrChange.label || 'Resting HR', lowerIsBetter: true },
     ];
     return candidates
       .filter((m): m is MetricChange => !!m && typeof m === 'object' && 'changePercent' in m)
@@ -266,7 +272,10 @@ function BeforeAfterCard({
   }, [wearable, best, isFeatured]);
 
   // Hero symptom and context for mini customer story
-  const heroSymptom = story.baseline?.motivation;
+  // Priority: hopedResults (what they wanted to achieve) > villainVariable (category) > motivation (why they joined)
+  const heroSymptom = story.baseline?.hopedResults 
+    || story.journey?.villainVariable 
+    || story.baseline?.motivation;
   const villainDuration = story.baseline?.villainDuration;
   const triedBefore = story.baseline?.triedOther;
 
@@ -302,7 +311,7 @@ function BeforeAfterCard({
           <div className={`bg-gray-50/70 rounded-lg p-2.5 mb-3 space-y-1 ${isFeatured ? '' : 'text-xs'}`}>
             {heroSymptom && (
               <p className="text-xs text-gray-600">
-                <span className="font-medium text-gray-700">Struggling with:</span> {heroSymptom.length > 80 ? heroSymptom.slice(0, 80) + '…' : heroSymptom}
+                <span className="font-medium text-gray-700">Looking for:</span> {heroSymptom.length > 80 ? heroSymptom.slice(0, 80) + '…' : heroSymptom}
               </p>
             )}
             {villainDuration && (

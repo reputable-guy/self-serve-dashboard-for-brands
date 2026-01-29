@@ -339,12 +339,23 @@ export function getAllWidgetModes(studyId: string): WidgetModeConfig[] {
 
 /**
  * Get full widget data for a study (for modal and product page demo)
+ * Now sorts participants by positive metrics before selecting top 6
  */
 export function getWidgetDataForStudy(studyId: string): WidgetStudyData | null {
   if (studyId === "study-sensate-real") {
-    const participants = SENSATE_REAL_STORIES.slice(0, 6).map((story) =>
+    // Transform all participants and sort by positive metrics
+    const allParticipants = SENSATE_REAL_STORIES.map((story) =>
       transformParticipantToPreview(story, "sensate")
     );
+    // Score by rating + positive metric change, prioritize positive metrics
+    const scored = allParticipants.map((p) => {
+      const match = p.primaryMetric.value.match(/([+-]?\d+)/);
+      const change = match ? parseInt(match[1], 10) : 0;
+      const score = p.rating * 10 + (change > 0 ? change : change * 2); // Penalize negative metrics
+      return { participant: p, score, change };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const participants = scored.slice(0, 6).map(s => s.participant);
 
     return {
       studyId,
@@ -361,9 +372,18 @@ export function getWidgetDataForStudy(studyId: string): WidgetStudyData | null {
   }
 
   if (studyId === "study-lyfefuel-real") {
-    const participants = LYFEFUEL_REAL_STORIES.slice(0, 6).map((story) =>
+    // Transform all participants and sort by positive metrics
+    const allParticipants = LYFEFUEL_REAL_STORIES.map((story) =>
       transformParticipantToPreview(story, "lyfefuel")
     );
+    const scored = allParticipants.map((p) => {
+      const match = p.primaryMetric.value.match(/([+-]?\d+)/);
+      const change = match ? parseInt(match[1], 10) : 0;
+      const score = p.rating * 10 + (change > 0 ? change : change * 2);
+      return { participant: p, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const participants = scored.slice(0, 6).map(s => s.participant);
 
     return {
       studyId,
@@ -391,29 +411,43 @@ export function hasWidgetData(studyId: string): boolean {
 }
 
 /**
- * Get the default top 3 participant IDs based on rating and positive metrics.
+ * Get the default top 3 participant IDs based on rating and POSITIVE metrics only.
  * Used for auto-selection when no manual selection has been made.
+ * Excludes participants with negative primary metrics to ensure we showcase winners.
  */
 export function getDefaultFeaturedParticipantIds(studyId: string): string[] {
-  const widgetData = getWidgetDataForStudy(studyId);
-  if (!widgetData) return [];
+  // Get ALL participants, not just the limited set from getWidgetDataForStudy
+  let allParticipants: ParticipantPreview[] = [];
+  
+  if (studyId === "study-sensate-real") {
+    allParticipants = SENSATE_REAL_STORIES.map((story) =>
+      transformParticipantToPreview(story, "sensate")
+    );
+  } else if (studyId === "study-lyfefuel-real") {
+    allParticipants = LYFEFUEL_REAL_STORIES.map((story) =>
+      transformParticipantToPreview(story, "lyfefuel")
+    );
+  } else {
+    const widgetData = getWidgetDataForStudy(studyId);
+    if (!widgetData) return [];
+    allParticipants = widgetData.participants;
+  }
 
   // Score each participant by rating + positive metric change
-  const scored = widgetData.participants.map((p) => {
-    let score = p.rating * 10; // Rating contributes significantly
-
-    // Parse metric value to get numeric change
-    const metricMatch = p.primaryMetric.value.match(/([+-]?\d+)/);
-    if (metricMatch) {
-      const change = parseInt(metricMatch[1], 10);
-      // Positive changes add to score
-      if (change > 0) {
-        score += change;
-      }
-    }
-
-    return { id: p.id, score };
-  });
+  // ONLY include participants with POSITIVE primary metrics
+  const scored = allParticipants
+    .map((p) => {
+      // Parse metric value to get numeric change
+      const metricMatch = p.primaryMetric.value.match(/([+-]?\d+)/);
+      const change = metricMatch ? parseInt(metricMatch[1], 10) : 0;
+      
+      // Calculate score: rating * 10 + metric improvement
+      let score = p.rating * 10 + change;
+      
+      return { id: p.id, score, change };
+    })
+    // Filter to only participants with positive metrics
+    .filter((p) => p.change > 0);
 
   // Sort by score descending and take top 3
   scored.sort((a, b) => b.score - a.score);

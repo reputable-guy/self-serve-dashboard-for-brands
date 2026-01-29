@@ -124,18 +124,27 @@ export default function DemoProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Image */}
           <div className="space-y-4">
-            <div className="aspect-square bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center">
-              <div className="text-center">
-                <div className="h-48 w-48 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full mx-auto mb-4 shadow-lg" />
-                <p className="text-sm text-gray-400">[Product Image]</p>
-              </div>
+            <div className="aspect-square bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center p-8 overflow-hidden">
+              <img 
+                src="/images/sensate-device.png" 
+                alt="Sensate 2 Device" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="aspect-square bg-gray-100 rounded-lg cursor-pointer hover:ring-2 ring-purple-400"
-                />
+                  className={`aspect-square bg-gradient-to-br ${i === 1 ? 'from-purple-100 to-purple-200 ring-2 ring-purple-400' : 'from-gray-100 to-gray-200'} rounded-lg cursor-pointer hover:ring-2 ring-purple-400 overflow-hidden`}
+                >
+                  {i === 1 && (
+                    <img 
+                      src="/images/sensate-device.png" 
+                      alt="Sensate 2" 
+                      className="w-full h-full object-contain p-1"
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </div>

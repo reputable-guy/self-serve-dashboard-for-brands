@@ -109,7 +109,9 @@ const COLOR_PRESETS = [
   { name: "Pink", value: "#DB2777" },
 ];
 
-const getConfigKey = (studyId: string) => `reputable-widget-config-${studyId}`;
+// Version bumped to invalidate old configs with bad featured participant IDs
+const WIDGET_CONFIG_VERSION = "v2";
+const getConfigKey = (studyId: string) => `reputable-widget-config-${WIDGET_CONFIG_VERSION}-${studyId}`;
 
 // ============================================
 // HELPER: Compute display modes for demo studies

@@ -293,25 +293,27 @@ export function ParticipantStoryCard({
           </div>
         )}
 
-        {/* Expand/Collapse Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleToggle}
-          className="w-full mt-3 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-        >
-          {isExpanded ? (
-            <>
-              <ChevronUp className="w-3 h-3 mr-1" />
-              Show less
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-3 h-3 mr-1" />
-              View full profile
-            </>
-          )}
-        </Button>
+        {/* Expand/Collapse Button - only show if there's expanded content to show */}
+        {(card.failedAlternatives.length > 3 || card.archetype) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggle}
+            className="w-full mt-3 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-3 h-3 mr-1" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-3 h-3 mr-1" />
+                Show more
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

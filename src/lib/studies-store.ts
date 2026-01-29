@@ -274,6 +274,15 @@ export const useStudiesStore = create<StudiesStore>()(
       onRehydrateStorage: () => createSafeRehydrationHandler('studies', (state) => {
         // Merge in any new studies from SEED_STUDIES that don't exist in persisted state
         state.studies = mergeSeedData(state.studies, SEED_STUDIES, s => s.id);
+        // Sync avgImprovement from SEED_STUDIES for real data studies (ground truth)
+        // This ensures seed file updates propagate to persisted data
+        state.studies = state.studies.map(study => {
+          const seedStudy = SEED_STUDIES.find(s => s.id === study.id);
+          if (seedStudy && !seedStudy.isDemo && seedStudy.avgImprovement !== undefined) {
+            return { ...study, avgImprovement: seedStudy.avgImprovement };
+          }
+          return study;
+        });
         // Mark hydration as complete
         state.setHasHydrated(true);
       }),
