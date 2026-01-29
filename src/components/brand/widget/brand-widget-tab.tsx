@@ -39,10 +39,8 @@ import {
   Palette,
   Users,
   RotateCcw,
-  Sparkles,
   Settings2,
 } from "lucide-react";
-import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import {
   TrustStripWidget,
@@ -50,7 +48,6 @@ import {
   TrustSectionWidget,
   WIDGET_STYLES,
   type WidgetStyle,
-  type TrustWidgetParticipant,
 } from "@/components/widgets/trust-widgets";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";

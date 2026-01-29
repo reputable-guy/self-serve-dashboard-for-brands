@@ -14,7 +14,7 @@
  * - Something brands would actually put on their sites
  */
 
-import { Shield, ChevronRight, Check, Users, Star, ExternalLink } from "lucide-react";
+import { Shield, ChevronRight, Users, ExternalLink } from "lucide-react";
 import Image from "next/image";
 
 // ============================================
@@ -107,13 +107,8 @@ function MiniAvatarStack({
 // 1. TRUST STRIP — Compact horizontal bar
 // ============================================
 
-export function TrustStripWidget({
-  participantCount,
-  headline,
-  participants = [],
-  brandColor = "#00D1C1",
-  onOpenModal,
-}: TrustWidgetProps) {
+export function TrustStripWidget(props: TrustWidgetProps) {
+  const { participantCount, participants = [], brandColor = "#00D1C1", onOpenModal } = props;
   const displayParticipants = participants.length > 0
     ? participants
     : [
@@ -238,16 +233,18 @@ export function TrustCardWidget({
 // 3. TRUST SECTION — Full-width inline section
 // ============================================
 
-export function TrustSectionWidget({
-  participantCount,
-  headline,
-  subheadline,
-  participants = [],
-  brandColor = "#00D1C1",
-  onOpenModal,
-  durationDays = 28,
-  deviceType = "Oura Ring",
-}: TrustWidgetProps & { showParticipantPreviews?: boolean; durationDays?: number; deviceType?: string }) {
+export function TrustSectionWidget(
+  props: TrustWidgetProps & { showParticipantPreviews?: boolean; durationDays?: number; deviceType?: string }
+) {
+  const {
+    participantCount,
+    headline,
+    participants = [],
+    brandColor = "#00D1C1",
+    onOpenModal,
+    durationDays = 28,
+    deviceType = "Oura Ring",
+  } = props;
   const displayParticipants = participants.length > 0
     ? participants.slice(0, 3)
     : [
