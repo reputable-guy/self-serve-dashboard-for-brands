@@ -409,7 +409,11 @@ export function BrandWidgetTab({
   }, [studyId, computeDefaultFeatured]);
 
   // --- Save config to localStorage ---
+  // Skip save if featuredParticipantIds is empty (initial state before load effect runs)
   useEffect(() => {
+    if (featuredParticipantIds.length === 0) {
+      return;
+    }
     const config: WidgetConfig = {
       brandColor,
       position,
