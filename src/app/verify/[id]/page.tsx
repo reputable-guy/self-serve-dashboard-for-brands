@@ -627,7 +627,8 @@ export default function VerifyPage() {
   }
 
   // Check if this is a simulated verification ID (XXXXX-SIM-XXX format)
-  const simulatedMatch = id.match(/^([A-Z0-9]+)-SIM-(\d+)$/);
+  // Note: Study IDs may contain underscores after processing (e.g., SENSATE_STRESS -> SENSATE_)
+  const simulatedMatch = id.match(/^([A-Z0-9_]+)-SIM-(\d+)$/);
   if (simulatedMatch) {
     // Try to retrieve from sessionStorage
     const simulatedStory = getSimulatedStory(id);
