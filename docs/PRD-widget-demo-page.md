@@ -67,12 +67,16 @@ We're leaving value on the table by not demonstrating these placements.
 
 | ID | Requirement | Rationale |
 |----|-------------|-----------|
-| P0-1 | **Placement Preview Gallery** — Show widget in 5+ realistic page mockups: PDP, Homepage Hero, Landing Page, Blog Post, Email Signature | Core value prop; addresses checkout anxiety |
-| P0-2 | **Live Widget Rendering** — Display brand's actual configured widget (not static mockups) in each context | Must see THEIR widget, not a generic example |
-| P0-3 | **One-Click Embed Codes** — Provide placement-specific embed snippets with a copy button | Removes technical friction |
-| P0-4 | **Real-Time Preview Updates** — When widget config changes (colors, style, size), all placements update instantly | Builds confidence; no refresh needed |
-| P0-5 | **Responsive Preview Toggle** — Switch between desktop/tablet/mobile views for each placement | Brands need to verify mobile experience |
-| P0-6 | **"View Full Demo" Links** — Each placement has a button to open a full-page, scrollable demo (not just cropped preview) | Stakeholders need realistic context; preview area alone isn't enough for internal buy-in |
+| P0-1 | **Placement Preview on Widget Tab** — Show widget in realistic page mockups DIRECTLY on Widget tab: PDP (default), Homepage, Landing Page, Blog Post, Email Signature. NO separate "demo page" required. | Core value prop; addresses checkout anxiety; no extra navigation |
+| P0-2 | **PDP First, Not Checkout** — Default placement is Product Page with "Recommended" badge. Checkout is de-emphasized or removed. "Not checkout — start here!" messaging prominent. | Directly counters the #1 objection |
+| P0-3 | **Unified Configuration** — ALL widget config in ONE section on Widget tab: style (card/strip/section), colors, display mode. No config scattered across multiple locations. | AT-3 failure mode: config was in 3 places |
+| P0-4 | **Present Button on Widget Tab** — Single "Present" button in Widget tab header enters full-screen presentation mode. NO intermediary pages like /demo/widget-placements/. | AT-1 failure mode: Kyle had to navigate to sub-page |
+| P0-5 | **Live Widget Rendering** — Display brand's actual configured widget (not static mockups) in each context | Must see THEIR widget, not a generic example |
+| P0-6 | **Real-Time Preview Updates** — When widget config changes, preview updates instantly (<500ms) | Builds confidence; no refresh needed |
+| P0-7 | **One-Click Embed Codes** — Copy button for placement-specific embed code, visible on Widget tab | Removes technical friction |
+| P0-8 | **Presentation Mode** — Full-screen, dark background, no config UI; arrow keys navigate placements; Escape exits; responsive toggle (desktop/mobile) | Sales demo must be clean and professional |
+| P0-9 | **Share Preview Link** — Generate shareable URL that opens directly to presentation mode, no login required | Enables async stakeholder review |
+| P0-10 | **Responsive Preview Toggle** — Switch between desktop/mobile views | Brands need to verify mobile experience |
 
 ### P1 — Should Have
 
@@ -80,8 +84,7 @@ We're leaving value on the table by not demonstrating these placements.
 |----|-------------|-----------|
 | P1-1 | **Custom Background Color** — Let brands set background color to match their site | Better brand-match visualization |
 | P1-2 | **Embed Code Variants** — Offer HTML, React, Vue, and Shopify Liquid snippets (complete, working examples) | Technical teams have preferences |
-| P1-3 | **Share Preview Link** — Generate shareable URL so brand can send to stakeholders | Speeds internal approval process |
-| P1-4 | **"This is NOT checkout" Callout** — Explicitly highlight non-checkout placements as the recommended starting point | Directly counters the main objection |
+| P1-3 | **"This is NOT checkout" Callout** — Explicitly highlight non-checkout placements as the recommended starting point | Directly counters the main objection |
 
 ### P2 — Nice to Have
 
@@ -273,6 +276,287 @@ const embedConfigs = {
 - Reduction in "checkout anxiety" mentions in sales calls
 - Brands proactively asking about PDP/homepage placement
 - Faster stakeholder approval (share link enables async review)
+
+---
+
+## Acceptance Tests (Journey-Based QA)
+
+**These tests MUST pass before feature is considered complete.**
+**Each test specifies: Persona → Starting State → Journey → Checkpoints → Failure Modes**
+
+---
+
+### AT-1: Sales Rep — Demo Flow from Widget Tab
+
+**Persona:** Kyle (Sales Rep)
+- Goal: Demo the widget to a prospect on a live call
+- Constraint: Screen sharing, needs to look professional, no "backstage" views
+- Context: Prospect asked "What does this look like on our site?"
+
+**Starting State:**
+- Kyle is on the **Widget tab** in the dashboard (the main widget configuration area)
+- He is screen sharing with a prospect on Zoom
+- This is the ONLY page Kyle should need to be on
+
+**Journey:**
+1. Kyle looks for a way to demo/present the widget
+2. Kyle clicks the "Present" button
+3. Kyle is now in full-screen presentation mode
+4. Kyle shows the Product Page placement
+5. Kyle navigates to Homepage placement
+6. Kyle toggles to mobile view
+7. Kyle shares a link for the prospect to review later
+
+**Checkpoints:**
+- [ ] Step 1: "Present" button is visible ON the Widget tab (NOT a sub-page)
+- [ ] Step 1: Button is prominent — top-right, teal/primary color, can't miss it
+- [ ] Step 2: ONE click enters presentation mode (no intermediary page)
+- [ ] Step 2: Transition is instant (<500ms), no loading states
+- [ ] Step 3: Full-screen, dark background, no sidebar/nav visible
+- [ ] Step 3: NO "Widget Demo Page" intermediary visible at any point
+- [ ] Step 4: PDP is shown FIRST (not checkout) — with "Recommended" badge
+- [ ] Step 4: Mockup looks like a real e-commerce site, not a wireframe
+- [ ] Step 5: Arrow keys navigate between placements smoothly
+- [ ] Step 6: Up/Down arrows toggle device, shows realistic mobile mockup
+- [ ] Step 7: Share button copies link that opens directly to presentation
+
+**End State:**
+- Kyle completed demo in <2 minutes
+- Prospect received a shareable link
+- Kyle never left the Widget tab to access presentation mode
+
+**Failure Modes (test FAILS if ANY are true):**
+- ❌ Kyle had to click "View Demo" or navigate to /demo/widget-placements/
+- ❌ There was an intermediary page between Widget tab and presentation
+- ❌ "Present" button was hidden in a dropdown or sub-section
+- ❌ Checkout placement was shown before PDP
+- ❌ Configuration UI was visible during presentation
+- ❌ Kyle said "hold on, let me find the right page"
+
+---
+
+### AT-2: Brand Manager — Stakeholder Share Link
+
+**Persona:** Amber (Brand Marketing Manager)
+- Goal: Send a link to her VP so he can review the widget without a meeting
+- Constraint: VP won't log in; link must work standalone
+- Context: Amber needs VP approval before implementing widget
+
+**Starting State:**
+- Amber is on the Widget tab
+- She has configured the widget with her brand colors
+- She wants to share a preview with her VP
+
+**Journey:**
+1. Amber clicks "Present" to see full demo
+2. Amber clicks "Share" to get a link
+3. Amber sends link to VP via email
+4. VP clicks link (not logged into Reputable)
+5. VP sees the widget demo immediately
+
+**Checkpoints:**
+- [ ] Step 1: Present button is on Widget tab (no sub-page navigation)
+- [ ] Step 2: Share button is visible IN presentation mode
+- [ ] Step 2: Link is copied to clipboard with confirmation
+- [ ] Step 3: Link is a simple URL (not requiring login token)
+- [ ] Step 4: Link works without Reputable account
+- [ ] Step 5: VP sees presentation mode directly (not a login page)
+- [ ] Step 5: VP sees Amber's brand colors applied
+- [ ] Step 5: VP can navigate placements and toggle device view
+
+**End State:**
+- VP reviewed widget without scheduling a meeting
+- VP saw exactly what Kyle would show in a sales demo
+- No login or account required
+
+**Failure Modes:**
+- ❌ Share link required recipient to log in
+- ❌ Share link opened to dashboard instead of presentation
+- ❌ Brand colors weren't applied in shared view
+- ❌ VP had to figure out how to navigate (no instructions visible)
+
+---
+
+### AT-3: Brand Manager — Widget Configuration Clarity
+
+**Persona:** Amber (Brand Marketing Manager)
+- Goal: Configure the widget style and colors
+- Constraint: Doesn't want to hunt through multiple pages
+- Context: First time setting up the widget
+
+**Starting State:**
+- Amber is on the Widget tab
+- She wants to configure colors, style (card/strip/section), and display mode
+
+**Journey:**
+1. Amber looks for widget configuration options
+2. Amber finds all config in ONE section
+3. Amber changes brand color
+4. Amber sees preview update immediately
+5. Amber switches widget style (card → strip)
+6. Amber sees preview update with new style
+
+**Checkpoints:**
+- [ ] Step 1: Configuration is visible on Widget tab (not in Settings)
+- [ ] Step 2: ALL config in ONE place: style, colors, display mode
+- [ ] Step 2: No config scattered across "Widget Style" + "Widget Config" + "Preview" sections
+- [ ] Step 3: Color picker is easy to use (presets + custom)
+- [ ] Step 4: Preview updates LIVE (<500ms)
+- [ ] Step 4: Preview shows widget in realistic page context (not isolated)
+- [ ] Step 5: Style options are clear (visual thumbnails, not just text)
+- [ ] Step 6: Preview reflects the style change immediately
+
+**End State:**
+- Amber configured the widget without confusion
+- She knew where to find every setting
+- She saw live previews of every change
+
+**Failure Modes:**
+- ❌ Config was in 3 different sections (style selector, config panel, preview page)
+- ❌ Amber had to go to a different page to see the preview
+- ❌ Changes required clicking "Apply" or "Save" to see effect
+- ❌ Amber asked "wait, where do I change the color?"
+
+---
+
+### AT-4: First-Time User — Widget Tab Default State
+
+**Persona:** New brand user (first login after study completion)
+- Goal: See what the widget looks like and how to use it
+- Constraint: Has never seen the Widget tab before
+- Context: Just completed their first study, exploring features
+
+**Starting State:**
+- User clicks on Widget tab for the first time
+- Has a completed study with participant data
+
+**Journey:**
+1. User lands on Widget tab
+2. User sees widget preview (default configuration)
+3. User understands what placements are available
+4. User knows how to present/demo and get embed code
+
+**Checkpoints:**
+- [ ] Step 1: Widget tab loads quickly (<1 second)
+- [ ] Step 2: Widget preview is visible immediately (not hidden behind tabs)
+- [ ] Step 2: Preview shows PDP placement by default (NOT checkout)
+- [ ] Step 2: "Not checkout — start here!" message is prominent
+- [ ] Step 3: Placement options (PDP, Homepage, etc.) are visible
+- [ ] Step 3: PDP has "Recommended" badge
+- [ ] Step 4: "Present" button is obvious (for demos)
+- [ ] Step 4: "Get Embed Code" is obvious (for implementation)
+
+**End State:**
+- User understands the widget feature in <30 seconds
+- User knows checkout isn't the only option
+- User knows how to demo and implement
+
+**Failure Modes:**
+- ❌ Checkout was shown first/default (reinforces anxiety)
+- ❌ Widget preview was hidden behind a "Preview" tab
+- ❌ User didn't notice alternative placements exist
+- ❌ "Present" or "Embed Code" buttons were buried
+
+---
+
+### AT-5: Technical — Embed Code Flow
+
+**Persona:** Developer or Technical Marketer
+- Goal: Get embed code for PDP placement
+- Constraint: Needs code that works, not documentation to read
+- Context: Ready to implement the widget
+
+**Starting State:**
+- User is on Widget tab
+- Widget is configured with brand colors
+- User wants embed code for Product Page placement
+
+**Journey:**
+1. User selects PDP placement
+2. User clicks to get embed code
+3. User copies the code
+4. User sees confirmation
+
+**Checkpoints:**
+- [ ] Step 1: Placement selection is clear (tabs or buttons)
+- [ ] Step 2: "Copy Embed Code" button is visible for selected placement
+- [ ] Step 2: Code is displayed in a readable format (syntax highlighted)
+- [ ] Step 3: Copy button works with one click
+- [ ] Step 3: Code includes placement-specific attributes (data-placement="pdp")
+- [ ] Step 4: Success feedback ("Copied!" toast or button change)
+- [ ] Code is correct and would work if pasted into a real page
+
+**End State:**
+- User has working embed code in clipboard
+- Code is specific to PDP placement
+- No need to read documentation
+
+**Failure Modes:**
+- ❌ Had to navigate to separate page to get embed code
+- ❌ Embed code was generic (not placement-specific)
+- ❌ Code was wrong or had syntax errors
+- ❌ Copy button didn't work or had no feedback
+
+---
+
+### AT-6: Presentation Mode — Visual Quality
+
+**Persona:** Kyle (Sales Rep) and Amber (Brand Manager)
+- Goal: Presentation mode looks professional for external audiences
+- Constraint: Will be screen-shared or sent to VPs/prospects
+- Context: This is our "showroom"
+
+**Starting State:**
+- User has entered presentation mode
+
+**Journey:**
+1. Review the overall visual appearance
+2. Check each placement mockup
+3. Verify widget renders correctly
+4. Test navigation and controls
+
+**Checkpoints:**
+- [ ] Full-screen dark background (no white dashboard chrome bleeding through)
+- [ ] Mockups look like real e-commerce sites (not wireframes or gray boxes)
+- [ ] Product images, star ratings, prices look realistic
+- [ ] Widget renders with actual data (participant counts, NPS, etc.)
+- [ ] Navigation arrows are visible but not distracting
+- [ ] Keyboard hints are present at bottom (but subtle)
+- [ ] "Verified by Reputable" badge is visible on widgets
+- [ ] Mobile view is properly sized and realistic
+
+**Failure Modes:**
+- ❌ Dashboard UI visible behind/around the presentation
+- ❌ Mockups look like placeholder wireframes
+- ❌ Widget shows "loading" or error states
+- ❌ Professional designer would say "this looks unfinished"
+
+---
+
+### AT-7: Data Constraints
+
+**Persona:** N/A (Technical requirement)
+- Goal: Feature works without production data
+- Constraint: Sales demos use demo studies
+- Context: Cannot require Sensate Real Data study
+
+**Starting State:**
+- User has a DEMO study (not real participant data)
+
+**Journey:**
+1. User goes to Widget tab
+2. User tries to preview/present
+
+**Checkpoints:**
+- [ ] Widget tab works with demo studies
+- [ ] Preview shows realistic demo data
+- [ ] Presentation mode works fully
+- [ ] No errors about "insufficient data"
+
+**Failure Modes:**
+- ❌ "Widget requires real participant data" error
+- ❌ Empty or broken preview with demo studies
+- ❌ Feature only works with Sensate Real Data study
 
 ---
 

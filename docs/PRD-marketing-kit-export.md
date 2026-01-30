@@ -754,6 +754,315 @@ User clicks "Export"
 
 ---
 
+## Acceptance Tests (Journey-Based QA)
+
+**These tests MUST pass before feature is considered complete.**
+**Each test specifies: Persona → Starting State → Journey → Checkpoints → Failure Modes**
+
+---
+
+### AT-1: Social Media Manager — Single Participant Export
+
+**Persona:** Jessica (Social Media Manager)
+- Goal: Export one participant story as Instagram carousel
+- Constraint: Needs it done in <5 minutes, no design skills required
+- Context: Has 15 participant stories, needs content for this week's posts
+
+**Starting State:**
+- Jessica is logged into the dashboard
+- She navigates to the Marketing Kit tab
+- She sees participant stories from a completed study
+
+**Journey:**
+1. Jessica scans participants to find a compelling story
+2. Jessica clicks to export that participant
+3. Jessica selects "Instagram Carousel" format
+4. Jessica sees a live preview of the carousel
+5. Jessica adjusts brand colors (or accepts defaults)
+6. Jessica downloads the export
+
+**Checkpoints:**
+- [ ] Step 1: Participants are scannable (cards show key metrics, not just names)
+- [ ] Step 1: Best performers are visually highlighted or sortable
+- [ ] Step 2: "Export" button is ON the participant card (not hidden in detail view)
+- [ ] Step 2: ONE click opens export modal (no intermediary "configure" page)
+- [ ] Step 3: Format options are visual (thumbnails, not a dropdown list)
+- [ ] Step 4: Preview shows ACTUAL carousel slides, not wireframes
+- [ ] Step 4: Preview updates LIVE as settings change (<500ms)
+- [ ] Step 5: Brand colors are pre-filled if previously configured
+- [ ] Step 5: Color picker is intuitive (not hex-code-only)
+- [ ] Step 6: Download starts immediately (no "we'll email you" delay)
+- [ ] Step 6: Files are properly named (participant-name-slide-1.png, not uuid.png)
+
+**End State:**
+- Jessica has 5 PNG files ready to upload to Instagram
+- Total time from Marketing Kit tab to downloaded files: <5 minutes
+- She didn't need help or documentation
+
+**Failure Modes (test FAILS if ANY are true):**
+- ❌ Jessica had to click into participant detail page to find "Export"
+- ❌ Jessica had to navigate to a separate "Exports" section
+- ❌ Export button led to a configuration page before showing preview
+- ❌ Preview looked like a dashboard screenshot, not Instagram content
+- ❌ Preview didn't match final downloaded files
+- ❌ Download required waiting for email delivery
+- ❌ Jessica said "I'd still rebuild this in Canva"
+
+---
+
+### AT-2: Social Media Manager — Visual Quality
+
+**Persona:** Jessica (Social Media Manager)
+- Goal: Determine if exports are post-ready or need Canva touch-ups
+- Constraint: Her brand has a premium aesthetic; can't post amateur content
+- Context: Comparing Reputable export to what she'd create manually
+
+**Starting State:**
+- Jessica has downloaded an Instagram carousel export
+- She opens the files in her image viewer
+
+**Journey:**
+1. Jessica reviews Slide 1 (Hook)
+2. Jessica reviews Slide 3 (Transformation/Results)
+3. Jessica compares to her brand's existing Instagram aesthetic
+4. Jessica decides: post as-is, or rebuild in Canva?
+
+**Checkpoints:**
+- [ ] Step 1: Hero metric is LARGE and attention-grabbing (not small text)
+- [ ] Step 1: Participant photo/avatar is prominent and humanizing
+- [ ] Step 1: Layout has visual hierarchy (not everything same size)
+- [ ] Step 2: Before→After metrics have visual drama (progress bars, big numbers, color coding)
+- [ ] Step 2: Improvement percentages are prominent and celebratory
+- [ ] Step 3: Export aesthetic matches premium DTC brand standards
+- [ ] Step 3: Colors, typography, spacing feel intentional (not template-y)
+- [ ] Step 4: Jessica's answer is "I'd post this as-is"
+
+**Failure Modes:**
+- ❌ Slides look like a spreadsheet with colors
+- ❌ All text is same size (no hierarchy)
+- ❌ Metrics are displayed as plain text tables
+- ❌ Jessica says "This looks like a template everyone uses"
+- ❌ Jessica says "I'd need to fix this in Canva first"
+
+---
+
+### AT-3: Marketing Manager — Brand Customization Flow
+
+**Persona:** Amber (Brand Marketing Manager)  
+- Goal: Set up brand kit so all exports match her brand
+- Constraint: Needs VP approval; exports must look "on-brand"
+- Context: First time using export feature; hasn't configured brand yet
+
+**Starting State:**
+- Amber is on the Marketing Kit tab
+- Brand colors/logo have NOT been configured yet
+- She wants to export but needs to set up branding first
+
+**Journey:**
+1. Amber clicks to export a participant
+2. Amber sees brand customization options
+3. Amber uploads her logo
+4. Amber sets brand colors (primary, secondary)
+5. Amber sees preview update with her branding
+6. Amber saves brand settings for future exports
+
+**Checkpoints:**
+- [ ] Step 1: Export flow naturally leads to brand setup (not a dead end)
+- [ ] Step 2: Brand options are IN the export modal (not a separate settings page)
+- [ ] Step 2: Clear indication that settings will be saved for future
+- [ ] Step 3: Logo upload accepts common formats (PNG, JPG, SVG)
+- [ ] Step 3: Logo preview shows how it will appear on exports
+- [ ] Step 4: Color picker has presets AND custom hex input
+- [ ] Step 4: "Use brand colors from logo" auto-extraction would be nice (P1)
+- [ ] Step 5: Preview updates IMMEDIATELY (<500ms) as colors change
+- [ ] Step 5: Amber can see logo placement on actual slides
+- [ ] Step 6: "Save as default" is prominent and obvious
+- [ ] Step 6: Confirmation that settings are saved
+
+**Failure Modes:**
+- ❌ Amber had to go to Settings to configure brand before exporting
+- ❌ Brand customization was on a different page than export preview
+- ❌ Changes didn't preview in real-time (had to click "Apply")
+- ❌ Amber wasn't sure if settings were saved for next time
+- ❌ Logo looked wrong (wrong size, bad placement, cropped weird)
+
+---
+
+### AT-4: Marketing Manager — Batch Export Flow
+
+**Persona:** Amber (Brand Marketing Manager)
+- Goal: Export 5 participant stories for a content calendar
+- Constraint: Needs all 5 with consistent branding, quickly
+- Context: Planning a week of social content
+
+**Starting State:**
+- Amber is on Marketing Kit tab
+- Brand settings are already configured
+- Study has 15 completed participants
+
+**Journey:**
+1. Amber selects multiple participants (5)
+2. Amber initiates batch export
+3. Amber confirms format and settings apply to all
+4. Amber sees progress/confirmation
+5. Amber downloads ZIP with all exports
+
+**Checkpoints:**
+- [ ] Step 1: Multi-select is obvious (checkboxes visible, not hidden)
+- [ ] Step 1: "Select best performers" shortcut or sort available
+- [ ] Step 1: Clear count of selected participants shown
+- [ ] Step 2: "Export Selected (5)" button is prominent
+- [ ] Step 2: ONE click to start batch (not per-participant)
+- [ ] Step 3: Preview shows sample of how all will look (not each one)
+- [ ] Step 3: Brand settings from previous exports are pre-applied
+- [ ] Step 4: Progress indicator for batch processing
+- [ ] Step 4: Reasonable time (<30 seconds for 5 participants)
+- [ ] Step 5: ZIP is organized (folders per participant)
+- [ ] Step 5: File names are human-readable
+
+**Failure Modes:**
+- ❌ Amber had to export each participant individually
+- ❌ Had to re-configure brand settings for each export
+- ❌ Batch export took >1 minute
+- ❌ ZIP was flat (100 files, not organized)
+- ❌ Files were named with UUIDs instead of participant names
+
+---
+
+### AT-5: Sales Rep — Showing Export to Prospect
+
+**Persona:** Kyle (Sales Rep)
+- Goal: Show a prospect what their exports would look like
+- Constraint: On a live demo call; needs to look impressive quickly
+- Context: Prospect asked "What can I actually DO with the participant data?"
+
+**Starting State:**
+- Kyle is on a demo call, screen sharing
+- He's in the dashboard with a demo study
+- Prospect wants to see export capabilities
+
+**Journey:**
+1. Kyle navigates to Marketing Kit tab
+2. Kyle clicks on a participant to show export options
+3. Kyle shows the export preview with carousel slides
+4. Kyle demonstrates brand customization
+5. Kyle shows the "Verified by Reputable" badge
+
+**Checkpoints:**
+- [ ] Step 1: Marketing Kit tab is easy to find (main navigation)
+- [ ] Step 2: Export preview opens quickly (<1 second)
+- [ ] Step 2: No loading spinners or "generating preview" delays
+- [ ] Step 3: Preview looks impressive on screen share (not cramped modal)
+- [ ] Step 3: Carousel slides are visible without scrolling
+- [ ] Step 4: Color changes are instant and visually dramatic
+- [ ] Step 4: Kyle can say "See? Your brand colors, everywhere"
+- [ ] Step 5: Verification badge is prominently visible
+- [ ] Step 5: Kyle can explain "This links to the verification page"
+
+**Failure Modes:**
+- ❌ Kyle had to wait for preview to generate (awkward silence)
+- ❌ Modal was too small to see clearly on screen share
+- ❌ Prospect couldn't see the carousel slides without Kyle scrolling
+- ❌ Color changes were slow or required clicking "Apply"
+- ❌ Verification badge was hidden or required explanation to find
+
+---
+
+### AT-6: Verification Badge — Non-Negotiable Requirements
+
+**Persona:** N/A (Product requirement)
+- Goal: Ensure verification is never lost in export process
+- Constraint: This is our differentiation; cannot be optional
+- Context: Every exported asset must link back to verification
+
+**Starting State:**
+- Any export flow, any format
+
+**Journey:**
+1. User exports any asset type
+2. Exported asset is reviewed
+
+**Checkpoints:**
+- [ ] "Verified by Reputable" badge appears on EVERY slide/asset
+- [ ] Badge is consistently positioned (same corner on all slides)
+- [ ] Badge is legible at actual post size (not tiny)
+- [ ] Badge contains or links to verification URL
+- [ ] For images: QR code on CTA slide links to verification page
+- [ ] For email HTML: Badge is a clickable link
+- [ ] Badge cannot be removed or hidden by user settings
+- [ ] Badge style is consistent with Reputable brand
+
+**Failure Modes:**
+- ❌ Any slide missing the verification badge
+- ❌ Badge is so small it's unreadable
+- ❌ Badge link goes to wrong page or is broken
+- ❌ User found a way to export without badge
+- ❌ QR code doesn't scan properly
+
+---
+
+### AT-7: Data Constraints — Works Without Real Data
+
+**Persona:** N/A (Technical requirement)
+- Goal: Feature works on demo studies for sales/testing
+- Constraint: Cannot require Sensate Real Data study
+- Context: Sales demos, internal testing, new brand onboarding
+
+**Starting State:**
+- User is viewing a DEMO study (simulated participants)
+
+**Journey:**
+1. User navigates to Marketing Kit for demo study
+2. User attempts to export a participant
+
+**Checkpoints:**
+- [ ] Demo participants appear in Marketing Kit tab
+- [ ] Export button is enabled (not grayed out)
+- [ ] Export produces actual images (not error messages)
+- [ ] Images contain demo data that looks realistic
+- [ ] Verification badge links to demo verification page
+
+**Failure Modes:**
+- ❌ "Export not available for demo studies" message
+- ❌ Export button disabled with no explanation
+- ❌ Export produces error or empty files
+- ❌ Demo exports look obviously fake (lorem ipsum, etc.)
+
+---
+
+### AT-8: Competitive Bar — Better Than Canva
+
+**Persona:** Jessica (Social Media Manager)
+- Goal: Determine if Reputable export beats her current workflow
+- Constraint: Currently spends 1.5-2 hours per participant in Canva
+- Context: Evaluating whether to switch workflows
+
+**Starting State:**
+- Jessica has exported a carousel from Reputable
+- Jessica has a carousel she made in Canva for comparison
+
+**Journey:**
+1. Jessica compares visual quality
+2. Jessica compares time spent
+3. Jessica compares final result credibility (verification)
+4. Jessica decides which she'd use going forward
+
+**Checkpoints:**
+- [ ] Visual quality: Reputable export is equal or better than Canva
+- [ ] Time: Reputable took <5 min vs Canva's 1.5-2 hours
+- [ ] Credibility: Reputable has verification badge; Canva doesn't
+- [ ] Flexibility: Reputable has enough customization for her needs
+- [ ] Verdict: Jessica chooses Reputable over Canva
+
+**Failure Modes:**
+- ❌ Jessica says "The Canva version looks better"
+- ❌ Jessica says "I'd still need to touch this up in Canva"
+- ❌ Jessica says "The templates are too limiting"
+- ❌ Export time exceeded 5 minutes
+- ❌ Customization options were confusing or insufficient
+
+---
+
 ## 9. Open Questions
 
 ### Product Questions

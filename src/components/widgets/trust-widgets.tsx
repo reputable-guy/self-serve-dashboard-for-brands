@@ -340,7 +340,7 @@ export function TrustSectionWidget(
 // STYLE SELECTOR TYPE
 // ============================================
 
-export type WidgetStyle = "strip" | "card" | "section";
+export type WidgetStyle = "strip" | "card" | "section" | "floating-badge";
 
 export const WIDGET_STYLES: { value: WidgetStyle; label: string; description: string }[] = [
   {
@@ -350,12 +350,17 @@ export const WIDGET_STYLES: { value: WidgetStyle; label: string; description: st
   },
   {
     value: "card",
-    label: "Trust Card", 
+    label: "Trust Card",
     description: "Prominent card — more visibility, shows key stats",
   },
   {
     value: "section",
     label: "Trust Section",
     description: "Full-width block — maximum impact, shows participants",
+  },
+  {
+    value: "floating-badge",
+    label: "Floating Badge",
+    description: "Fixed corner badge — FrontRowMD-style with dismiss button",
   },
 ];

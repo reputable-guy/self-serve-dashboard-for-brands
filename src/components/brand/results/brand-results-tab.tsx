@@ -7,9 +7,10 @@
  * Progressive: no completions → first results → full study results.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
   Star,
@@ -19,23 +20,33 @@ import {
   ArrowRight,
   Award,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
+import { useBrandsStore } from "@/lib/brands-store";
 import { getCompletedStoriesFromEnrollments, categorizeStory } from "@/lib/simulation";
 import type { StudyData } from "@/components/admin/study-detail/types";
 import type { ParticipantStory } from "@/lib/types";
 import Link from "next/link";
+import { ContentGeneratorDrawer } from "./content-generator-drawer";
 
 interface BrandResultsTabProps {
   study: StudyData;
   realStories?: ParticipantStory[] | null;
+  brandName?: string;
+  productName?: string;
 }
 
-export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
+export function BrandResultsTab({ study, realStories, brandName, productName }: BrandResultsTabProps) {
+  const [selectedStory, setSelectedStory] = useState<ParticipantStory | null>(null);
   const { getEnrollmentsByStudy } = useEnrollmentStore();
+  const { getBrandById } = useBrandsStore();
   const enrollments = getEnrollmentsByStudy(study.id);
   const category = study.category;
   const isRealData = !!realStories && realStories.length > 0;
+
+  // Get brand name from store if not passed as prop
+  const resolvedBrandName = brandName || getBrandById(study.brandId)?.name;
 
   // Get completed stories — real data or from enrollments
   const completedStories = useMemo(() => {
@@ -136,6 +147,7 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
           story={sortedStories[0]}
           category={category}
           variant="featured"
+          onCreateContent={() => setSelectedStory(sortedStories[0])}
         />
       )}
 
@@ -152,6 +164,7 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
                 story={story}
                 category={category}
                 variant="compact"
+                onCreateContent={() => setSelectedStory(story)}
               />
             ))}
           </div>
@@ -187,6 +200,18 @@ export function BrandResultsTab({ study, realStories }: BrandResultsTabProps) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Content Generator Drawer */}
+      {selectedStory && (
+        <ContentGeneratorDrawer
+          isOpen={selectedStory !== null}
+          onClose={() => setSelectedStory(null)}
+          story={selectedStory}
+          brandName={resolvedBrandName}
+          productName={productName || resolvedBrandName}
+          category={category}
+        />
       )}
     </div>
   );
@@ -233,10 +258,12 @@ function formatMinutes(min: number): string {
 function BeforeAfterCard({
   story,
   variant,
+  onCreateContent,
 }: {
   story: ParticipantStory;
   category: string;
   variant: "featured" | "compact";
+  onCreateContent?: () => void;
 }) {
   const isFeatured = variant === "featured";
   const wearable = story.wearableMetrics;
@@ -404,7 +431,7 @@ function BeforeAfterCard({
           </blockquote>
         )}
 
-        {/* Footer: Rating + Verify */}
+        {/* Footer: Rating + Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -418,14 +445,30 @@ function BeforeAfterCard({
               />
             ))}
           </div>
-          {story.verificationId && (
-            <Link
-              href={`/verify/${story.verificationId}`}
-              className="text-xs text-[#00D1C1] hover:underline flex items-center gap-1"
-            >
-              Verified Results <ExternalLink className="h-3 w-3" />
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            {onCreateContent && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCreateContent();
+                }}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Create Content
+              </Button>
+            )}
+            {story.verificationId && (
+              <Link
+                href={`/verify/${story.verificationId}`}
+                className="text-xs text-[#00D1C1] hover:underline flex items-center gap-1"
+              >
+                Verified Results <ExternalLink className="h-3 w-3" />
+              </Link>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

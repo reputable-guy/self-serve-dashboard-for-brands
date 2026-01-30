@@ -11,11 +11,15 @@
  * - Email Signature
  * 
  * Addresses the #1 objection: "I don't want to mess with my checkout page"
+ * 
+ * Features:
+ * - Presentation Mode (P0-7): Full-screen demo for sales calls
+ * - Share Preview Link (P0-8): Shareable URL for stakeholder review
  */
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Monitor,
@@ -32,8 +36,9 @@ import {
   Lightbulb,
   Shield,
   Star,
-  ChevronRight,
   Sparkles,
+  Presentation,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +48,7 @@ import {
   TrustSectionWidget,
   type WidgetStyle,
 } from "@/components/widgets/trust-widgets";
+import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import {
   hasWidgetData,
@@ -52,6 +58,7 @@ import {
 } from "@/lib/widget-data";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";
+import { PresentationMode } from "@/components/demo/presentation-mode";
 
 // ============================================
 // TYPES
@@ -139,6 +146,7 @@ const PLACEMENTS: PlacementConfig[] = [
 
 export default function WidgetPlacementsDemo() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const studyId = params.studyId as string;
 
   // State
@@ -146,6 +154,8 @@ export default function WidgetPlacementsDemo() {
   const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
   const [copiedCode, setCopiedCode] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
 
   // Widget config from localStorage (synced with brand-widget-tab.tsx)
   const [brandColor, setBrandColor] = useState("#00D1C1");
@@ -212,6 +222,32 @@ export default function WidgetPlacementsDemo() {
       }
     }
   }, [studyId]);
+
+  // Handle URL params for share links (auto-open presentation mode)
+  useEffect(() => {
+    const presentParam = searchParams.get("present");
+    const placementParam = searchParams.get("placement") as PlacementType | null;
+    
+    if (presentParam === "true") {
+      setPresentationMode(true);
+      if (placementParam && PLACEMENTS.some(p => p.id === placementParam)) {
+        setSelectedPlacement(placementParam);
+      }
+    }
+  }, [searchParams]);
+
+  // Generate share link
+  const generateShareLink = () => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    return `${baseUrl}/demo/widget-placements/${studyId}?present=true&placement=${selectedPlacement}`;
+  };
+
+  const handleCopyShareLink = async () => {
+    const link = generateShareLink();
+    await navigator.clipboard.writeText(link);
+    setCopiedShareLink(true);
+    setTimeout(() => setCopiedShareLink(false), 2000);
+  };
 
   // Current placement config
   const currentPlacement = PLACEMENTS.find((p) => p.id === selectedPlacement) || PLACEMENTS[0];
@@ -293,6 +329,20 @@ export default function WidgetPlacementsDemo() {
             }
           />
         );
+      case "floating-badge":
+        return (
+          <FloatingBadgeWidget
+            participantCount={props.participantCount}
+            studyTitle={widgetData?.studyTitle || "Product Study"}
+            badgeHeadline={badgeHeadline}
+            participants={participants.map(p => ({
+              id: p.id,
+              initials: p.initials,
+            }))}
+            brandColor={brandColor}
+            onOpenModal={() => setShowModal(true)}
+          />
+        );
       case "card":
       default:
         return <TrustCardWidget {...props} />;
@@ -347,10 +397,41 @@ export default function WidgetPlacementsDemo() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Not checkout — start here!
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Best on product pages
+              </Badge>
+              
+              {/* Share Link Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyShareLink}
+                className={`gap-2 ${copiedShareLink ? "bg-emerald-50 border-emerald-300 text-emerald-700" : ""}`}
+              >
+                {copiedShareLink ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Link Copied!
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </>
+                )}
+              </Button>
+
+              {/* Present Button */}
+              <Button
+                onClick={() => setPresentationMode(true)}
+                className="gap-2 bg-[#00D1C1] hover:bg-[#00B8A9]"
+              >
+                <Presentation className="h-4 w-4" />
+                Present
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -530,6 +611,27 @@ export default function WidgetPlacementsDemo() {
           </div>
         </div>
       </div>
+
+      {/* Presentation Mode */}
+      <PresentationMode
+        isOpen={presentationMode}
+        onClose={() => setPresentationMode(false)}
+        studyId={studyId}
+        brandColor={brandColor}
+        participantCount={participantCount || 30}
+        badgeHeadline={badgeHeadline}
+        participants={participantPreviews.length > 0
+          ? participantPreviews.map(p => ({ id: p.id, initials: p.initials, name: p.name }))
+          : [
+              { id: "1", initials: "JR", name: "James R." },
+              { id: "2", initials: "SM", name: "Sarah M." },
+              { id: "3", initials: "AL", name: "Alex L." },
+            ]
+        }
+        initialPlacement={selectedPlacement}
+        onOpenVerification={() => setShowModal(true)}
+        widgetStyle={widgetStyle}
+      />
 
       {/* Verification Modal */}
       <VerificationModal
@@ -788,7 +890,7 @@ function BlogPostMockup({ brandColor, widget, deviceType }: MockupProps) {
         <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
           <p>
             Understanding how wellness products work is crucial for making informed decisions
-            about your health journey. In this article, we'll explore the science behind
+            about your health journey. In this article, we&apos;ll explore the science behind
             our approach and share real data from our customer studies.
           </p>
 
@@ -836,7 +938,7 @@ function EmailMockup({ brandColor, widget, deviceType }: MockupProps) {
         <p className="text-sm text-gray-600">Hi there,</p>
         
         <p className="text-sm text-gray-600">
-          Thank you for your recent purchase! We're excited for you to start your
+          Thank you for your recent purchase! We&apos;re excited for you to start your
           wellness journey with us.
         </p>
 

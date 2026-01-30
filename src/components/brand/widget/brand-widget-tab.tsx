@@ -31,23 +31,31 @@ import {
   Shield,
   HelpCircle,
   ChevronDown,
-  ChevronUp,
-  Image as ImageIcon,
+  ChevronRight,
   Star,
   Palette,
   Users,
   RotateCcw,
   Settings2,
-  Download,
+  Presentation,
+  Share2,
+  Layout,
+  Eye,
 } from "lucide-react";
 import { VerificationModal } from "@/components/widgets/verification-modal";
 import {
+  WIDGET_STYLES,
+  type WidgetStyle,
   TrustStripWidget,
   TrustCardWidget,
   TrustSectionWidget,
-  WIDGET_STYLES,
-  type WidgetStyle,
 } from "@/components/widgets/trust-widgets";
+import { FloatingBadgeWidget } from "@/components/widgets/compact-badge-widget";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 import { getCompletedStoriesFromEnrollments } from "@/lib/simulation/completed-story-generator";
 import {
@@ -60,7 +68,7 @@ import {
   type WidgetModeConfig,
 } from "@/lib/widget-data";
 import type { ParticipantStory } from "@/lib/types";
-import { ExportModal, type ParticipantData } from "@/components/brand/marketing-kit";
+import { PresentationMode } from "@/components/demo/presentation-mode";
 
 // ============================================
 // TYPES
@@ -213,6 +221,7 @@ function getModeDescriptionText(modeConfig: WidgetModeConfig): string {
 export function BrandWidgetTab({
   studyId,
   studyName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   brandName,
   category,
   realStories,
@@ -221,9 +230,20 @@ export function BrandWidgetTab({
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showWidgetModal, setShowWidgetModal] = useState(false);
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedExportParticipant, setSelectedExportParticipant] = useState<ParticipantPreviewItem | null>(null);
+  const [showPresentationMode, setShowPresentationMode] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+
+  // Accordion section state - style section starts expanded
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    style: true,
+    appearance: false,
+    displayMode: false,
+    participants: false,
+  });
+
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  }, []);
 
   // Config state (persisted to localStorage)
   const [brandColor, setBrandColor] = useState("#00D1C1");
@@ -436,22 +456,7 @@ export function BrandWidgetTab({
     localStorage.setItem(getConfigKey(studyId), JSON.stringify(config));
   }, [brandColor, position, selectedMode, featuredParticipantIds, widgetStyle, studyId]);
 
-  // --- Badge data ---
-  const participantAvatars = useMemo(() => {
-    if (allParticipantPreviews.length > 0) {
-      return allParticipantPreviews.slice(0, 4).map((p) => ({
-        id: p.id,
-        initials: p.initials,
-      }));
-    }
-    return [
-      { id: "demo-1", initials: "SM" },
-      { id: "demo-2", initials: "JR" },
-      { id: "demo-3", initials: "AL" },
-      { id: "demo-4", initials: "MK" },
-    ];
-  }, [allParticipantPreviews]);
-
+  // --- Badge headline for presentation mode ---
   const badgeHeadline = currentMode?.badgeHeadline ||
     (hasParticipants
       ? completedCount > 0
@@ -499,42 +504,17 @@ export function BrandWidgetTab({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // --- Export helper: Convert participant preview to export data format ---
-  const convertToExportData = useCallback((participant: ParticipantPreviewItem): ParticipantData => {
-    // Parse the primary metric value to extract numbers
-    const metricMatch = participant.primaryMetric.value.match(/([+-]?\d+)/);
-    const changePercent = metricMatch ? parseInt(metricMatch[1], 10) : 0;
-    
-    // Create mock metrics based on available data
-    // In real implementation, this would come from the full participant data
-    const metrics: ParticipantData["metrics"] = [
-      {
-        label: participant.primaryMetric.label,
-        before: 100,
-        after: 100 + changePercent,
-        unit: "",
-        changePercent: Math.abs(changePercent),
-      },
-    ];
-
-    return {
-      id: participant.id,
-      name: participant.name,
-      initials: participant.initials,
-      quote: participant.quote,
-      rating: participant.rating,
-      studyDuration: 28,
-      device: participant.device,
-      verificationId: participant.verificationId,
-      verificationUrl: `${baseUrl}/verify/${studyId}/participant/${participant.verificationId}`,
-      metrics,
-    };
+  // Generate share link for presentation mode
+  const generateShareLink = useCallback(() => {
+    return `${baseUrl}/demo/widget-placements/${studyId}?present=true&placement=pdp`;
   }, [baseUrl, studyId]);
 
-  const handleOpenExport = useCallback((participant: ParticipantPreviewItem) => {
-    setSelectedExportParticipant(participant);
-    setShowExportModal(true);
-  }, []);
+  const handleCopyShareLink = useCallback(async () => {
+    const link = generateShareLink();
+    await navigator.clipboard.writeText(link);
+    setCopiedShareLink(true);
+    setTimeout(() => setCopiedShareLink(false), 2000);
+  }, [generateShareLink]);
 
   // ============================================
   // RENDER
@@ -543,478 +523,362 @@ export function BrandWidgetTab({
   return (
     <div className="space-y-6">
       {/* ===================== */}
-      {/* WIDGET STYLE SELECTOR */}
+      {/* HEADER WITH PRESENT BUTTON */}
+      {/* ===================== */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Widget Configuration</h2>
+          <p className="text-sm text-muted-foreground">
+            Configure and preview your verification widget — start with Product Page, not checkout
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Share Link Button */}
+          <Button
+            variant="outline"
+            onClick={handleCopyShareLink}
+            className={`gap-2 ${copiedShareLink ? "bg-emerald-50 border-emerald-300 text-emerald-700" : ""}`}
+          >
+            {copiedShareLink ? (
+              <>
+                <Check className="h-4 w-4" />
+                Link Copied!
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4" />
+                Share
+              </>
+            )}
+          </Button>
+          
+          {/* Demo Mode Button - Primary CTA */}
+          <Button
+            onClick={() => setShowPresentationMode(true)}
+            className="gap-2 bg-[#00D1C1] hover:bg-[#00B8A9]"
+          >
+            <Presentation className="h-4 w-4" />
+            Demo Mode
+          </Button>
+        </div>
+      </div>
+
+      {/* Product Page Recommendation Callout */}
+      <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+        <div className="flex-shrink-0">
+          <Shield className="h-5 w-5 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-amber-800">
+            Best results on product pages
+          </p>
+          <p className="text-xs text-amber-700">
+            Shoppers engage more with clinical proof while they&apos;re still deciding. Add this widget to your product pages for maximum impact.
+          </p>
+        </div>
+      </div>
+
+      {/* ===================== */}
+      {/* WIDGET SETUP — Side-by-side with live preview */}
       {/* ===================== */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Shield className="h-4 w-4 text-[#00D1C1]" />
-            Choose Widget Style
+            <Settings2 className="h-4 w-4 text-[#00D1C1]" />
+            Widget Setup
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Select how the verification badge appears on your product page
+            Configure your widget and see changes in real-time
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {WIDGET_STYLES.map((style) => (
-              <button
-                key={style.value}
-                onClick={() => setWidgetStyle(style.value)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  widgetStyle === style.value
-                    ? "border-[#00D1C1] bg-[#00D1C1]/5"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* LEFT COLUMN: Configuration Options */}
+            <div className="space-y-3">
+              {/* Section 1: Widget Style */}
+              <Collapsible
+                open={expandedSections.style}
+                onOpenChange={() => toggleSection("style")}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
-                      widgetStyle === style.value ? "border-[#00D1C1]" : "border-gray-300"
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Layout className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Widget Style</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({WIDGET_STYLES.find((s) => s.value === widgetStyle)?.label})
+                    </span>
+                  </div>
+                  <ChevronRight
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      expandedSections.style ? "rotate-90" : ""
                     }`}
-                  >
-                    {widgetStyle === style.value && (
-                      <div className="h-2 w-2 rounded-full bg-[#00D1C1]" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{style.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {style.description}
-                </p>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===================== */}
-      {/* WIDGET PREVIEW ON MOCK PRODUCT PAGE */}
-      {/* ===================== */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-sm font-medium">
-                Live Preview
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                See how your widget looks on a real product page
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className="bg-emerald-50 text-emerald-700 border-emerald-200"
-            >
-              <Check className="h-3 w-3 mr-1" />
-              {WIDGET_STYLES.find(s => s.value === widgetStyle)?.label}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Professional Mock Product Page */}
-          <div className="bg-white border-t">
-            {/* Mock browser chrome */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-b">
-              <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
-              </div>
-              <div className="flex-1 flex justify-center">
-                <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 border">
-                  yourstore.com/products/{studyName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}
-                </div>
-              </div>
-            </div>
-
-            {/* Product page content */}
-            <div className="p-6 md:p-8">
-              <div className="max-w-3xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Product Image */}
-                  <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
-                    <div className="text-center p-8">
-                      <div 
-                        className="h-24 w-24 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                        style={{ backgroundColor: `${brandColor}15` }}
-                      >
-                        <Shield className="h-12 w-12" style={{ color: brandColor }} />
-                      </div>
-                      <p className="text-sm font-medium text-gray-600">
-                        {brandName || "Your Brand"}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">Product Image</p>
-                    </div>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="flex flex-col">
-                    <div className="mb-1">
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {brandName || "Your Brand"}
-                      </span>
-                    </div>
-                    
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                      {studyName
-                        .replace(/\s*\(.*?\)\s*/g, "")
-                        .replace(/study/gi, "")
-                        .replace(/sleep\s*&?\s*stress/gi, "")
-                        .trim() || "Premium Product"}
-                    </h1>
-                    
-                    {/* Reviews */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className="h-4 w-4 text-amber-400 fill-amber-400"
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">4.8 (142 reviews)</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="mb-6">
-                      <span className="text-3xl font-bold text-gray-900">$49.99</span>
-                      <span className="text-sm text-gray-500 line-through ml-2">$59.99</span>
-                    </div>
-
-                    {/* Add to Cart */}
-                    <button className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors mb-4">
-                      Add to Cart
-                    </button>
-
-                    {/* Trust Strip Widget (if selected) */}
-                    {widgetStyle === "strip" && (
-                      <div className="mb-4">
-                        <TrustStripWidget
-                          participantCount={hasParticipants ? participantCount : 30}
-                          headline={badgeHeadline}
-                          participants={
-                            hasParticipants
-                              ? participantAvatars.map(p => ({ ...p, name: p.initials }))
-                              : [
-                                  { id: "1", initials: "JR" },
-                                  { id: "2", initials: "SM" },
-                                  { id: "3", initials: "AL" },
-                                ]
-                          }
-                          brandColor={brandColor}
-                          onOpenModal={() => setShowWidgetModal(true)}
-                        />
-                      </div>
-                    )}
-
-                    {/* Trust Card Widget (if selected) */}
-                    {widgetStyle === "card" && (
-                      <div className="mb-4">
-                        <TrustCardWidget
-                          participantCount={hasParticipants ? participantCount : 30}
-                          headline={hasParticipants 
-                            ? `${participantCount} people verified this product with wearable data`
-                            : "30 people verified this product with wearable data"
-                          }
-                          subheadline="28-day study · Oura Ring tracked"
-                          participants={
-                            hasParticipants
-                              ? participantAvatars.map(p => ({ ...p, name: p.initials }))
-                              : [
-                                  { id: "1", initials: "JR" },
-                                  { id: "2", initials: "SM" },
-                                  { id: "3", initials: "AL" },
-                                ]
-                          }
-                          brandColor={brandColor}
-                          onOpenModal={() => setShowWidgetModal(true)}
-                        />
-                      </div>
-                    )}
-
-                    {/* Product description */}
-                    <div className="text-sm text-gray-600 leading-relaxed">
-                      <p>
-                        Backed by real customer data. Results verified through 
-                        wearable health tracking over a 28-day study period.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Trust Section Widget (if selected) - below the fold */}
-                {widgetStyle === "section" && (
-                  <div className="mt-8 pt-8 border-t">
-                    <TrustSectionWidget
-                      participantCount={hasParticipants ? participantCount : 30}
-                      headline={hasParticipants 
-                        ? badgeHeadline
-                        : "30 real customers tested this product for 28 days with Oura Ring health tracking"
-                      }
-                      participants={
-                        hasParticipants
-                          ? allParticipantPreviews.slice(0, 3).map(p => ({
-                              id: p.id,
-                              initials: p.initials,
-                              name: p.name,
-                              metric: p.primaryMetric.value + " " + p.primaryMetric.label,
-                            }))
-                          : [
-                              { id: "1", initials: "JR", name: "James R.", metric: "+18% HRV" },
-                              { id: "2", initials: "SM", name: "Sarah M.", metric: "+24% Deep Sleep" },
-                              { id: "3", initials: "AL", name: "Alex L.", metric: "+12% Recovery" },
-                            ]
-                      }
-                      brandColor={brandColor}
-                      onOpenModal={() => setShowWidgetModal(true)}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="py-3 bg-gray-50 border-t flex items-center justify-between px-4">
-            <p className="text-xs text-muted-foreground">
-              Click the widget to preview the modal that opens for customers
-            </p>
-            <a 
-              href={`/demo/widget-placements/${studyId}`}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#00D1C1] hover:text-[#00B5A6] transition-colors"
-            >
-              Preview on different page types
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===================== */}
-      {/* CONFIGURATION PANEL */}
-      {/* ===================== */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Settings2 className="h-4 w-4 text-muted-foreground" />
-              Widget Configuration
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsConfigOpen(!isConfigOpen)}
-              className="text-muted-foreground"
-            >
-              {isConfigOpen ? (
-                <ChevronUp className="h-4 w-4 mr-1" />
-              ) : (
-                <ChevronDown className="h-4 w-4 mr-1" />
-              )}
-              {isConfigOpen ? "Collapse" : "Configure"}
-            </Button>
-          </div>
-          {!isConfigOpen && (
-            <p className="text-xs text-muted-foreground">
-              Mode: <span className="font-medium">{currentMode ? getModeLabelText(currentMode.mode) : "Auto"}</span>
-              {" · "}Color:{" "}
-              <span
-                className="inline-block h-3 w-3 rounded-full align-middle border"
-                style={{ backgroundColor: brandColor }}
-              />
-            </p>
-          )}
-        </CardHeader>
-
-        {isConfigOpen && (
-          <CardContent className="space-y-6 pt-0">
-            {/* Display Mode Selection */}
-            {allModes.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Display Mode</p>
-                <div className="space-y-2">
-                  {allModes.map((modeConfig) => {
-                    const isSelected = currentMode?.mode === modeConfig.mode;
-                    const isBest = bestMode?.mode === modeConfig.mode;
-
-                    return (
+                  />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 px-1">
+                  <div className="space-y-2">
+                    {WIDGET_STYLES.map((style) => (
                       <button
-                        key={modeConfig.mode}
-                        onClick={() => setSelectedMode(modeConfig.mode)}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
-                          isSelected
+                        key={style.value}
+                        onClick={() => setWidgetStyle(style.value)}
+                        className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                          widgetStyle === style.value
                             ? "border-[#00D1C1] bg-[#00D1C1]/5"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <div
-                            className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
-                              isSelected ? "border-[#00D1C1]" : "border-gray-300"
+                            className={`h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              widgetStyle === style.value ? "border-[#00D1C1]" : "border-gray-300"
                             }`}
                           >
-                            {isSelected && (
+                            {widgetStyle === style.value && (
                               <div className="h-2 w-2 rounded-full bg-[#00D1C1]" />
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-medium flex items-center gap-2">
-                              {getModeLabelText(modeConfig.mode)}
-                              {isBest && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200"
-                                >
-                                  Recommended
-                                </Badge>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {getModeDescriptionText(modeConfig)}
-                            </p>
+                            <span className="text-sm font-medium">{style.label}</span>
+                            <p className="text-xs text-muted-foreground">{style.description}</p>
                           </div>
                         </div>
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Brand Color */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Palette className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Brand Color</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  {COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      onClick={() => setBrandColor(preset.value)}
-                      className={`h-8 w-8 rounded-full border-2 transition-all ${
-                        brandColor === preset.value
-                          ? "border-gray-900 scale-110"
-                          : "border-transparent hover:scale-105"
-                      }`}
-                      style={{ backgroundColor: preset.value }}
-                      title={preset.name}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="customColor" className="text-xs text-muted-foreground">
-                    Custom:
-                  </Label>
-                  <Input
-                    id="customColor"
-                    type="text"
-                    value={brandColor}
-                    onChange={(e) => setBrandColor(e.target.value)}
-                    className="w-24 h-8 text-xs font-mono"
-                    placeholder="#00D1C1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Note: Position removed - new widget styles are all inline, not floating */}
-
-            {/* Featured Participants */}
-            {allParticipantPreviews.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Featured Participants</p>
-                    <span className="text-xs text-muted-foreground">
-                      ({featuredParticipantIds.length}/3 selected)
-                    </span>
+                    ))}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFeaturedParticipantIds(computeDefaultFeatured())}
-                    className="h-7 text-xs text-muted-foreground"
-                  >
-                    <RotateCcw className="h-3 w-3 mr-1" />
-                    Auto-select
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Choose up to 3 participants to highlight in the modal. Auto-select picks
-                  the top performers.
-                </p>
-                <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-2">
-                  {allParticipantPreviews.map((participant) => {
-                    const isSelected = featuredParticipantIds.includes(participant.id);
-                    const canSelect = isSelected || featuredParticipantIds.length < 3;
+                </CollapsibleContent>
+              </Collapsible>
 
-                    return (
-                      <button
-                        key={participant.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setFeaturedParticipantIds(
-                              featuredParticipantIds.filter((id) => id !== participant.id)
-                            );
-                          } else if (canSelect) {
-                            setFeaturedParticipantIds([
-                              ...featuredParticipantIds,
-                              participant.id,
-                            ]);
-                          }
-                        }}
-                        disabled={!canSelect && !isSelected}
-                        className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left ${
-                          isSelected
-                            ? "bg-[#00D1C1]/10 border border-[#00D1C1]/30"
-                            : canSelect
-                              ? "hover:bg-gray-50 border border-transparent"
-                              : "opacity-50 cursor-not-allowed border border-transparent"
-                        }`}
+              {/* Section 2: Appearance / Brand Color */}
+              <Collapsible
+                open={expandedSections.appearance}
+                onOpenChange={() => toggleSection("appearance")}
+              >
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Appearance</span>
+                    <div
+                      className="h-4 w-4 rounded-full border border-gray-300"
+                      style={{ backgroundColor: brandColor }}
+                    />
+                  </div>
+                  <ChevronRight
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      expandedSections.appearance ? "rotate-90" : ""
+                    }`}
+                  />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 px-1">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Brand Color</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex gap-1">
+                        {COLOR_PRESETS.map((preset) => (
+                          <button
+                            key={preset.value}
+                            onClick={() => setBrandColor(preset.value)}
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${
+                              brandColor === preset.value
+                                ? "border-gray-900 scale-110"
+                                : "border-transparent hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: preset.value }}
+                            title={preset.name}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="customColor" className="text-xs text-muted-foreground">
+                          Custom:
+                        </Label>
+                        <Input
+                          id="customColor"
+                          type="text"
+                          value={brandColor}
+                          onChange={(e) => setBrandColor(e.target.value)}
+                          className="w-24 h-8 text-xs font-mono"
+                          placeholder="#00D1C1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Section 3: Display Mode */}
+              {allModes.length > 0 && (
+                <Collapsible
+                  open={expandedSections.displayMode}
+                  onOpenChange={() => toggleSection("displayMode")}
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Display Mode</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({getModeLabelText(currentMode?.mode || "individual")})
+                      </span>
+                    </div>
+                    <ChevronRight
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${
+                        expandedSections.displayMode ? "rotate-90" : ""
+                      }`}
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3 px-1">
+                    <div className="space-y-2">
+                      {allModes.map((modeConfig) => {
+                        const isSelected = currentMode?.mode === modeConfig.mode;
+                        const isBest = bestMode?.mode === modeConfig.mode;
+
+                        return (
+                          <button
+                            key={modeConfig.mode}
+                            onClick={() => setSelectedMode(modeConfig.mode)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                              isSelected
+                                ? "border-[#00D1C1] bg-[#00D1C1]/5"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                  isSelected ? "border-[#00D1C1]" : "border-gray-300"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <div className="h-2 w-2 rounded-full bg-[#00D1C1]" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium flex items-center gap-2">
+                                  {getModeLabelText(modeConfig.mode)}
+                                  {isBest && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200"
+                                    >
+                                      Recommended
+                                    </Badge>
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {getModeDescriptionText(modeConfig)}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Section 4: Featured Participants */}
+              {allParticipantPreviews.length > 0 && (
+                <Collapsible
+                  open={expandedSections.participants}
+                  onOpenChange={() => toggleSection("participants")}
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Featured Participants</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({featuredParticipantIds.length}/3 selected)
+                      </span>
+                    </div>
+                    <ChevronRight
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${
+                        expandedSections.participants ? "rotate-90" : ""
+                      }`}
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3 px-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">
+                        Choose up to 3 participants to highlight
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFeaturedParticipantIds(computeDefaultFeatured())}
+                        className="h-6 text-xs text-muted-foreground"
                       >
-                        {/* Checkbox */}
-                        <div
-                          className={`h-4 w-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                            isSelected
-                              ? "border-[#00D1C1] bg-[#00D1C1]"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          {isSelected && <Check className="h-3 w-3 text-white" />}
-                        </div>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Auto
+                      </Button>
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {allParticipantPreviews.map((participant) => {
+                        const isSelected = featuredParticipantIds.includes(participant.id);
+                        const canSelect = isSelected || featuredParticipantIds.length < 3;
 
-                        {/* Avatar */}
-                        <div
-                          className="h-8 w-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0"
-                          style={{ backgroundColor: brandColor }}
-                        >
-                          {participant.initials}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium truncate">
-                              {participant.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span
-                              className="font-medium"
-                              style={{ color: brandColor }}
+                        return (
+                          <button
+                            key={participant.id}
+                            onClick={() => {
+                              if (isSelected) {
+                                setFeaturedParticipantIds(
+                                  featuredParticipantIds.filter((id) => id !== participant.id)
+                                );
+                              } else if (canSelect) {
+                                setFeaturedParticipantIds([
+                                  ...featuredParticipantIds,
+                                  participant.id,
+                                ]);
+                              }
+                            }}
+                            disabled={!canSelect && !isSelected}
+                            className={`w-full flex items-center gap-2 p-2 rounded-lg transition-colors text-left ${
+                              isSelected
+                                ? "bg-[#00D1C1]/10 border border-[#00D1C1]/30"
+                                : canSelect
+                                  ? "hover:bg-gray-50 border border-transparent"
+                                  : "opacity-50 cursor-not-allowed border border-transparent"
+                            }`}
+                          >
+                            {/* Checkbox */}
+                            <div
+                              className={`h-4 w-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                isSelected
+                                  ? "border-[#00D1C1] bg-[#00D1C1]"
+                                  : "border-gray-300"
+                              }`}
                             >
-                              {participant.primaryMetric.value}{" "}
-                              {participant.primaryMetric.label}
-                            </span>
-                            <span>·</span>
-                            <div className="flex items-center gap-0.5">
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+
+                            {/* Avatar */}
+                            <div
+                              className="h-6 w-6 rounded-full flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0"
+                              style={{ backgroundColor: brandColor }}
+                            >
+                              {participant.initials}
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium truncate">
+                                  {participant.name}
+                                </span>
+                                <span
+                                  className="text-[10px] font-medium"
+                                  style={{ color: brandColor }}
+                                >
+                                  {participant.primaryMetric.value}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Stars (compact) */}
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`h-2.5 w-2.5 ${
+                                  className={`h-2 w-2 ${
                                     star <= participant.rating
                                       ? "text-yellow-400 fill-yellow-400"
                                       : "text-gray-300"
@@ -1022,16 +886,102 @@ export function BrandWidgetTab({
                                 />
                               ))}
                             </div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: Live Preview */}
+            <div className="lg:border-l lg:pl-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Live Preview
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPresentationMode(true)}
+                  className="h-7 text-xs text-muted-foreground hover:text-gray-900 gap-1.5"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Full Screen
+                </Button>
+              </div>
+              {/* Preview frame */}
+              <div className="border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 p-4 min-h-[200px] flex items-center justify-center">
+                <div className="w-full max-w-sm">
+                  {/* Render the actual widget based on selected style */}
+                  {widgetStyle === "strip" && (
+                    <TrustStripWidget
+                      participantCount={participantCount || 30}
+                      headline={badgeHeadline}
+                      subheadline={`${participantCount || 30} verified participants`}
+                      participants={modalParticipants.map((p) => ({
+                        id: p.id,
+                        initials: p.initials,
+                        name: p.name,
+                      }))}
+                      brandColor={brandColor}
+                      onOpenModal={() => setShowWidgetModal(true)}
+                    />
+                  )}
+                  {widgetStyle === "card" && (
+                    <TrustCardWidget
+                      participantCount={participantCount || 30}
+                      headline={badgeHeadline}
+                      subheadline={`${participantCount || 30} verified participants`}
+                      participants={modalParticipants.map((p) => ({
+                        id: p.id,
+                        initials: p.initials,
+                        name: p.name,
+                      }))}
+                      brandColor={brandColor}
+                      onOpenModal={() => setShowWidgetModal(true)}
+                    />
+                  )}
+                  {widgetStyle === "section" && (
+                    <TrustSectionWidget
+                      participantCount={participantCount || 30}
+                      headline={badgeHeadline}
+                      subheadline={`${participantCount || 30} verified participants`}
+                      participants={modalParticipants.map((p) => ({
+                        id: p.id,
+                        initials: p.initials,
+                        name: p.name,
+                        metric: p.primaryMetric.value,
+                      }))}
+                      brandColor={brandColor}
+                      onOpenModal={() => setShowWidgetModal(true)}
+                    />
+                  )}
+                  {widgetStyle === "floating-badge" && (
+                    <FloatingBadgeWidget
+                      participantCount={participantCount || 30}
+                      studyTitle={studyName}
+                      badgeHeadline={badgeHeadline}
+                      participants={modalParticipants.map((p) => ({
+                        id: p.id,
+                        initials: p.initials,
+                      }))}
+                      brandColor={brandColor}
+                      onOpenModal={() => setShowWidgetModal(true)}
+                    />
+                  )}
                 </div>
               </div>
-            )}
-          </CardContent>
-        )}
+              <p className="text-[10px] text-muted-foreground text-center mt-2">
+                Click the widget to preview the verification modal
+              </p>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* ===================== */}
@@ -1118,116 +1068,6 @@ export function BrandWidgetTab({
           </CardContent>
         </Card>
       </div>
-
-      {/* ===================== */}
-      {/* MARKETING KIT */}
-      {/* ===================== */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-            Marketing Kit
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Export verified participant stories as Instagram carousels and marketing assets
-          </p>
-        </CardHeader>
-        <CardContent>
-          {allParticipantPreviews.length > 0 ? (
-            <>
-              {/* Participant Cards with Export Buttons */}
-              <div className="space-y-3 mb-4">
-                {allParticipantPreviews.slice(0, 4).map((participant) => (
-                  <div
-                    key={participant.id}
-                    className="border rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow"
-                  >
-                    <div className="p-4 flex items-center gap-4">
-                      {/* Avatar */}
-                      <div
-                        className="h-12 w-12 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ backgroundColor: brandColor }}
-                      >
-                        {participant.initials}
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {participant.name}
-                          </p>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`h-3 w-3 ${
-                                  s <= Math.round(participant.rating)
-                                    ? "text-amber-400 fill-amber-400"
-                                    : "text-gray-200"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span
-                            className="font-medium"
-                            style={{ color: brandColor }}
-                          >
-                            {participant.primaryMetric.value} {participant.primaryMetric.label}
-                          </span>
-                          <span>·</span>
-                          <span>{participant.device}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 italic truncate mt-1">
-                          &quot;{participant.quote}&quot;
-                        </p>
-                      </div>
-
-                      {/* Export Button */}
-                      <Button
-                        size="sm"
-                        onClick={() => handleOpenExport(participant)}
-                        className="flex-shrink-0"
-                        style={{ backgroundColor: brandColor }}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Export
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Info text */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-emerald-500" />
-                  <span>All exports include verification badge</span>
-                </div>
-                <span>1080×1350px · Instagram ready</span>
-              </div>
-            </>
-          ) : (
-            // Empty state when no participants
-            <div className="text-center py-8">
-              <div
-                className="h-16 w-16 mx-auto rounded-full flex items-center justify-center mb-4"
-                style={{ backgroundColor: `${brandColor}15` }}
-              >
-                <ImageIcon className="h-8 w-8" style={{ color: brandColor }} />
-              </div>
-              <p className="text-sm font-medium text-gray-900 mb-1">
-                No completed stories yet
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Marketing assets will be available once participants complete the study
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* ===================== */}
       {/* METHODOLOGY FAQ */}
@@ -1347,28 +1187,32 @@ export function BrandWidgetTab({
       />
 
       {/* ===================== */}
-      {/* EXPORT MODAL */}
+      {/* PRESENTATION MODE */}
       {/* ===================== */}
-      {selectedExportParticipant && (
-        <ExportModal
-          isOpen={showExportModal}
-          onClose={() => {
-            setShowExportModal(false);
-            setSelectedExportParticipant(null);
-          }}
-          participant={convertToExportData(selectedExportParticipant)}
-          brandName={brandName}
-          studyName={studyName}
-          initialBrandSettings={{
-            primaryColor: brandColor,
-            secondaryColor: "#10B981",
-            textColor: "#1F2937",
-            backgroundColor: "#F9FAFB",
-            logoPosition: "top-right",
-            fontFamily: "Inter, sans-serif",
-          }}
-        />
-      )}
+      <PresentationMode
+        isOpen={showPresentationMode}
+        onClose={() => setShowPresentationMode(false)}
+        studyId={studyId}
+        brandColor={brandColor}
+        participantCount={participantCount || 30}
+        badgeHeadline={badgeHeadline}
+        participants={
+          allParticipantPreviews.length > 0
+            ? allParticipantPreviews.slice(0, 3).map((p) => ({
+                id: p.id,
+                initials: p.initials,
+                name: p.name,
+              }))
+            : [
+                { id: "1", initials: "JR", name: "James R." },
+                { id: "2", initials: "SM", name: "Sarah M." },
+                { id: "3", initials: "AL", name: "Alex L." },
+              ]
+        }
+        initialPlacement="pdp"
+        onOpenVerification={() => setShowWidgetModal(true)}
+        widgetStyle={widgetStyle}
+      />
     </div>
   );
 }

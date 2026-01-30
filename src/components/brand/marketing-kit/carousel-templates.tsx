@@ -193,7 +193,14 @@ function getBadgePosition(logoPosition: string): "top-left" | "top-right" | "bot
 // ============================================
 
 export function SlideHook({ participant, brand, brandName, aspectRatio = "4:5" }: SlideProps) {
-  const heroMetric = participant.metrics[0];
+  const heroMetric = participant.metrics[0] || {
+    label: "Improvement",
+    before: 50,
+    after: 75,
+    unit: "/100",
+    changePercent: 50,
+    lowerIsBetter: false,
+  };
   const dimensions = aspectRatio === "4:5" 
     ? { width: 1080, height: 1350 }
     : { width: 1080, height: 1080 };
@@ -300,7 +307,7 @@ export function SlideHook({ participant, brand, brandName, aspectRatio = "4:5" }
         </div>
       </div>
 
-      <VerificationBadge color={brand.primaryColor} position={getBadgePosition(brand.logoPosition)} />
+      <VerificationBadge position={getBadgePosition(brand.logoPosition)} />
     </div>
   );
 }
@@ -400,10 +407,7 @@ export function SlideStruggle({ participant, brand, brandName, aspectRatio = "4:
         </div>
       </div>
 
-      <VerificationBadge 
-        color={brand.backgroundColor} 
-        position={getBadgePosition(brand.logoPosition)} 
-      />
+      <VerificationBadge position={getBadgePosition(brand.logoPosition)} />
     </div>
   );
 }
@@ -523,10 +527,7 @@ export function SlideTransformation({ participant, brand, brandName, aspectRatio
         })}
       </div>
 
-      <VerificationBadge 
-        color={brand.backgroundColor} 
-        position={getBadgePosition(brand.logoPosition)} 
-      />
+      <VerificationBadge position={getBadgePosition(brand.logoPosition)} />
     </div>
   );
 }
@@ -659,10 +660,7 @@ export function SlideTestimonial({ participant, brand, brandName, aspectRatio = 
         </div>
       </div>
 
-      <VerificationBadge 
-        color={brand.primaryColor} 
-        position={getBadgePosition(brand.logoPosition)} 
-      />
+      <VerificationBadge position={getBadgePosition(brand.logoPosition)} />
     </div>
   );
 }
