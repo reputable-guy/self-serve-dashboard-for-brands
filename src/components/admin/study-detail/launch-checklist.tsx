@@ -75,11 +75,9 @@ export function LaunchChecklist({
     },
   ];
 
-  const prerequisiteCount = items.filter((item) => checklist[item.id]).length;
-  const allPrerequisitesComplete = prerequisiteCount === items.length;
-  const isPublished = !!checklist.goLiveAt;
-  const completedCount = prerequisiteCount + (isPublished ? 1 : 0);
-  const totalCount = items.length + 1; // 3 prerequisites + 1 publish step
+  const completedCount = items.filter((item) => checklist[item.id]).length;
+  const totalCount = items.length;
+  const allPrerequisitesComplete = completedCount === totalCount;
   const progressPercent = Math.round((completedCount / totalCount) * 100);
 
   return (
@@ -88,10 +86,10 @@ export function LaunchChecklist({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <Rocket className="h-5 w-5 text-[#00D1C1]" />
-            Publish Checklist
+            Launch Checklist
           </CardTitle>
           <span className="text-sm text-muted-foreground">
-            {completedCount}/{totalCount} done
+            {completedCount}/{totalCount + 1} done
           </span>
         </div>
       </CardHeader>
@@ -156,17 +154,13 @@ export function LaunchChecklist({
           {/* Go Live item (special) */}
           <div
             className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-              isPublished
-                ? "bg-green-50 border border-green-200"
-                : allPrerequisitesComplete
+              allPrerequisitesComplete
                 ? "bg-[#00D1C1]/10 border border-[#00D1C1]/30"
                 : "bg-gray-50 border border-gray-200"
             }`}
           >
             {/* Status icon */}
-            {isPublished ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            ) : allPrerequisitesComplete ? (
+            {allPrerequisitesComplete ? (
               <Circle className="h-5 w-5 text-[#00D1C1] flex-shrink-0 mt-0.5" />
             ) : (
               <Lock className="h-5 w-5 text-gray-300 flex-shrink-0 mt-0.5" />
@@ -177,52 +171,44 @@ export function LaunchChecklist({
               <div className="flex items-center justify-between gap-2">
                 <span
                   className={`font-medium ${
-                    isPublished
-                      ? "text-green-700"
-                      : allPrerequisitesComplete
+                    allPrerequisitesComplete
                       ? "text-[#00D1C1]"
                       : "text-gray-400"
                   }`}
                 >
-                  Publish as Coming Soon
+                  Go Live
                 </span>
-                {!isPublished && (
-                  <Button
-                    size="sm"
-                    disabled={!allPrerequisitesComplete}
-                    onClick={onGoLive}
-                    className={
-                      allPrerequisitesComplete
-                        ? "bg-[#00D1C1] hover:bg-[#00B8A9] text-white"
-                        : ""
-                    }
-                  >
-                    {allPrerequisitesComplete ? (
-                      <>
-                        <Rocket className="h-4 w-4 mr-1" />
-                        Publish
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-4 w-4 mr-1" />
-                        Locked
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  disabled={!allPrerequisitesComplete}
+                  onClick={onGoLive}
+                  className={
+                    allPrerequisitesComplete
+                      ? "bg-[#00D1C1] hover:bg-[#00B8A9] text-white"
+                      : ""
+                  }
+                >
+                  {allPrerequisitesComplete ? (
+                    <>
+                      <Rocket className="h-4 w-4 mr-1" />
+                      Go Live
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4 mr-1" />
+                      Locked
+                    </>
+                  )}
+                </Button>
               </div>
               <p
                 className={`text-sm ${
-                  isPublished
-                    ? "text-green-600"
-                    : allPrerequisitesComplete
+                  allPrerequisitesComplete
                     ? "text-[#00D1C1]/80"
                     : "text-gray-400"
                 }`}
               >
-                {isPublished
-                  ? "Your study is visible in the catalogue"
-                  : "Make your study visible in the catalogue to build a waitlist"}
+                Open your first 24-hour recruitment window
               </p>
             </div>
           </div>

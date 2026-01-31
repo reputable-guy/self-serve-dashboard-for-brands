@@ -19,6 +19,7 @@ import type {
   ParticipantCompliance,
   StudyComplianceStats,
   StudyComplianceConfig,
+  ComplianceStatus,
   CohortProgress,
 } from "@/lib/types";
 import {
@@ -97,20 +98,27 @@ function generateRealisticParticipants(
     // Determine participant "archetype" for realistic patterns
     const random = Math.random();
     let missedDays: number;
+    let pattern: "perfect" | "occasional" | "weekend" | "struggling" | "critical";
+
     if (random < 0.4) {
       // 40%: Perfect compliance
+      pattern = "perfect";
       missedDays = 0;
     } else if (random < 0.7) {
       // 30%: Occasional miss (1-2 days)
+      pattern = "occasional";
       missedDays = Math.min(currentDay - 1, Math.floor(Math.random() * 2) + 1);
     } else if (random < 0.85) {
       // 15%: Weekend dropper (2-3 misses)
+      pattern = "weekend";
       missedDays = Math.min(currentDay - 1, Math.floor(Math.random() * 2) + 2);
     } else if (random < 0.95) {
       // 10%: Struggling (3-5 misses)
+      pattern = "struggling";
       missedDays = Math.min(currentDay - 1, Math.floor(Math.random() * 3) + 3);
     } else {
       // 5%: Critical (5-6 misses)
+      pattern = "critical";
       missedDays = Math.min(currentDay - 1, Math.floor(Math.random() * 2) + 5);
     }
 
@@ -225,7 +233,7 @@ export const useComplianceStore = create<ComplianceStoreState>()(
         };
 
         const participants: Record<string, ParticipantCompliance> = {};
-        participantsList.forEach((p) => {
+        participantsList.forEach((p, index) => {
           participants[p.id] = {
             participantId: p.id,
             studyId,

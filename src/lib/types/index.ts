@@ -98,7 +98,6 @@ export interface DeviceDefinition {
 
 export const STUDY_STATUS_VALUES = [
   "draft",
-  "coming_soon",
   "recruiting",
   "filling-fast",
   "full",
@@ -170,287 +169,11 @@ export interface LaunchChecklist {
   goLiveAt?: string;
 }
 
-// ============================================
-// ENROLLMENT (Brand-Recruits Model)
-// ============================================
-
-/** Enrollment status for brand-recruited studies */
-export type EnrollmentStatus = 'draft' | 'open' | 'paused' | 'closed';
-
-/** Enrollment configuration for brand-recruited studies */
-export interface EnrollmentConfig {
-  /** Maximum number of participants that can enroll */
-  enrollmentCap: number;
-  /** Optional deadline after which enrollment closes (ISO date) */
-  enrollmentDeadline?: string;
-  /** URL-friendly slug for enrollment link (e.g., "sensate-stress-2025") */
-  enrollmentSlug: string;
-  /** Current enrollment status */
-  enrollmentStatus: EnrollmentStatus;
-  /** Number of participants currently enrolled */
-  enrolledCount?: number;
-}
-
-// ============================================
-// EARLY INSIGHTS (Brand-Recruited Studies)
-// ============================================
-
-/** Participant archetype for simulation and analysis */
-export type ParticipantArchetype = 'skeptic' | 'desperate' | 'power_user' | 'struggler' | 'optimist';
-
-/** Hero symptom data - the single biggest challenge */
-export interface HeroSymptom {
-  /** The question asked (e.g., "What's your biggest challenge with sleep?") */
-  question: string;
-  /** Verbatim response (e.g., "I haven't slept through the night in 3 years") */
-  response: string;
-  /** Severity rating 1-10 */
-  severity: number;
-}
-
-/** Pain story - their journey context */
-export interface PainStory {
-  /** How long they've been dealing with the issue */
-  duration: string;
-  /** What they've tried before that didn't work */
-  failedAlternatives: string[];
-  /** How desperate they are 1-10 */
-  desperationLevel: number;
-  /** How committed they are to solving this 1-10 */
-  commitmentLevel: number;
-  /** Notable verbatim quote about their struggle */
-  verbatimQuote?: string;
-}
-
-/** Specific hoped outcomes */
-export interface HopedOutcomes {
-  /** Primary goal (e.g., "Fall asleep within 15 minutes") */
-  primaryGoal: string;
-  /** Secondary goals */
-  secondaryGoals: string[];
-  /** Expected timeframe (e.g., "Within 2 weeks") */
-  timeframe: string;
-}
-
-/** Status rating for wearable baseline metrics */
-export type WearableMetricStatus = 'poor' | 'below_avg' | 'normal' | 'good' | 'excellent';
-
-/** Individual wearable baseline metric (7-day average before product use) */
-export interface WearableBaselineMetric {
-  /** Metric label (e.g., "Sleep Score", "HRV", "Total Sleep") */
-  label: string;
-  /** Metric value (number or formatted string like "5h 42m") */
-  value: string | number;
-  /** Unit (e.g., "/100", "bpm", "ms") */
-  unit?: string;
-  /** Status rating based on population norms */
-  status: WearableMetricStatus;
-  /** Icon name for display (e.g., "moon", "heart", "activity") */
-  iconName?: 'moon' | 'heart' | 'activity' | 'clock' | 'zap' | 'gauge';
-}
-
-/** Wearable baseline data (7-day average before product use) */
-export interface WearableBaselineData {
-  /** Category this data is for */
-  category: 'sleep' | 'stress' | 'recovery' | 'fitness';
-  /** Averaging period description */
-  avgPeriod: string;
-  /** Individual metrics */
-  metrics: WearableBaselineMetric[];
-}
-
-/** Baseline data collected during the first week of study enrollment */
-export interface BaselineData {
-  /** Responses to baseline questions (motivation, hoped results, etc.) */
-  baselineResponses?: {
-    questionId: string;
-    response: string;
-  }[];
-  /** Profile data collected progressively days 1-5 */
-  profileData?: {
-    ageRange?: string;
-    lifeStage?: string;
-    primaryWellnessGoal?: string;
-    baselineStressLevel?: number;
-    /** Semi-anonymized location (e.g., "Texas") */
-    location?: string;
-  };
-  /** Day 1 assessment scores */
-  assessmentData?: {
-    compositeScore: number;
-    primaryScore: number;
-    primaryRaw: number;
-  };
-  /** When baseline collection was completed */
-  completedAt?: string;
-
-  // === NEW: Enhanced baseline data for voyeuristic insights ===
-
-  /** Hero symptom - the single biggest challenge */
-  heroSymptom?: HeroSymptom;
-  /** Pain story - their journey context */
-  painStory?: PainStory;
-  /** Specific hoped outcomes */
-  hopedOutcomes?: HopedOutcomes;
-  /** Participant archetype (for simulation and visual styling) */
-  archetype?: ParticipantArchetype;
-  /** Wearable baseline data (7-day average before product use) - Tier 1-2 only */
-  wearableBaseline?: WearableBaselineData;
-}
-
-/** Individual participant card data for early insights (n=1+) */
-export interface ParticipantInsightCard {
-  id: string;
-  /** Semi-anonymized name (e.g., "Sarah M.") */
-  displayName: string;
-  initials: string;
-  /** Avatar color generated from name for consistency */
-  avatarColor: string;
-  /** When they enrolled */
-  enrolledAt: string;
-  /** Relative time (e.g., "just now", "12 min ago") */
-  enrolledAgo: string;
-
-  // Their story
-  heroSymptom: string;
-  heroSymptomSeverity?: number;
-  painDuration?: string;
-  failedAlternatives: string[];
-  desperationLevel?: number;
-
-  // Their hopes
-  primaryGoal: string;
-  verbatimQuote?: string;
-
-  // Profile context (semi-anonymized)
-  ageRange: string;
-  location?: string;
-
-  // Assessment baseline
-  baselineScore?: number;
-
-  // Archetype for visual styling
-  archetype?: ParticipantArchetype;
-
-  // Wearable baseline data (Tier 1-2 categories only)
-  wearableBaseline?: WearableBaselineData;
-}
-
-/** Timeline event for live activity feed */
-export interface InsightTimelineEvent {
-  id: string;
-  type: 'new_participant' | 'quote_captured' | 'milestone' | 'pattern_emerging';
-  timestamp: string;
-  /** Relative time display */
-  timeAgo: string;
-  /** Participant initials (if applicable) */
-  participantInitials?: string;
-  /** Event content/description */
-  content: string;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
-}
-
-/** Emerging patterns when n >= 3 */
-export interface EmergingPatterns {
-  /** Top pain points mentioned */
-  topPainPoints: { label: string; count: number; percentage: number }[];
-  /** Common failed alternatives */
-  commonFailedAlternatives: { label: string; count: number }[];
-  /** Average desperation level */
-  averageDesperationLevel: number;
-  /** Most common pain duration */
-  mostCommonDuration: string;
-  /** Pattern confidence note */
-  confidenceNote: string;
-}
-
-/** Aggregated responses for a single baseline question */
-export interface BaselineQuestionAggregation {
-  questionId: string;
-  questionText: string;
-  questionType: "text" | "voice_and_text" | "multiple_choice";
-  /** Response distribution */
-  responses: {
-    value: string;
-    count: number;
-    percentage: number;
-  }[];
-  /** Notable quotes from text responses (for display) */
-  notableQuotes?: {
-    quote: string;
-    participantInitials: string;
-  }[];
-  totalResponses: number;
-}
-
-/** Demographics breakdown for early insights */
-export interface EarlyInsightsDemographics {
-  ageRanges: { range: string; count: number; percentage: number }[];
-  lifeStages: { stage: string; count: number; percentage: number }[];
-  primaryGoals?: { goal: string; count: number; percentage: number }[];
-  baselineStressDistribution?: { level: number; count: number; percentage: number }[];
-}
-
-/** Baseline assessment score distribution */
-export interface BaselineScoreDistribution {
-  assessmentName: string;
-  categoryLabel: string;
-  averageScore: number;
-  scoreDistribution: {
-    range: string;
-    count: number;
-    percentage: number;
-  }[];
-  primaryQuestionSummary?: {
-    questionText: string;
-    averageRaw: number;
-    maxValue: number;
-  };
-}
-
-/** Complete early insights data for a brand-recruited study */
-export interface EarlyInsightsData {
-  studyId: string;
-  /** Total participants in study */
-  totalParticipants: number;
-  /** Participants who have completed baseline */
-  participantsWithBaseline: number;
-  /** Minimum required for aggregate insights (10) - but individual cards show from n=1 */
-  minimumRequired: number;
-  /** When insights were last computed */
-  updatedAt: string;
-  /** Aggregated baseline question responses */
-  baselineQuestions: BaselineQuestionAggregation[];
-  /** Demographics breakdown */
-  demographics: EarlyInsightsDemographics;
-  /** Day 1 assessment score distribution */
-  baselineScores?: BaselineScoreDistribution;
-
-  // === NEW: Progressive disclosure data ===
-
-  /** Individual participant cards (always shown when n >= 1) */
-  participantCards: ParticipantInsightCard[];
-  /** Live activity timeline events */
-  timeline: InsightTimelineEvent[];
-  /** Emerging patterns (shown when n >= 3) */
-  emergingPatterns?: EmergingPatterns;
-  /** Notable quotes for carousel */
-  notableQuotes: {
-    quote: string;
-    initials: string;
-    context: string;
-    archetype?: ParticipantArchetype;
-  }[];
-}
-
 export interface Study {
   id: string;
-  // Demo studies show sample/mock data; real studies show actual data (or empty state if new)
-  isDemo?: boolean;
   name: string;
   brandId: string;
-  // NOTE: brandName removed - lookup from brands store at render time using getBrandById(study.brandId)?.name
+  brandName: string; // TODO: Consider removing - should lookup from brands store
   category: string;
   categoryKey: string;
   categoryLabel: string;
@@ -492,10 +215,6 @@ export interface Study {
     mode: "auto" | "manual";
     selectedMetric?: string; // e.g., "deep_sleep_duration"
   };
-  // Enrollment configuration (for brand-recruited studies only)
-  enrollmentConfig?: EnrollmentConfig;
-  // Pre-computed aggregate metrics (ground truth for real data studies)
-  avgImprovement?: number;
   // Legacy fields
   productName?: string;
   durationDays?: number;
@@ -700,34 +419,16 @@ export interface MockTestimonial {
   videoDuration?: string;
 }
 
-/** Individual wearable metric change (before → after) */
-export interface WearableMetricChange {
-  before: number;
-  after: number;
-  unit: string;
-  changePercent: number;
-  /** Human-readable label for this metric (e.g., "Deep Sleep", "Sleep Efficiency") */
-  label?: string;
-  /** True if lower values are better (e.g., sleep latency, resting HR) */
-  lowerIsBetter?: boolean;
-}
-
 export interface WearableMetrics {
   device: string;
-  /** The single metric that improved the most (for hero display) */
-  bestMetric?: WearableMetricChange;
-  // Sleep metrics (Vital/Oura API outputs)
-  sleepChange?: WearableMetricChange;
-  deepSleepChange?: WearableMetricChange;
-  remSleepChange?: WearableMetricChange;
-  sleepLatencyChange?: WearableMetricChange;
-  sleepEfficiencyChange?: WearableMetricChange;
-  hrvChange?: WearableMetricChange;
-  // Activity/recovery metrics
-  restingHrChange?: WearableMetricChange;
-  stepsChange?: WearableMetricChange;
-  activeMinutesChange?: WearableMetricChange;
-  activeCaloriesChange?: WearableMetricChange;
+  sleepChange?: { before: number; after: number; unit: string; changePercent: number };
+  deepSleepChange?: { before: number; after: number; unit: string; changePercent: number };
+  hrvChange?: { before: number; after: number; unit: string; changePercent: number };
+  restingHrChange?: { before: number; after: number; unit: string; changePercent: number };
+  stepsChange?: { before: number; after: number; unit: string; changePercent: number };
+  activeMinutesChange?: { before: number; after: number; unit: string; changePercent: number };
+  activeCaloriesChange?: { before: number; after: number; unit: string; changePercent: number };
+  sleepEfficiencyChange?: { before: number; after: number; unit: string; changePercent: number };
 }
 
 /** Data source type for distinguishing real vs demo/generated data */
@@ -825,31 +526,6 @@ export interface CustomQuestion {
   likertMax?: number;
   likertMinLabel?: string;
   likertMaxLabel?: string;
-}
-
-// ============================================
-// STUDY FORM TYPES (for study creation wizard)
-// ============================================
-
-/** Item in "What You'll Do" section */
-export interface WhatYoullDoItem {
-  icon: string;
-  title: string;
-  subtitle: string;
-}
-
-/** Section in "What You'll Do" */
-export interface WhatYoullDoSection {
-  sectionTitle: string;
-  items: WhatYoullDoItem[];
-}
-
-/** Item in "What You'll Get" section */
-export interface WhatYoullGetItem {
-  icon: string;
-  item: string;
-  note: string;
-  value: string;
 }
 
 // ============================================

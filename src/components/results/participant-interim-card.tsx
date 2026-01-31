@@ -307,7 +307,6 @@ function getRatingColor(rating: number): string {
  */
 function VillainProgressSection({
   ratings,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   villainVariable,
 }: {
   ratings: VillainRating[];

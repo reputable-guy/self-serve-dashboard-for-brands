@@ -17,13 +17,11 @@ export interface MockParticipant {
 
 export interface StudyData {
   id: string;
-  // Demo studies show sample/mock data; real studies show actual data (or empty state if new)
-  isDemo?: boolean;
   name: string;
   brandId: string;
   category: string;
   categoryLabel: string;
-  status: "draft" | "coming_soon" | "recruiting" | "filling-fast" | "full" | "active" | "completed" | "archived";
+  status: "draft" | "recruiting" | "filling-fast" | "full" | "active" | "completed" | "archived";
   participants: number;
   targetParticipants: number;
   startDate: string;
@@ -45,23 +43,6 @@ export interface StudyData {
   };
   // Current day of the study (for active studies)
   currentDay?: number;
-  // Launch checklist state (for draft/coming_soon studies)
-  launchChecklist?: {
-    settingsComplete: boolean;
-    previewReviewed: boolean;
-    inventoryConfirmed: boolean;
-    goLiveAt?: string;
-  };
-  // Fulfillment model: "recruited" = Reputable recruits, "rebate" = brand recruits
-  fulfillmentModel?: "recruited" | "rebate";
-  // Enrollment config for brand-recruited studies
-  enrollmentConfig?: {
-    enrollmentCap: number;
-    enrollmentDeadline?: string;
-    enrollmentSlug: string;
-    enrollmentStatus: "draft" | "open" | "paused" | "closed";
-    enrolledCount?: number;
-  };
 }
 
 export interface DemographicItem {
@@ -86,4 +67,4 @@ export interface Demographics {
   wearableDevices: DemographicItem[];
 }
 
-export type TabId = "overview" | "enrollment" | "participants" | "fulfillment" | "compliance" | "results" | "config";
+export type TabId = "overview" | "fulfillment" | "compliance" | "results" | "config";

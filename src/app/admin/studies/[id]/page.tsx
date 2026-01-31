@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,19 +14,14 @@ import {
   Star,
   Package,
   Activity,
-  Users,
-  UserCheck,
-  Eye,
 } from "lucide-react";
 import { useBrandsStore } from "@/lib/brands-store";
-import { useStudiesStore, SEED_STUDIES } from "@/lib/studies-store";
+import { useStudiesStore } from "@/lib/studies-store";
 import { CATEGORY_CONFIGS } from "@/lib/assessments";
 import { StudyDetailsFullPreview } from "@/components/study-details-full-preview";
 import { StudyPreview } from "@/components/study-preview";
 import {
   OverviewTab,
-  EnrollmentTab,
-  ParticipantsTab,
   ResultsTab,
   ConfigTab,
   FulfillmentTab,
@@ -37,7 +32,6 @@ import {
   getTierColor,
 } from "@/components/admin/study-detail";
 import type { TabId } from "@/components/admin/study-detail";
-import { BrandViewShell } from "@/components/brand";
 
 // ============================================
 // PREVIEW MODAL COMPONENT
@@ -150,9 +144,6 @@ export default function AdminStudyDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const searchParams = useSearchParams();
-  const initialView = searchParams.get("view") === "brand" ? "brand" : "admin";
-  const [viewMode, setViewMode] = useState<"admin" | "brand">(initialView);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [showPreview, setShowPreview] = useState(false);
 
@@ -166,9 +157,7 @@ export default function AdminStudyDetailPage() {
         ...storeStudy,
         startDate: storeStudy.startDate ? new Date(storeStudy.startDate).toISOString().split('T')[0] : "",
         endDate: storeStudy.endDate ? new Date(storeStudy.endDate).toISOString().split('T')[0] : "",
-        avgImprovement: storeStudy.avgImprovement
-          ?? SEED_STUDIES.find(s => s.id === storeStudy.id)?.avgImprovement
-          ?? Math.floor(Math.random() * 20) + 15, // Use ground truth if available, random fallback for demo
+        avgImprovement: Math.floor(Math.random() * 20) + 15, // Generate random for new studies
         completionRate: storeStudy.status === 'completed' ? 100 : Math.floor(Math.random() * 20) + 75,
       }
     : legacyStudy;
@@ -203,66 +192,30 @@ export default function AdminStudyDetailPage() {
     );
   }
 
-  // Check if this is a brand-recruited study
-  const isBrandRecruits = study.fulfillmentModel === "rebate" && study.enrollmentConfig;
-
-  // Tab order follows workflow: Overview → [Enrollment for brand-recruits] → Fulfillment → Compliance → Results → Config
-  const baseTabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  // Tab order follows workflow: Overview → Fulfillment → Compliance → Results → Config
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     {
       id: "overview",
       label: "Overview",
       icon: <BarChart3 className="h-4 w-4" />,
     },
-  ];
-
-  // Add enrollment and participants tabs for brand-recruited studies
-  if (isBrandRecruits) {
-    baseTabs.push({
-      id: "enrollment",
-      label: "Enrollments",
-      icon: <Users className="h-4 w-4" />,
-    });
-    baseTabs.push({
-      id: "participants",
-      label: "Participants",
-      icon: <UserCheck className="h-4 w-4" />,
-    });
-  }
-
-  // Add remaining tabs (exclude Fulfillment/Compliance for brand-recruited studies)
-  const tabs = [
-    ...baseTabs,
-    // Only show Fulfillment/Compliance for Reputable-recruited studies
-    ...(!isBrandRecruits ? [
-      {
-        id: "fulfillment" as TabId,
-        label: "Fulfillment",
-        icon: <Package className="h-4 w-4" />,
-      },
-      {
-        id: "compliance" as TabId,
-        label: "Compliance",
-        icon: <Activity className="h-4 w-4" />,
-      },
-    ] : []),
-    { id: "results" as TabId, label: "Results", icon: <Star className="h-4 w-4" /> },
     {
-      id: "config" as TabId,
+      id: "fulfillment",
+      label: "Fulfillment",
+      icon: <Package className="h-4 w-4" />,
+    },
+    {
+      id: "compliance",
+      label: "Compliance",
+      icon: <Activity className="h-4 w-4" />,
+    },
+    { id: "results", label: "Results", icon: <Star className="h-4 w-4" /> },
+    {
+      id: "config",
       label: "Configuration",
       icon: <Settings className="h-4 w-4" />,
     },
   ];
-
-  // Brand View Mode
-  if (viewMode === "brand") {
-    return (
-      <BrandViewShell
-        study={study}
-        brand={brand ? { id: brand.id, name: brand.name, logoUrl: brand.logoUrl } : undefined}
-        onBackToAdmin={() => setViewMode("admin")}
-      />
-    );
-  }
 
   return (
     <div className="p-8">
@@ -296,16 +249,6 @@ export default function AdminStudyDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* View as Brand Button */}
-        <Button
-          variant="outline"
-          onClick={() => setViewMode("brand")}
-          className="gap-2"
-        >
-          <Eye className="h-4 w-4" />
-          View as Brand
-        </Button>
       </div>
 
       {/* Tabs */}
@@ -340,29 +283,6 @@ export default function AdminStudyDetailPage() {
           study={study}
           brand={brand}
           onOpenPreview={() => setShowPreview(true)}
-          onNavigateToTab={setActiveTab}
-        />
-      )}
-      {activeTab === "enrollment" && isBrandRecruits && study.enrollmentConfig && (
-        <EnrollmentTab
-          studyId={study.id}
-          studyName={study.name}
-          studyCategory={study.category}
-          enrollmentSlug={study.enrollmentConfig.enrollmentSlug}
-          enrollmentCap={study.enrollmentConfig.enrollmentCap}
-          enrollmentStatus={study.enrollmentConfig.enrollmentStatus}
-          enrolledCount={study.enrollmentConfig.enrolledCount || 0}
-          rebateAmount={study.rebateAmount}
-          isDemo={study.isDemo !== false}
-        />
-      )}
-      {activeTab === "participants" && isBrandRecruits && study.enrollmentConfig && (
-        <ParticipantsTab
-          studyId={study.id}
-          studyName={study.name}
-          enrollmentSlug={study.enrollmentConfig.enrollmentSlug}
-          studyCategory={study.category}
-          isDemo={study.isDemo !== false}
         />
       )}
       {activeTab === "fulfillment" && (
@@ -370,11 +290,9 @@ export default function AdminStudyDetailPage() {
           studyId={study.id}
           studyName={study.name}
           targetParticipants={study.targetParticipants}
-          studyStatus={study.status}
-          isDemo={study.isDemo !== false}
         />
       )}
-      {activeTab === "compliance" && <ComplianceTab study={study} isDemo={study.isDemo !== false} />}
+      {activeTab === "compliance" && <ComplianceTab study={study} />}
       {activeTab === "results" && <ResultsTab study={study} />}
       {activeTab === "config" && (
         <ConfigTab study={study} categoryConfig={categoryConfig} />

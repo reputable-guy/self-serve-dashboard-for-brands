@@ -15,8 +15,6 @@ import { DEFAULT_COMPLIANCE_CONFIG } from "@/lib/types/compliance";
 interface ComplianceTabProps {
   /** Only requires the study ID - other fields are managed by compliance store */
   study: { id: string };
-  /** If true, show demo data and simulation controls */
-  isDemo?: boolean;
 }
 
 /**
@@ -26,7 +24,7 @@ interface ComplianceTabProps {
  * Includes simulation controls for demo purposes (advancing days, simulating
  * missed check-ins, etc.)
  */
-export function ComplianceTab({ study, isDemo = true }: ComplianceTabProps) {
+export function ComplianceTab({ study }: ComplianceTabProps) {
   const [initialized, setInitialized] = useState(false);
 
   const {
@@ -42,9 +40,9 @@ export function ComplianceTab({ study, isDemo = true }: ComplianceTabProps) {
     participants,
   } = useComplianceStore();
 
-  // Initialize mock data on first render - only for demo studies
+  // Initialize mock data on first render
   useEffect(() => {
-    if (!initialized && isDemo) {
+    if (!initialized) {
       // Check if we already have participants for this study
       const existingParticipants = Object.values(participants).filter(
         (p) => p.studyId === study.id
@@ -55,10 +53,8 @@ export function ComplianceTab({ study, isDemo = true }: ComplianceTabProps) {
         generateMockData(study.id, 14, 22);
       }
       setInitialized(true);
-    } else if (!initialized) {
-      setInitialized(true);
     }
-  }, [initialized, isDemo, study.id, participants, generateMockData]);
+  }, [initialized, study.id, participants, generateMockData]);
 
   const stats = getStudyStats(study.id);
   const atRiskParticipants = getParticipantsNeedingAttention(study.id);
@@ -92,21 +88,10 @@ export function ComplianceTab({ study, isDemo = true }: ComplianceTabProps) {
   if (!stats) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        <div className="max-w-md mx-auto">
-          <p className="text-lg font-medium">No compliance data available yet</p>
-          <p className="text-sm mt-2">
-            Compliance tracking begins when participants start the study and
-            begin their daily check-ins.
-          </p>
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg text-left">
-            <p className="text-sm font-medium mb-2">What you&apos;ll see here:</p>
-            <ul className="text-sm space-y-1">
-              <li>• Daily compliance rates and trends</li>
-              <li>• Participants needing attention</li>
-              <li>• Cohort-level engagement metrics</li>
-            </ul>
-          </div>
-        </div>
+        <p>No compliance data available yet.</p>
+        <p className="text-sm mt-2">
+          Compliance tracking begins when participants start the study.
+        </p>
       </div>
     );
   }
@@ -132,22 +117,20 @@ export function ComplianceTab({ study, isDemo = true }: ComplianceTabProps) {
         totalParticipants={stats.totalActive + stats.withdrawnCount}
       />
 
-      {/* Bottom row: Settings + Simulation Controls (demo only) */}
-      <div className={`grid grid-cols-1 ${isDemo ? 'md:grid-cols-2' : ''} gap-6`}>
+      {/* Bottom row: Settings + Simulation Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ComplianceSettings
           config={config}
           onConfigChange={(updates) => updateConfig(study.id, updates)}
         />
-        {isDemo && (
-          <SimulationControls
-            onAdvanceDay={() => advanceDay(study.id)}
-            onSimulateMiss={handleSimulateMiss}
-            onSimulateCheckIn={handleSimulateCheckIn}
-            onReset={() => resetStudy(study.id)}
-            currentDay={stats.currentDay}
-            totalDays={stats.totalDays}
-          />
-        )}
+        <SimulationControls
+          onAdvanceDay={() => advanceDay(study.id)}
+          onSimulateMiss={handleSimulateMiss}
+          onSimulateCheckIn={handleSimulateCheckIn}
+          onReset={() => resetStudy(study.id)}
+          currentDay={stats.currentDay}
+          totalDays={stats.totalDays}
+        />
       </div>
     </div>
   );

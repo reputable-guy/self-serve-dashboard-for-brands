@@ -18,6 +18,7 @@ import { persist } from "zustand/middleware";
 import type {
   AdminAlert,
   AlertType,
+  AlertSeverity,
   PlatformHealth,
 } from "@/lib/types";
 import {
@@ -144,8 +145,7 @@ export const useAlertsStore = create<AlertsStoreState>()(
 
       clearAcknowledgement: (alertId) => {
         set((state) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [alertId]: removed, ...rest } = state.acknowledgedAlerts;
+          const { [alertId]: _, ...rest } = state.acknowledgedAlerts;
           return { acknowledgedAlerts: rest };
         });
       },

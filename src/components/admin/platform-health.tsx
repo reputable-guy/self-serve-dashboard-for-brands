@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FlaskConical, Users, Activity, CheckCircle2 } from "lucide-react";
+import { FlaskConical, Users, Activity, Truck, CheckCircle2 } from "lucide-react";
 import type { PlatformHealth as PlatformHealthType, HealthIndicator } from "@/lib/types";
 
 interface PlatformHealthProps {

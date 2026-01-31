@@ -69,7 +69,7 @@ export function ComplianceTrendChart({ stats }: ComplianceTrendChartProps) {
 
             {/* Bars */}
             <div className="absolute inset-0 bottom-6 flex items-end gap-px">
-              {dailyCompliance.map((point) => {
+              {dailyCompliance.map((point, index) => {
                 const height = (point.percent / maxPercent) * 100;
                 const isWeekend = new Date(point.date).getDay() === 0 || new Date(point.date).getDay() === 6;
                 const barColor = point.percent >= targetCompliancePercent
