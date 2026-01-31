@@ -828,6 +828,31 @@ export interface CustomQuestion {
 }
 
 // ============================================
+// STUDY FORM TYPES (for study creation wizard)
+// ============================================
+
+/** Item in "What You'll Do" section */
+export interface WhatYoullDoItem {
+  icon: string;
+  title: string;
+  subtitle: string;
+}
+
+/** Section in "What You'll Do" */
+export interface WhatYoullDoSection {
+  sectionTitle: string;
+  items: WhatYoullDoItem[];
+}
+
+/** Item in "What You'll Get" section */
+export interface WhatYoullGetItem {
+  icon: string;
+  item: string;
+  note: string;
+  value: string;
+}
+
+// ============================================
 // HELPER TYPES
 // ============================================
 

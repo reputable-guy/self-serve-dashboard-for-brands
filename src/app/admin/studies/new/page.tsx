@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -59,13 +59,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useBrandsStore } from "@/lib/brands-store";
-import { useStudiesStore } from "@/lib/studies-store";
+import { useBrandsStore, useBrandsHydrated } from "@/lib/brands-store";
+import { useStudiesStore, useStudiesHydrated } from "@/lib/studies-store";
 import {
   CATEGORY_CONFIGS,
   getTierDisplayInfo,
 } from "@/lib/assessments";
-import { getCategory } from "@/lib/categories";
+import { getCategory, categorySupportsWearables } from "@/lib/categories";
+import type { CategoryValue, WhatYoullDoSection, WhatYoullDoItem, WhatYoullGetItem } from "@/lib/types";
+import { validateStudyData, warnValidationErrors } from "@/lib/store-validation";
 import {
   generateStudyContent,
   getStudyAutoConfig,
@@ -79,9 +81,6 @@ import {
   StudyDetailsFullPreview,
   generateDefaultWhatYoullDo,
   generateDefaultWhatYoullGet,
-  WhatYoullDoSection,
-  WhatYoullDoItem,
-  WhatYoullGetItem,
 } from "@/components/study-details-full-preview";
 import { StudyPreview } from "@/components/study-preview";
 
@@ -92,6 +91,13 @@ import { StudyPreview } from "@/components/study-preview";
 const STORAGE_KEY = "study-wizard-draft";
 
 const STEP_LABELS = ["Basics", "Preview", "Customize", "Publish"];
+
+// Default values with named constants
+const DEFAULT_TARGET_PARTICIPANTS = 50;
+const DEFAULT_REBATE_AMOUNT = 50;
+const ENROLLMENT_CAP_MULTIPLIER = 1.5; // Account for participants who may not complete
+const DEFAULT_ENROLLMENT_CAP = Math.round(DEFAULT_TARGET_PARTICIPANTS * ENROLLMENT_CAP_MULTIPLIER);
+const DEFAULT_STUDY_DURATION_DAYS = 28;
 
 // Available icons for What You'll Do
 const WHAT_YOULL_DO_ICON_OPTIONS = [
@@ -156,6 +162,10 @@ interface StudyFormData {
   // Structured content
   whatYoullDoSections: WhatYoullDoSection[];
   whatYoullGet: WhatYoullGetItem[];
+
+  // Tracking flags to preserve manual edits
+  _hasManuallyEditedContent: boolean;  // Tracks if user has customized generated content
+  _hasManuallyEditedEnrollmentCap: boolean;  // Tracks if user has manually set enrollment cap
 }
 
 // ============================================
@@ -208,6 +218,10 @@ function AdminStudyCreationContent() {
   const searchParams = useSearchParams();
   const preselectedBrandId = searchParams.get("brand");
 
+  // Wait for store hydration before rendering
+  const brandsHydrated = useBrandsHydrated();
+  const studiesHydrated = useStudiesHydrated();
+
   const [step, setStep] = useState(1);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -217,15 +231,15 @@ function AdminStudyCreationContent() {
   const brands = useBrandsStore((state) => state.brands);
   const addStudy = useStudiesStore((state) => state.addStudy);
 
-  const getInitialFormData = (): StudyFormData => ({
+  const getInitialFormData = useCallback((): StudyFormData => ({
     brandId: preselectedBrandId || "",
     productName: "",
     category: "",
-    rebateAmount: 50,
-    targetParticipants: 50,
+    rebateAmount: DEFAULT_REBATE_AMOUNT,
+    targetParticipants: DEFAULT_TARGET_PARTICIPANTS,
     fulfillmentModel: "recruited",
     shippingProductDescription: "",
-    enrollmentCap: 75, // Default to 1.5x of default target (50)
+    enrollmentCap: DEFAULT_ENROLLMENT_CAP,
     hasEnrollmentDeadline: false,
     enrollmentDeadline: "",
     allowNonWearable: true,
@@ -240,7 +254,9 @@ function AdminStudyCreationContent() {
     villainVariable: "",
     whatYoullDoSections: [],
     whatYoullGet: [],
-  });
+    _hasManuallyEditedContent: false,
+    _hasManuallyEditedEnrollmentCap: false,
+  }), [preselectedBrandId]);
 
   const [formData, setFormData] = useState<StudyFormData>(getInitialFormData);
   const [generatedContent, setGeneratedContent] = useState<GeneratedStudyContent | null>(null);
@@ -287,7 +303,7 @@ function AdminStudyCreationContent() {
     }
   };
 
-  // Auto-configure when category changes
+  // Auto-configure when category or product changes (but respect manual edits)
   useEffect(() => {
     if (formData.category && formData.productName) {
       const autoConfig = getStudyAutoConfig(formData.category);
@@ -305,45 +321,58 @@ function AdminStudyCreationContent() {
       const defaultVillainVariable = categoryDef?.villainVariable || formData.category;
       const categoryLabel = CATEGORY_CONFIGS.find((c) => c.value === formData.category)?.label || formData.category;
 
-      // Generate structured content
-      const doSections = generateDefaultWhatYoullDo(
-        formData.productName,
-        categoryLabel,
-        28,
-        autoConfig.tier
-      );
-      const getItems = generateDefaultWhatYoullGet(
-        formData.productName,
-        categoryLabel,
-        formData.rebateAmount,
-        28
-      );
+      // Only generate structured content if user hasn't manually edited it
+      // This prevents losing user customizations when rebateAmount changes
+      if (!formData._hasManuallyEditedContent) {
+        const doSections = generateDefaultWhatYoullDo(
+          formData.productName,
+          categoryLabel,
+          DEFAULT_STUDY_DURATION_DAYS,
+          autoConfig.tier
+        );
+        const getItems = generateDefaultWhatYoullGet(
+          formData.productName,
+          categoryLabel,
+          formData.rebateAmount,
+          DEFAULT_STUDY_DURATION_DAYS
+        );
 
-      // Expand all sections
-      const expanded: Record<number, boolean> = {};
-      doSections.forEach((_, i) => (expanded[i] = true));
-      setExpandedSections(expanded);
+        // Expand all sections
+        const expanded: Record<number, boolean> = {};
+        doSections.forEach((_, i) => (expanded[i] = true));
+        setExpandedSections(expanded);
 
-      setFormData((prev) => ({
-        ...prev,
-        autoConfig,
-        whatYoullDiscover: content.whatYoullDiscover,
-        dailyRoutine: content.dailyRoutine,
-        howItWorks: howItWorksContent,
-        studyTitle: prev.studyTitle || `${prev.productName} Study`,
-        hookQuestion: prev.hookQuestion || `Can ${prev.productName} improve your ${categoryLabel.toLowerCase()}?`,
-        productDescription: prev.productDescription || howItWorksContent,
-        villainVariable: prev.villainVariable || defaultVillainVariable,
-        whatYoullDoSections: doSections,
-        whatYoullGet: getItems,
-      }));
+        setFormData((prev) => ({
+          ...prev,
+          autoConfig,
+          whatYoullDiscover: content.whatYoullDiscover,
+          dailyRoutine: content.dailyRoutine,
+          howItWorks: howItWorksContent,
+          studyTitle: prev.studyTitle || `${prev.productName} Study`,
+          hookQuestion: prev.hookQuestion || `Can ${prev.productName} improve your ${categoryLabel.toLowerCase()}?`,
+          productDescription: prev.productDescription || howItWorksContent,
+          villainVariable: prev.villainVariable || defaultVillainVariable,
+          whatYoullDoSections: doSections,
+          whatYoullGet: getItems,
+        }));
+      } else {
+        // Only update autoConfig and preserve existing content
+        setFormData((prev) => ({
+          ...prev,
+          autoConfig,
+          studyTitle: prev.studyTitle || `${prev.productName} Study`,
+          hookQuestion: prev.hookQuestion || `Can ${prev.productName} improve your ${categoryLabel.toLowerCase()}?`,
+          productDescription: prev.productDescription || howItWorksContent,
+          villainVariable: prev.villainVariable || defaultVillainVariable,
+        }));
+      }
       setGeneratedContent(content);
     }
-  }, [formData.category, formData.productName, formData.rebateAmount]);
+  }, [formData.category, formData.productName, formData.rebateAmount, formData._hasManuallyEditedContent]);
 
-  // Generate "How It Works" content based on category
+  // Generate "How It Works" content based on category (uses CategoryValue for type safety)
   function generateHowItWorks(productName: string, category: string): string {
-    const categoryDescriptions: Record<string, string> = {
+    const categoryDescriptions: Partial<Record<CategoryValue, string>> = {
       sleep: `${productName} is designed to support healthy sleep patterns. This study will track how it affects your sleep quality, duration, and how refreshed you feel upon waking.`,
       recovery: `${productName} is formulated to support post-workout recovery. This study will measure its impact on your recovery metrics, muscle soreness, and HRV.`,
       fitness: `${productName} is designed to support your fitness goals. This study will track how it affects your activity levels, workout performance, and overall fitness metrics.`,
@@ -358,29 +387,67 @@ function AdminStudyCreationContent() {
       immunity: `${productName} is formulated to support immune function. This study will measure its impact on your immune health markers and overall wellness.`,
       hair: `${productName} is designed to support hair health. This study will track how it affects your hair strength, growth, and overall appearance.`,
       weight: `${productName} is formulated to support healthy metabolism. This study will measure its impact on your weight management goals and metabolic markers.`,
+      libido: `${productName} is designed to support sexual wellness. This study will track how it affects your libido and overall intimate wellbeing.`,
+      satiety: `${productName} is formulated to support healthy appetite control. This study will measure its impact on your satiety levels and eating patterns.`,
+      resilience: `${productName} is designed to support mental resilience. This study will track how it affects your stress response and emotional recovery.`,
     };
-    return categoryDescriptions[category] || `${productName} is a wellness product. This study will track how it affects your health and wellbeing over 28 days.`;
+    return categoryDescriptions[category as CategoryValue] || `${productName} is a wellness product. This study will track how it affects your health and wellbeing over ${DEFAULT_STUDY_DURATION_DAYS} days.`;
   }
 
-  const selectedBrand = brands.find((b) => b.id === formData.brandId);
-  const selectedCategory = CATEGORY_CONFIGS.find((c) => c.value === formData.category);
-  const tierInfo = formData.autoConfig ? getTierDisplayInfo(formData.autoConfig.tier) : null;
-  const heartbeats = calculateHeartbeats(formData.rebateAmount);
-  const tier = formData.autoConfig?.tier || 1;
+  // Memoized computed values to avoid recalculating on every render
+  const selectedBrand = useMemo(
+    () => brands.find((b) => b.id === formData.brandId),
+    [brands, formData.brandId]
+  );
 
-  const canProceedStep1 =
-    formData.brandId && formData.productName && formData.category && formData.rebateAmount > 0;
+  const selectedCategory = useMemo(
+    () => CATEGORY_CONFIGS.find((c) => c.value === formData.category),
+    [formData.category]
+  );
+
+  const tierInfo = useMemo(
+    () => formData.autoConfig ? getTierDisplayInfo(formData.autoConfig.tier) : null,
+    [formData.autoConfig]
+  );
+
+  const heartbeats = useMemo(
+    () => calculateHeartbeats(formData.rebateAmount),
+    [formData.rebateAmount]
+  );
+
+  const tier = useMemo(
+    () => formData.autoConfig?.tier || 1,
+    [formData.autoConfig]
+  );
+
+  const canProceedStep1 = useMemo(
+    () => formData.brandId && formData.productName && formData.category && formData.rebateAmount > 0,
+    [formData.brandId, formData.productName, formData.category, formData.rebateAmount]
+  );
+
+  // Show loading state until stores are hydrated (must be after all hooks)
+  if (!brandsHydrated || !studiesHydrated) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 w-48 bg-muted rounded" />
+          <div className="h-4 w-64 bg-muted rounded" />
+          <div className="h-64 bg-muted rounded-lg mt-8" />
+        </div>
+      </div>
+    );
+  }
 
   // Form update helper
   const updateFormData = (updates: Partial<StudyFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  // What You'll Do section handlers
+  // What You'll Do section handlers (mark as manually edited)
   const updateDoSection = (sectionIndex: number, updates: Partial<WhatYoullDoSection>) => {
     const newSections = [...formData.whatYoullDoSections];
     newSections[sectionIndex] = { ...newSections[sectionIndex], ...updates };
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
   };
 
   const updateDoItem = (sectionIndex: number, itemIndex: number, updates: Partial<WhatYoullDoItem>) => {
@@ -388,7 +455,7 @@ function AdminStudyCreationContent() {
     const newItems = [...newSections[sectionIndex].items];
     newItems[itemIndex] = { ...newItems[itemIndex], ...updates };
     newSections[sectionIndex] = { ...newSections[sectionIndex], items: newItems };
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
   };
 
   const addDoItem = (sectionIndex: number) => {
@@ -398,13 +465,13 @@ function AdminStudyCreationContent() {
       title: "",
       subtitle: "",
     });
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
   };
 
   const removeDoItem = (sectionIndex: number, itemIndex: number) => {
     const newSections = [...formData.whatYoullDoSections];
     newSections[sectionIndex].items = newSections[sectionIndex].items.filter((_, i) => i !== itemIndex);
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
   };
 
   const addDoSection = () => {
@@ -414,20 +481,20 @@ function AdminStudyCreationContent() {
       sectionTitle: "New Section",
       items: [{ icon: "gift", title: "", subtitle: "" }],
     });
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
     setExpandedSections((prev) => ({ ...prev, [newIndex]: true }));
   };
 
   const removeDoSection = (sectionIndex: number) => {
     const newSections = formData.whatYoullDoSections.filter((_, i) => i !== sectionIndex);
-    updateFormData({ whatYoullDoSections: newSections });
+    updateFormData({ whatYoullDoSections: newSections, _hasManuallyEditedContent: true });
   };
 
-  // What You'll Get handlers
+  // What You'll Get handlers (mark as manually edited)
   const updateGetItem = (index: number, updates: Partial<WhatYoullGetItem>) => {
     const newItems = [...formData.whatYoullGet];
     newItems[index] = { ...newItems[index], ...updates };
-    updateFormData({ whatYoullGet: newItems });
+    updateFormData({ whatYoullGet: newItems, _hasManuallyEditedContent: true });
   };
 
   const addGetItem = () => {
@@ -438,12 +505,12 @@ function AdminStudyCreationContent() {
       note: "",
       value: "$0",
     });
-    updateFormData({ whatYoullGet: newItems });
+    updateFormData({ whatYoullGet: newItems, _hasManuallyEditedContent: true });
   };
 
   const removeGetItem = (index: number) => {
     const newItems = formData.whatYoullGet.filter((_, i) => i !== index);
-    updateFormData({ whatYoullGet: newItems });
+    updateFormData({ whatYoullGet: newItems, _hasManuallyEditedContent: true });
   };
 
   const toggleSection = (index: number) => {
@@ -461,8 +528,23 @@ function AdminStudyCreationContent() {
     return `${baseSlug}-${timestamp}`;
   };
 
-  // Publish study
+  // Publish study with validation
   const handlePublish = async () => {
+    // Validate form data before publishing
+    const validation = validateStudyData({
+      name: formData.productName,
+      brandId: formData.brandId,
+      category: formData.category,
+      targetParticipants: formData.targetParticipants,
+      rebateAmount: formData.rebateAmount,
+    });
+
+    if (!validation.valid) {
+      warnValidationErrors('handlePublish', validation.errors);
+      // Could show user-facing error here, but the checklist should prevent this
+      return;
+    }
+
     setIsPublishing(true);
 
     const categoryLabel = selectedCategory?.label || formData.category;
@@ -480,6 +562,11 @@ function AdminStudyCreationContent() {
     // Reputable-recruited studies go to "coming_soon" (build waitlist first)
     const isBrandRecruits = formData.fulfillmentModel === "rebate";
 
+    // hasWearables indicates whether the study supports wearable data collection
+    // This is determined by the category tier (1-3 support wearables, 4 does not)
+    // The allowNonWearable flag only affects whether wearables are REQUIRED, not supported
+    const studySupportsWearables = categorySupportsWearables(formData.category);
+
     const study = addStudy({
       name: formData.productName,
       brandId: formData.brandId,
@@ -492,7 +579,7 @@ function AdminStudyCreationContent() {
       startDate: null,
       endDate: null,
       rebateAmount: formData.rebateAmount,
-      hasWearables: !formData.allowNonWearable,
+      hasWearables: studySupportsWearables,
       productDescription: formData.productDescription,
       productImage: formData.productImage,
       hookQuestion: formData.hookQuestion,
@@ -710,13 +797,15 @@ function AdminStudyCreationContent() {
           className="w-32"
           value={formData.targetParticipants}
           onChange={(e) => {
-            const newTarget = parseInt(e.target.value) || 50;
+            const newTarget = parseInt(e.target.value) || DEFAULT_TARGET_PARTICIPANTS;
             updateFormData({
               targetParticipants: newTarget,
               // Auto-update enrollment cap to 1.5x when target changes (for rebate model)
-              enrollmentCap: formData.fulfillmentModel === "rebate"
-                ? Math.round(newTarget * 1.5)
-                : formData.enrollmentCap
+              // But only if user hasn't manually set the enrollment cap
+              ...(formData.fulfillmentModel === "rebate" && !formData._hasManuallyEditedEnrollmentCap
+                ? { enrollmentCap: Math.round(newTarget * ENROLLMENT_CAP_MULTIPLIER) }
+                : {}
+              ),
             });
           }}
         />
@@ -783,8 +872,11 @@ function AdminStudyCreationContent() {
             }`}
             onClick={() => updateFormData({
               fulfillmentModel: "rebate",
-              // Auto-set enrollment cap to 1.5x target when switching
-              enrollmentCap: Math.round(formData.targetParticipants * 1.5)
+              // Auto-set enrollment cap to 1.5x target when switching (only if not manually edited)
+              ...(!formData._hasManuallyEditedEnrollmentCap
+                ? { enrollmentCap: Math.round(formData.targetParticipants * ENROLLMENT_CAP_MULTIPLIER) }
+                : {}
+              ),
             })}
           >
             <CardContent className="p-4">
@@ -831,10 +923,13 @@ function AdminStudyCreationContent() {
                   min={formData.targetParticipants}
                   className="w-32"
                   value={formData.enrollmentCap}
-                  onChange={(e) => updateFormData({ enrollmentCap: parseInt(e.target.value) || formData.targetParticipants })}
+                  onChange={(e) => updateFormData({
+                    enrollmentCap: parseInt(e.target.value) || formData.targetParticipants,
+                    _hasManuallyEditedEnrollmentCap: true,
+                  })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Recommend 1.5x your target ({Math.round(formData.targetParticipants * 1.5)}) to account for participants who may not complete
+                  Recommend {ENROLLMENT_CAP_MULTIPLIER}x your target ({Math.round(formData.targetParticipants * ENROLLMENT_CAP_MULTIPLIER)}) to account for participants who may not complete
                 </p>
               </div>
 
@@ -1104,7 +1199,7 @@ function AdminStudyCreationContent() {
                   onChange={(e) => {
                     const newItems = [...formData.whatYoullDiscover];
                     newItems[index] = e.target.value;
-                    updateFormData({ whatYoullDiscover: newItems });
+                    updateFormData({ whatYoullDiscover: newItems, _hasManuallyEditedContent: true });
                   }}
                   placeholder="Discovery point..."
                   className="flex-1"
@@ -1115,7 +1210,7 @@ function AdminStudyCreationContent() {
                   className="h-9 w-9 text-muted-foreground hover:text-destructive"
                   onClick={() => {
                     const newItems = formData.whatYoullDiscover.filter((_, i) => i !== index);
-                    updateFormData({ whatYoullDiscover: newItems });
+                    updateFormData({ whatYoullDiscover: newItems, _hasManuallyEditedContent: true });
                   }}
                 >
                   <X className="h-4 w-4" />
@@ -1126,7 +1221,7 @@ function AdminStudyCreationContent() {
               variant="outline"
               size="sm"
               className="w-full"
-              onClick={() => updateFormData({ whatYoullDiscover: [...formData.whatYoullDiscover, ""] })}
+              onClick={() => updateFormData({ whatYoullDiscover: [...formData.whatYoullDiscover, ""], _hasManuallyEditedContent: true })}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Discovery Point

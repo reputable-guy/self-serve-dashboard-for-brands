@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MOCK_BRANDS, Brand } from './roles';
 import { validateBrandData, warnValidationErrors } from './store-validation';
-import { mergeSeedData, createSafeRehydrationHandler, safeParseDateField } from './store-utils';
+import { mergeSeedData, createSafeRehydrationHandler, safeParseDateField, generateStoreId } from './store-utils';
 
 interface BrandsStore {
   brands: Brand[];
@@ -22,11 +22,6 @@ function generateSlug(name: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
-// Generate a unique ID
-function generateId(): string {
-  return `brand-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 export const useBrandsStore = create<BrandsStore>()(
   persist(
     (set, get) => ({
@@ -43,7 +38,7 @@ export const useBrandsStore = create<BrandsStore>()(
         }
 
         const newBrand: Brand = {
-          id: generateId(),
+          id: generateStoreId('brand'),
           name: brandData.name,
           slug: generateSlug(brandData.name),
           logoUrl: brandData.logoUrl,

@@ -20,7 +20,7 @@ import { SEED_STUDIES } from './data/seed-studies';
 import { validateStudyData, warnValidationErrors } from './store-validation';
 
 // Import shared store utilities
-import { mergeSeedData, createSafeRehydrationHandler } from './store-utils';
+import { mergeSeedData, createSafeRehydrationHandler, generateStoreId } from './store-utils';
 
 // Re-export Study type for backwards compatibility
 export type { Study } from './types';
@@ -54,10 +54,6 @@ interface StudiesStore {
   resetToSeedData: () => void;
 }
 
-function generateId(): string {
-  return `study-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 export const useStudiesStore = create<StudiesStore>()(
   persist(
     (set, get) => ({
@@ -75,7 +71,7 @@ export const useStudiesStore = create<StudiesStore>()(
         const now = new Date().toISOString();
         const newStudy: Study = {
           ...studyData,
-          id: generateId(),
+          id: generateStoreId('study'),
           isDemo: false, // User-created studies are NOT demos - show real data (or empty state)
           participants: 0,
           createdAt: now,

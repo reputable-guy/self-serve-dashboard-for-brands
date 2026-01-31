@@ -16,6 +16,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+// Import types from centralized location (SSOT)
+import type { WhatYoullDoItem, WhatYoullDoSection, WhatYoullGetItem } from "@/lib/types";
+
+// Re-export types for backwards compatibility
+export type { WhatYoullDoItem, WhatYoullDoSection, WhatYoullGetItem };
+
 // Icon mapping for What You'll Do items
 const WHAT_YOULL_DO_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   download: { icon: Download, color: "text-[#00D1C1]" },
@@ -34,24 +40,6 @@ const WHAT_YOULL_GET_ICONS: Record<string, { icon: LucideIcon; color: string }> 
   heart: { icon: Heart, color: "text-red-400" },
   chart: { icon: BarChart3, color: "text-blue-400" },
 };
-
-export interface WhatYoullDoItem {
-  icon: string;
-  title: string;
-  subtitle: string;
-}
-
-export interface WhatYoullDoSection {
-  sectionTitle: string;
-  items: WhatYoullDoItem[];
-}
-
-export interface WhatYoullGetItem {
-  icon: string;
-  item: string;
-  note: string;
-  value: string;
-}
 
 interface StudyDetailsFullPreviewProps {
   productName: string;
