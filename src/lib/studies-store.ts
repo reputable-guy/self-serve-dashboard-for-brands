@@ -24,6 +24,8 @@ export { SEED_STUDIES } from './data/seed-studies';
 
 interface StudiesStore {
   studies: Study[];
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   addStudy: (study: Omit<Study, 'id' | 'createdAt' | 'updatedAt' | 'participants'>) => Study;
   updateStudy: (id: string, updates: Partial<Study>) => void;
   deleteStudy: (id: string) => void;
@@ -44,6 +46,8 @@ export const useStudiesStore = create<StudiesStore>()(
   persist(
     (set, get) => ({
       studies: SEED_STUDIES,
+      _hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
 
       addStudy: (studyData) => {
         const now = new Date().toISOString();
@@ -168,6 +172,7 @@ export const useStudiesStore = create<StudiesStore>()(
           if (newStudies.length > 0) {
             state.studies = [...newStudies, ...state.studies];
           }
+          state.setHasHydrated(true);
         }
       },
     }
@@ -176,3 +181,6 @@ export const useStudiesStore = create<StudiesStore>()(
 
 // Alias for backward compatibility with legacy pages
 export const useStudies = useStudiesStore;
+
+// Hydration hook for SSR
+export const useStudiesHydrated = () => useStudiesStore((state) => state._hasHydrated);
